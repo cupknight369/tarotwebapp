@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Tarot</title>
+    <link href="./output.css" rel="stylesheet" />
+    <script defer src="alpine.min.js"></script>
+  </head>
+
+  <body class="bg-gray-800 p-6 text-white ">
+    <main x-data="{
+        num: 0
+      }">
+      <h1 class="mt-5 text-xl font-medium tracking-tight">Hello Tarot!</h1>
+      <hr class="py-3"/>
+      <button type="button" @click="num = num + 1">Clicky Me!</button>
+      <p x-text="num"></p>
+    </main>
+  </body>
+
+</html>
+
