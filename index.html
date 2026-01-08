@@ -20,7 +20,7 @@
       <p x-text="$store.cards[num]?.title"></p>
 
       <div>
-        <button type="button" class="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" @click="singleDrawNum = cryptoRandomInt0to77()">Single Draw</button>
+        <button type="button" class="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" @click="singleDrawNum = cryptoRandomInt($store.cards.length)">Single Draw</button>
         <p x-text="singleDrawNum ? $store.cards[singleDrawNum]?.title : 'Nothing drawn yet...'"></p>
       </div>
     </main>
@@ -110,7 +110,7 @@
       ])
     });
 
-    function cryptoRandomInt0to77() {
+    function cryptoRandomInt(len) {
       // 1. Get a random 32-bit unsigned integer.
       const buf = new Uint32Array(1);
       crypto.getRandomValues(buf); // cryptographically strong random 32-bit value [0, 2^32 - 1][web:22]
@@ -119,7 +119,7 @@
       const fraction = buf[0] / (0xFFFFFFFF + 1); // 0xFFFFFFFF = 2^32 - 1[web:21]
 
       // 3. Scale to [0, 78) and floor to get integer 0–77.
-      const result = Math.floor(fraction * 78);
+      const result = Math.floor(fraction * len);
 
       return result; // integer from 0 to 77 inclusive
     }
@@ -128,7 +128,7 @@
       const newArray = [...array];  // Create copy to preserve original
 
       for (let i = newArray.length - 1; i > 0; i--) {
-        const j = Math.floor(cryptoRandomInt0to77() * (i + 1));
+        const j = Math.floor(cryptoRandomInt(array.length) * (i + 1));
         [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
       }
 
