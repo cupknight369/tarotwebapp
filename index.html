@@ -123,6 +123,17 @@
 
       return result; // integer from 0 to 77 inclusive
     }
+
+    function shuffle(array) {
+      const newArray = [...array];  // Create copy to preserve original
+
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(cryptoRandomInt0to77() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+
+      return newArray;
+    }
   </script>
 
 </html>
