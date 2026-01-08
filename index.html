@@ -12,11 +12,17 @@
   <body class="bg-gray-800 p-6 text-white ">
     <main x-data="{
         num: 0,
+        singleDrawNum: null,
       }">
       <h1 class="mt-5 text-xl font-medium tracking-tight">Hello Tarot!</h1>
       <hr class="py-3"/>
       <button type="button" @click="num = num + 1">Clicky Me!</button>
       <p x-text="$store.cards[num]?.title"></p>
+
+      <div>
+        <button type="button" class="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" @click="singleDrawNum = cryptoRandomInt0to77()">Single Draw</button>
+        <p x-text="singleDrawNum ? $store.cards[singleDrawNum]?.title : 'Nothing drawn yet...'"></p>
+      </div>
     </main>
   </body>
 
@@ -103,6 +109,20 @@
         { title: 'King Of Pentacles', num: 77 },
       ])
     });
+
+    function cryptoRandomInt0to77() {
+      // 1. Get a random 32-bit unsigned integer.
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf); // cryptographically strong random 32-bit value [0, 2^32 - 1][web:22]
+
+      // 2. Convert to a fraction in [0, 1).
+      const fraction = buf[0] / (0xFFFFFFFF + 1); // 0xFFFFFFFF = 2^32 - 1[web:21]
+
+      // 3. Scale to [0, 78) and floor to get integer 0–77.
+      const result = Math.floor(fraction * 78);
+
+      return result; // integer from 0 to 77 inclusive
+    }
   </script>
 
 </html>
