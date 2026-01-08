@@ -11,14 +11,99 @@
 
   <body class="bg-gray-800 p-6 text-white ">
     <main x-data="{
-        num: 0
+        num: 0,
       }">
       <h1 class="mt-5 text-xl font-medium tracking-tight">Hello Tarot!</h1>
       <hr class="py-3"/>
       <button type="button" @click="num = num + 1">Clicky Me!</button>
-      <p x-text="num"></p>
+      <p x-text="$store.cards[num]?.title"></p>
     </main>
   </body>
+
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.store('cards', [
+        { title: 'The Fool', num: 0 },
+        { title: 'The Magician', num: 1 },
+        { title: 'The High Priestess', num: 2 },
+        { title: 'The Empress', num: 3 },
+        { title: 'The Emperor', num: 4 },
+        { title: 'The Hierophant', num: 5 },
+        { title: 'The Lovers', num: 6 },
+        { title: 'The Chariot', num: 7 },
+        { title: 'The Strength', num: 8 },
+        { title: 'The Hermit', num: 9 },
+        { title: 'The Wheel Of Fortune', num: 10 },
+        { title: 'Justice', num: 11 },
+        { title: 'The Hangman', num: 12 },
+        { title: 'Death', num: 13 },
+        { title: 'Temperance', num: 14 },
+        { title: 'The Devil', num: 15 },
+        { title: 'The Tower', num: 16 },
+        { title: 'The Star', num: 17 },
+        { title: 'The Moon', num: 18 },
+        { title: 'The Sun', num: 19 },
+        { title: 'Judgement', num: 20 },
+        { title: 'The World', num: 21 },
+        { title: 'Ace Of Wands', num: 22 },
+        { title: 'Two Of Wands', num: 23 },
+        { title: 'Three Of Wands', num: 24 },
+        { title: 'Four Of Wands', num: 25 },
+        { title: 'Five Of Wands', num: 26 },
+        { title: 'Six Of Wands', num: 27 },
+        { title: 'Seven Of Wands', num: 28 },
+        { title: 'Eight Of Wands', num: 29 },
+        { title: 'Nine Of Wands', num: 30 },
+        { title: 'Ten Of Wands', num: 31 },
+        { title: 'Page Of Wands', num: 32 },
+        { title: 'Knight Of Wands', num: 33 },
+        { title: 'Queen Of Wands', num: 34 },
+        { title: 'King Of Wands', num: 35 },  
+        { title: 'Ace Of Cups', num: 36 },
+        { title: 'Two Of Cups', num: 37 },
+        { title: 'Three Of Cups', num: 38 },
+        { title: 'Four Of Cups', num: 39 },
+        { title: 'Five Of Cups', num: 40 },
+        { title: 'Six Of Cups', num: 41 },
+        { title: 'Seven Of Cups', num: 42 },
+        { title: 'Eight Of Cups', num: 43 },
+        { title: 'Nine Of Cups', num: 44 },
+        { title: 'Ten Of Cups', num: 45 },
+        { title: 'Page Of Cups', num: 46 },
+        { title: 'Knight Of Cups', num: 47 },
+        { title: 'Queen Of Cups', num: 48 },
+        { title: 'King Of Cups', num: 49 },
+        { title: 'Ace Of Swords', num: 50 },
+        { title: 'Two Of Swords', num: 51 },
+        { title: 'Three Of Swords', num: 52 },
+        { title: 'Four Of Swords', num: 53 },
+        { title: 'Five Of Swords', num: 54 },
+        { title: 'Six Of Swords', num: 55 },
+        { title: 'Seven Of Swords', num: 56 },
+        { title: 'Eight Of Swords', num: 57 },
+        { title: 'Nine Of Swords', num: 58 },
+        { title: 'Ten Of Swords', num: 59 },
+        { title: 'Page Of Swords', num: 60 },
+        { title: 'Knight Of Swords', num: 61 },
+        { title: 'Queen Of Swords', num: 62 },
+        { title: 'King Of Swords', num: 63 },
+        { title: 'Ace Of Pentacles', num: 64 },
+        { title: 'Two Of Pentacles', num: 65 },
+        { title: 'Three Of Pentacles', num: 66 },
+        { title: 'Four Of Pentacles', num: 67 },
+        { title: 'Five Of Pentacles', num: 68 },
+        { title: 'Six Of Pentacles', num: 69 },
+        { title: 'Seven Of Pentacles', num: 70 },
+        { title: 'Eight Of Pentacles', num: 71 },
+        { title: 'Nine Of Pentacles', num: 72 },
+        { title: 'Ten Of Pentacles', num: 73 },
+        { title: 'Page Of Pentacles', num: 74 },
+        { title: 'Knight Of Pentacles', num: 75 },
+        { title: 'Queen Of Pentacles', num: 76 },
+        { title: 'King Of Pentacles', num: 77 },
+      ])
+    });
+  </script>
 
 </html>
 
