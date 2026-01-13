@@ -26,13 +26,13 @@ function shuffle(array) {
 function drawMultipleCards(num) {
   if (num > 10 || num < 1) { return; }
 
-  const draws = new Set([]);
+  const draws = new Set();
 
-  while (draws.length < num - 1) {
-    const randomNum = cryptoRandomInt(Alpine.store('shuffledCards'));
+  while (draws.size < num) {
+    const randomNum = cryptoRandomInt(Alpine.store('shuffledCards').length);
     if (!draws.has(randomNum)) { draws.add(randomNum); }
   }
-
+  
   return draws;
 }
 

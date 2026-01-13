@@ -15,7 +15,7 @@
     <main x-data="{
         num: 0,
         singleDrawNum: null,
-        multiDrawNums: new Set([]),
+        multiDrawNums: new Set(),
       }">
       <h1 class="mt-5 text-xl font-medium tracking-tight">Hello Tarot!</h1>
       <hr class="py-3"/>
@@ -27,7 +27,7 @@
           class="text-xl font-bold mt-3"></p>
       </div>
       
-      <form class="flex flex-col mt-5" @submit.prevent="multiDrawNums = drawMultipleCards(this.multiDraw);">
+      <form class="flex flex-col mt-5" @submit.prevent="multiDrawNums = drawMultipleCards(parseInt(event.target.multiDraw.value));">
         <label for="multiDraw" class="block text-xl font-bold text-gray-200 mb-1">Enter a number 1-10:</label>
         <input name="multiDraw" 
           class="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100
@@ -40,8 +40,8 @@
       </form>
 
       <ul>
-        <template x-for="num in multiDrawNums">
-          <li x-text="$store.shuffledCards[num]?.title"></li>
+        <template x-for="num in [...multiDrawNums]">
+          <li class="text-xl font-bold text-gray-200" x-text="$store.shuffledCards[num]?.title"></li>
         </template>
       </ul>
     </main>
