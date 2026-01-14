@@ -29,23 +29,41 @@
           class="text-xl font-bold mt-3"></p>
       </div>
       
-      <form class="flex flex-col mt-5" @submit.prevent="multiDrawNums = drawMultipleCards(parseInt(event.target.multiDraw.value));">
-        <label for="multiDraw" class="block text-xl font-bold text-gray-200 mb-1">Enter a number 1-10:</label>
-        <input name="multiDraw" 
-          class="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100
-            placeholder-gray-500
-            focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-            px-3 py-2 shadow-sm" 
-          type="number" 
-          min="1" 
-          max="10" />
-      </form>
+      <div>
+        <form class="flex flex-col mt-5" @submit.prevent="multiDrawNums = drawMultipleCards(parseInt(event.target.multiDraw.value));">
+          <label for="multiDraw" class="block text-xl font-bold text-gray-200 mb-1">Enter a number 1-10:</label>
+          <input name="multiDraw" 
+            class="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100
+              placeholder-gray-500
+              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+              px-3 py-2 shadow-sm" 
+            type="number" 
+            min="1" 
+            max="10" />
+        </form>
 
-      <ul>
-        <template x-for="num in [...multiDrawNums]">
-          <li class="text-xl font-bold text-gray-200" x-text="$store.shuffledCards[num]?.title"></li>
-        </template>
-      </ul>
+        <ul>
+          <template x-for="num in [...multiDrawNums]">
+            <li class="text-xl font-bold text-gray-200" x-text="$store.shuffledCards[num]?.title"></li>
+          </template>
+        </ul>
+      </div>
+      
+      <div x-data="{ specificIndexCard: null }">
+        <form class="flex flex-col mt-5" @submit.prevent="specificIndexCard = $store.shuffledCards[event.target.specificCardIndex.value];">
+          <label for="multiDraw" class="block text-xl font-bold text-gray-200 mb-1">Enter a number 0-77:</label>
+          <input name="specificCardIndex" 
+            class="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100
+              placeholder-gray-500
+              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+              px-3 py-2 shadow-sm" 
+            type="number" 
+            min="0" 
+            max="77" />
+        </form>
+
+        <p class="text-xl font-bold text-gray-200" x-text="specificIndexCard?.title"></p>
+      </div>
     </main>
   </body>
 </html>
