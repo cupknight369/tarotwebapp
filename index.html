@@ -23,7 +23,7 @@
         <div x-data="{ showShuffledConfirmation: false }">
           <button type="button" 
             class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" 
-            @click="singleDrawNum = cryptoRandomInt($store.cards.length)">Single Draw</button>
+            @click="compSingleDraw($store, $data, $refs);">Single Draw</button>
           <button type="button" 
             class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" 
             @click="$store.shuffledCards = shuffle($store.cards); showShuffledConfirmation = true; setTimeout(()=> showShuffledConfirmation = false, 3000);">Shuffle Deck</button>
@@ -31,9 +31,12 @@
             x-show="showShuffledConfirmation"
             class="inline-block text-md">Shuffled!</p>
         </div>
-        <p 
-          x-text="singleDrawNum !== null ? $store.shuffledCards[singleDrawNum]?.title : 'Nothing drawn yet...'"
-          class="text-xl font-bold mt-3"></p>
+        <div>
+          <img x-ref="cardImage" class="w-[150px]" />
+          <p 
+            x-text="singleDrawNum !== null ? $store.shuffledCards[singleDrawNum]?.title : 'Nothing drawn yet...'"
+            class="text-xl font-bold mt-3"></p>
+        </div>
       </div>
       
       <div>
