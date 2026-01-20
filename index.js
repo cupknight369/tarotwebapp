@@ -16,7 +16,7 @@ function shuffle(array) {
   const newArray = [...array];  // Create copy to preserve original
 
   for (let i = newArray.length - 1; i > 0; --i) {
-    const j = cryptoRandomInt(array.length);
+    const j = cryptoRandomInt(newArray.length);
     [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
   }
 
