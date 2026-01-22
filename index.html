@@ -15,7 +15,7 @@
         num: 0,
         singleDrawNum: null,
         multiDrawNums: new Set(),
-      }">
+      }" x-ref="main">
       <h1 class="mt-5 text-xl font-medium tracking-tight">Hello Tarot!</h1>
       <hr class="py-3"/>
 
@@ -36,6 +36,13 @@
           <p 
             x-text="singleDrawNum !== null ? $store.shuffledCards[singleDrawNum]?.title : 'Nothing drawn yet...'"
             class="text-xl font-bold mt-3"></p>
+          <button 
+            x-show="singleDrawNum !== null"
+            type="button"
+            class="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            @click="if (singleDrawNum !== null) { addCardToCanvas($store.shuffledCards[singleDrawNum]); }">
+            Add to Canvas
+          </button>
         </div>
       </div>
       
@@ -57,6 +64,13 @@
             <li class="text-xl font-bold text-gray-200" x-text="$store.shuffledCards[num]?.title"></li>
           </template>
         </ul>
+        <button 
+          x-show="multiDrawNums.size > 0"
+          type="button"
+          class="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          @click="[...multiDrawNums].forEach(num => { if ($store.shuffledCards[num]) addCardToCanvas($store.shuffledCards[num]); });">
+          Add All to Canvas
+        </button>
       </div>
       
       <div x-data="{ specificIndexCard: null }">
@@ -73,6 +87,52 @@
         </form>
 
         <p class="text-xl font-bold text-gray-200" x-text="specificIndexCard?.title"></p>
+        <button 
+          x-show="specificIndexCard !== null"
+          type="button"
+          class="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          @click="if (specificIndexCard !== null) { addCardToCanvas(specificIndexCard); }">
+          Add to Canvas
+        </button>
+      </div>
+
+      <!-- Draggable Zone -->
+      <div class="mt-8">
+        <h2 class="text-xl font-bold mb-4">Draggable Canvas</h2>
+        <div 
+          x-data="draggableZone()"
+          class="draggable-container relative w-full bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden"
+          style="height: 600px; min-height: 600px;">
+          
+          <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
+            <div 
+              :style="`transform: translate(${draggableCard.x}px, ${draggableCard.y}px) rotate(${draggableCard.rotation}deg) ${draggingCardId === draggableCard.id ? 'scale(1.05)' : ''}; transform-origin: 0 0; z-index: ${draggableCard.zIndex};`"
+              class="absolute cursor-grab select-none will-change-transform inline-block"
+              :data-card-id="draggableCard.id"
+              @mousedown="onDragStart($event, draggableCard.id)"
+              @touchstart="onDragStart($event, draggableCard.id)">
+              <img 
+                :src="draggableCard.card.img" 
+                :alt="draggableCard.card.title"
+                class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
+                draggable="false" />
+            </div>
+          </template>
+          
+          <div 
+            x-show="draggableCards.length === 0"
+            class="absolute inset-0 flex items-center justify-center text-gray-500">
+            <p>No cards on canvas. Add cards using the buttons above.</p>
+          </div>
+          
+          <button 
+            x-show="draggableCards.length > 0"
+            type="button"
+            class="absolute top-2 left-2 z-[9999] px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            @click="clearCanvas()">
+            Clear Canvas
+          </button>
+        </div>
       </div>
     </main>
   </body>

@@ -32,6 +32,15 @@ declare global {
     num: number;
     img: string;
   }
+  
+  interface DraggableCard {
+    card: TarotCard;
+    id: string;
+    x: number;
+    y: number;
+    rotation: number;
+    zIndex: number;
+  }
 }
 
 export {};

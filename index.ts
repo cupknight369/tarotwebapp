@@ -131,12 +131,165 @@ const cards: TarotCard[] = [
   { title: 'King Of Pentacles', num: 77, img: '/cards/p14.jpg' },
 ];
 
+function generateCardId(): string {
+  return `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function addCardToDraggableZone(
+  card: TarotCard,
+  draggableCards: DraggableCard[],
+  maxZIndex: number
+): { card: DraggableCard; newMaxZIndex: number } {
+  const newCard: DraggableCard = {
+    card,
+    id: generateCardId(),
+    x: Math.random() * 200 + 50, // Random initial position
+    y: Math.random() * 200 + 50,
+    rotation: 0,
+    zIndex: maxZIndex + 1
+  };
+  
+  return {
+    card: newCard,
+    newMaxZIndex: newCard.zIndex
+  };
+}
+
+// Helper function to add card to draggable zone (called from buttons)
+function addCardToCanvas(card: TarotCard): void {
+  const draggableZoneComponent = (window as any).draggableZoneComponent;
+  if (!draggableZoneComponent) {
+    console.error('Draggable zone component not found');
+    return;
+  }
+  
+  const result = addCardToDraggableZone(
+    card,
+    draggableZoneComponent.draggableCards,
+    draggableZoneComponent.maxZIndex
+  );
+  
+  draggableZoneComponent.draggableCards.push(result.card);
+  draggableZoneComponent.maxZIndex = result.newMaxZIndex;
+}
+
+// Alpine.js component for draggable zone (pure Alpine.js, no Interact.js)
+function draggableZone() {
+  const component = {
+    draggableCards: [] as DraggableCard[],
+    maxZIndex: 0,
+    draggingCardId: null as string | null,
+    dragStart: null as { cardX: number; cardY: number; pointerX: number; pointerY: number } | null,
+    
+    init() {
+      // Store reference globally so buttons can access it
+      (window as any).draggableZoneComponent = this;
+      
+      // Set up global mouse/touch event handlers
+      document.addEventListener('mousemove', (e) => this.onDragMove(e));
+      document.addEventListener('mouseup', (e) => this.onDragEnd(e));
+      document.addEventListener('touchmove', (e) => this.onDragMove(e), { passive: false });
+      document.addEventListener('touchend', (e) => this.onDragEnd(e));
+    },
+    
+    onDragStart(event: MouseEvent | TouchEvent, cardId: string) {
+      const card = this.draggableCards.find(c => c.id === cardId);
+      if (!card) return;
+      
+      // Bring card to front
+      this.maxZIndex += 1;
+      card.zIndex = this.maxZIndex;
+      
+      const pointerEvent = event instanceof MouseEvent ? event : event.touches[0];
+      const cardElement = (event.target as HTMLElement).closest('[data-card-id]') as HTMLElement;
+      if (!cardElement) return;
+      
+      const container = cardElement.closest('.draggable-container') as HTMLElement;
+      if (!container) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      const cardRect = cardElement.getBoundingClientRect();
+      
+      // Store start position in container coordinates (don't modify card.x/card.y here)
+      const cardLeft = cardRect.left - containerRect.left;
+      const cardTop = cardRect.top - containerRect.top;
+      const pointerX = pointerEvent.clientX - containerRect.left;
+      const pointerY = pointerEvent.clientY - containerRect.top;
+      
+      this.dragStart = { cardX: cardLeft, cardY: cardTop, pointerX, pointerY };
+      this.draggingCardId = cardId;
+      
+      cardElement.style.opacity = '0.8';
+      cardElement.style.cursor = 'grabbing';
+      event.preventDefault();
+    },
+    
+    onDragMove(event: MouseEvent | TouchEvent) {
+      if (!this.draggingCardId || !this.dragStart) return;
+      
+      const card = this.draggableCards.find(c => c.id === this.draggingCardId);
+      if (!card) return;
+      
+      const pointerEvent = event instanceof MouseEvent ? event : event.touches[0];
+      const container = document.querySelector('.draggable-container') as HTMLElement;
+      if (!container) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      const pointerX = pointerEvent.clientX - containerRect.left;
+      const pointerY = pointerEvent.clientY - containerRect.top;
+      
+      // Move by delta from start (avoids any offset/position sync issues)
+      let newX = this.dragStart.cardX + (pointerX - this.dragStart.pointerX);
+      let newY = this.dragStart.cardY + (pointerY - this.dragStart.pointerY);
+      
+      const cardWidth = 150;
+      const cardHeight = (150 * 2.5);
+      newX = Math.max(0, Math.min(newX, containerRect.width - cardWidth));
+      newY = Math.max(0, Math.min(newY, containerRect.height - cardHeight));
+      
+      card.x = newX;
+      card.y = newY;
+      
+      if (event instanceof TouchEvent) event.preventDefault();
+    },
+    
+    onDragEnd(event: MouseEvent | TouchEvent) {
+      if (!this.draggingCardId) return;
+      
+      const cardElement = document.querySelector(`[data-card-id="${this.draggingCardId}"]`) as HTMLElement;
+      if (cardElement) {
+        cardElement.style.opacity = '1';
+        cardElement.style.cursor = 'grab';
+      }
+      
+      this.draggingCardId = null;
+      this.dragStart = null;
+    },
+    
+    clearCanvas() {
+      this.draggableCards = [];
+      this.maxZIndex = 0;
+      this.draggingCardId = null;
+      this.dragStart = null;
+    }
+  };
+  
+  // Initialize and return
+  component.init();
+  return component;
+}
+
+// Expose draggableZone function globally for Alpine.js
+(window as any).draggableZone = draggableZone;
+
 // Expose functions globally for Alpine.js template access
 // Must be done immediately so Alpine can access them
 (window as any).cryptoRandomInt = cryptoRandomInt;
 (window as any).shuffle = shuffle;
 (window as any).drawMultipleCards = drawMultipleCards;
 (window as any).compSingleDraw = compSingleDraw;
+(window as any).addCardToDraggableZone = addCardToDraggableZone;
+(window as any).addCardToCanvas = addCardToCanvas;
 
 // Initialize Alpine stores when Alpine is available
 // Use DOMContentLoaded to ensure Alpine is loaded
