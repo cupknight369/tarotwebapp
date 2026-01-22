@@ -2,11 +2,11 @@
   "name": "tarot",
   "version": "1.0.0",
   "description": "Tarot card drawing application",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "dev": "python3 -m http.server 8000 & tsc --watch"
+    "dev": "python3 -m http.server 8000 & tsc --watch & tw -o 'output.css' --watch"
   },
   "keywords": [],
   "author": "",

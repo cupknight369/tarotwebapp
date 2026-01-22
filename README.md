@@ -14,7 +14,7 @@ npm install
 npm run build
 ```
 
-This will compile `index.ts` to `index.js` in the same directory.
+This will compile `index.ts` to `dist/index.js`.
 
 ## Development
 
@@ -26,7 +26,7 @@ This will run a python3 http server on port 8000 and watch for file changes.
 ## Project Structure
 
 - `index.ts` - Main TypeScript source file
-- `index.js` - Compiled JavaScript (generated, do not edit)
+- `dist/index.js` - Compiled JavaScript (generated, do not edit)
 - `types/alpine.d.ts` - TypeScript type definitions for Alpine.js
 - `tsconfig.json` - TypeScript configuration
 - `package.json` - Node.js dependencies and scripts
