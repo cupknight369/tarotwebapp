@@ -132,7 +132,7 @@ const cards: TarotCard[] = [
 ];
 
 function generateCardId(): string {
-  return `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `card-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 function addCardToDraggableZone(
