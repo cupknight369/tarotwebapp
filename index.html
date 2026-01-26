@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Tarot</title>
-    <link href="./output.css" rel="stylesheet" />
+    <link href="./dist/output.css" rel="stylesheet" />
     <script defer type="text/javascript" src="./dist/index.js"></script>
     <script defer type="text/javascript" src="alpine.min.js"></script>
   </head>
@@ -128,7 +128,7 @@
           <button 
             x-show="draggableCards.length > 0"
             type="button"
-            class="absolute top-2 left-2 z-[9999] px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            class="absolute top-1 left-2 z-[9999] px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             @click="clearCanvas()">
             Clear Canvas
           </button>

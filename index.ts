@@ -250,7 +250,7 @@ function draggableZone() {
       card.x = newX;
       card.y = newY;
       
-      if (event instanceof TouchEvent) event.preventDefault();
+      if ('touches' in event) event.preventDefault();
     },
     
     onDragEnd(event: MouseEvent | TouchEvent) {
