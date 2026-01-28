@@ -180,7 +180,7 @@ function draggableZone() {
 
       // Bring card to front
       cardElement.style.zIndex = (this.maxZIndex + 1).toString();
-      cardElement.style.opacity = '0.8';
+      cardElement.style.opacity = '0.5';
       cardElement.style.cursor = 'grabbing';
 
       event.dataTransfer?.setData('text/plain', cardElement.id);
