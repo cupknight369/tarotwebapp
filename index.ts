@@ -169,77 +169,39 @@ function draggableZone() {
       // Store reference globally so buttons can access it
       (window as any).draggableZoneComponent = this;
       this.dragContainer = document.querySelector('#draggable-container') as HTMLElement;
+      this.dragContainer.addEventListener('dragstart', (e) => this.onDragStart(e));
+      this.dragContainer.addEventListener('dragover', (e) => e.preventDefault());
+      this.dragContainer.addEventListener('drop', (e) => this.onDragDrop(e));
     },
 
-    initCard(card: HTMLElement) {
-      card.addEventListener('dragstart', (e) => this.onDragStart(e, card.id));
-      card.addEventListener('drag', (e) => this.onDragMove(e));
-      card.addEventListener('dragend', (e) => this.onDragEnd(e));
-    },
-    
-    onDragStart(event: DragEvent, cardId: string) {
-      console.log('onDragStart', event, cardId);
+    onDragStart(event: DragEvent) {
       const cardElement = event.target as HTMLElement;
       if (!cardElement) return;
-      const card = this.draggableCards.find(c => c.id === cardId);
-      if (!card) return;
-      
 
       // Bring card to front
-      this.maxZIndex += 1;
-      card.zIndex = this.maxZIndex;
-      
-      const container = cardElement.closest('.draggable-container') as HTMLElement;
-      if (!container) return;
-      
-      const containerRect = container.getBoundingClientRect();
-      const cardRect = cardElement.getBoundingClientRect();
-      
-      // Store start position in container coordinates (don't modify card.x/card.y here)
-      const cardLeft = cardRect.left - containerRect.left;
-      const cardTop = cardRect.top - containerRect.top;
-      
-      this.dragStart = { cardX: cardLeft, cardY: cardTop };
-      this.draggingCardId = cardId;
-      
+      cardElement.style.zIndex = (this.maxZIndex + 1).toString();
       cardElement.style.opacity = '0.8';
       cardElement.style.cursor = 'grabbing';
+
+      event.dataTransfer?.setData('text/plain', cardElement.id);
+    },
+    
+    onDragDrop(event: DragEvent) {
       event.preventDefault();
-    },
-    
-    onDragMove(event: DragEvent) {
-      console.log('onDragMove', event);
-      if (!this.draggingCardId || !this.dragStart) return;
-      
-      const card = this.draggableCards.find(c => c.id === this.draggingCardId);
-      if (!card) return;
-      
-      const container = document.querySelector('.draggable-container') as HTMLElement;
-      if (!container) return;
-      
-      const containerRect = container.getBoundingClientRect();
-      
-      const cardWidth = 150;
-      const cardHeight = (150 * 2.5);
-      const newX = Math.max(0, Math.min(this.dragStart.cardX, containerRect.width - cardWidth));
-      const newY = Math.max(0, Math.min(this.dragStart.cardY, containerRect.height - cardHeight));
-      
-      card.x = newX;
-      card.y = newY;
-    },
-    
-    onDragEnd(event: DragEvent) {
-      console.log('onDragEnd', event);
-      if (!this.draggingCardId) return;
-      
-      const cardElement = document.querySelector(`#"${this.draggingCardId}"]`) as HTMLElement;
-      if (cardElement) {
-        cardElement.style.opacity = '1';
-        cardElement.style.cursor = 'grab';
-      }
-      
-      this.draggingCardId = null;
-      this.dragStart = null;
+      const cardId = event.dataTransfer?.getData('text/plain');
+      if (!cardId) return;
+
+      const cardElement = document.querySelector(`#${cardId}`) as HTMLElement;
+      if (!cardElement) return;
+
+      const rect = this.dragContainer!.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      cardElement.style.left = x + "px";
+      cardElement.style.top = y + "px";
+      cardElement.style.opacity = '1';
+      cardElement.style.cursor = 'grab';
     },
     
     clearCanvas() {

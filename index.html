@@ -107,11 +107,9 @@
           
           <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
             <div 
-              :style="`transform: translate(${draggableCard.x}px, ${draggableCard.y}px) rotate(${draggableCard.rotation}deg) ${draggingCardId === draggableCard.id ? 'scale(1.05)' : ''}; transform-origin: 0 0; z-index: ${draggableCard.zIndex};`"
               class="absolute cursor-grab select-none will-change-transform inline-block"
               :id="draggableCard.id"
-              draggable="true"
-              x-init="initCard(this)">
+              draggable="true">
               <img 
                 :src="draggableCard.card.img" 
                 :alt="draggableCard.card.title"
