@@ -162,7 +162,7 @@ function draggableZone() {
     draggableCards: [] as DraggableCard[],
     maxZIndex: 0,
     draggingCardId: null as string | null,
-    dragStart: null as { cardX: number; cardY: number; } | null,
+    dragStart: null as { offsetX: number; offsetY: number; } | null,
     dragContainer: null as HTMLElement | null,
     
     init() {
@@ -178,6 +178,14 @@ function draggableZone() {
       const cardElement = event.target as HTMLElement;
       if (!cardElement) return;
 
+      // Calculate the offset from where the user clicked relative to the card's top-left corner
+      const cardRect = cardElement.getBoundingClientRect();
+      const offsetX = event.clientX - cardRect.left;
+      const offsetY = event.clientY - cardRect.top;
+      
+      // Store the offset so we can maintain the relative position on drop
+      this.dragStart = { offsetX, offsetY };
+
       // Bring card to front
       cardElement.style.zIndex = (this.maxZIndex + 1).toString();
       cardElement.style.opacity = '0.5';
@@ -189,19 +197,27 @@ function draggableZone() {
     onDragDrop(event: DragEvent) {
       event.preventDefault();
       const cardId = event.dataTransfer?.getData('text/plain');
-      if (!cardId) return;
+      if (!cardId || !this.dragStart) return;
 
       const cardElement = document.querySelector(`#${cardId}`) as HTMLElement;
       if (!cardElement) return;
 
       const rect = this.dragContainer!.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      // Calculate drop position relative to container
+      const dropX = event.clientX - rect.x;
+      const dropY = event.clientY - rect.y;
+      
+      // Subtract the offset to maintain the relative position where the user started dragging
+      const x = dropX - this.dragStart.offsetX;
+      const y = dropY - this.dragStart.offsetY;
 
       cardElement.style.left = x + "px";
       cardElement.style.top = y + "px";
       cardElement.style.opacity = '1';
       cardElement.style.cursor = 'grab';
+      
+      // Clear the drag start data
+      this.dragStart = null;
     },
     
     clearCanvas() {
