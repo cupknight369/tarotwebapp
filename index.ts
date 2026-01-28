@@ -226,8 +226,10 @@ function draggableZone() {
       let y = dropY - this.dragStart.offsetY;
 
       // Constrain the card to stay within container bounds
-      const cardWidth = 150; // Fixed card width
-      const cardHeight = 150 * 2.5; // Card height (aspect ratio)
+      // Measure the actual card dimensions instead of calculating them
+      const cardRect = cardElement.getBoundingClientRect();
+      const cardWidth = cardRect.width;
+      const cardHeight = cardRect.height;
       x = Math.max(0, Math.min(x, rect.width - cardWidth));
       y = Math.max(0, Math.min(y, rect.height - cardHeight));
 
