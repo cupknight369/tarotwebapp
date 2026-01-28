@@ -176,7 +176,11 @@ function draggableZone() {
 
     onDragStart(event: DragEvent) {
       const cardElement = event.target as HTMLElement;
-      if (!cardElement) return;
+      if (!cardElement || !cardElement.id) return;
+
+      const cardId = cardElement.id;
+      const card = this.draggableCards.find(c => c.id === cardId);
+      if (!card) return;
 
       // Calculate the offset from where the user clicked relative to the card's top-left corner
       const cardRect = cardElement.getBoundingClientRect();
@@ -186,12 +190,18 @@ function draggableZone() {
       // Store the offset so we can maintain the relative position on drop
       this.dragStart = { offsetX, offsetY };
 
-      // Bring card to front
-      cardElement.style.zIndex = (this.maxZIndex + 1).toString();
+      // Bring card to front by updating zIndex in data model
+      this.maxZIndex += 1;
+      card.zIndex = this.maxZIndex;
+      
+      // Trigger Alpine reactivity
+      this.draggableCards = [...this.draggableCards];
+
+      // Set visual feedback (these are temporary, so direct DOM manipulation is fine)
       cardElement.style.opacity = '0.5';
       cardElement.style.cursor = 'grabbing';
 
-      event.dataTransfer?.setData('text/plain', cardElement.id);
+      event.dataTransfer?.setData('text/plain', cardId);
     },
     
     onDragDrop(event: DragEvent) {
@@ -202,17 +212,33 @@ function draggableZone() {
       const cardElement = document.querySelector(`#${cardId}`) as HTMLElement;
       if (!cardElement) return;
 
+      // Find the card in the data model
+      const card = this.draggableCards.find(c => c.id === cardId);
+      if (!card) return;
+
       const rect = this.dragContainer!.getBoundingClientRect();
       // Calculate drop position relative to container
       const dropX = event.clientX - rect.x;
       const dropY = event.clientY - rect.y;
       
       // Subtract the offset to maintain the relative position where the user started dragging
-      const x = dropX - this.dragStart.offsetX;
-      const y = dropY - this.dragStart.offsetY;
+      let x = dropX - this.dragStart.offsetX;
+      let y = dropY - this.dragStart.offsetY;
 
-      cardElement.style.left = x + "px";
-      cardElement.style.top = y + "px";
+      // Constrain the card to stay within container bounds
+      const cardWidth = 150; // Fixed card width
+      const cardHeight = 150 * 2.5; // Card height (aspect ratio)
+      x = Math.max(0, Math.min(x, rect.width - cardWidth));
+      y = Math.max(0, Math.min(y, rect.height - cardHeight));
+
+      // Update the card's position in the data model
+      card.x = x;
+      card.y = y;
+      
+      // Trigger Alpine reactivity by reassigning the array
+      // This ensures Alpine detects the change and updates the DOM
+      this.draggableCards = [...this.draggableCards];
+
       cardElement.style.opacity = '1';
       cardElement.style.cursor = 'grab';
       

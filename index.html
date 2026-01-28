@@ -107,13 +107,15 @@
           
           <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
             <div 
-              class="absolute cursor-grab select-none will-change-transform inline-block"
+              class="absolute cursor-grab select-none will-change-transform"
               :id="draggableCard.id"
+              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex};`"
               draggable="true">
               <img 
                 :src="draggableCard.card.img" 
                 :alt="draggableCard.card.title"
                 class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
+                style="max-width: 150px; width: 150px;"
                 draggable="false" />
             </div>
           </template>
