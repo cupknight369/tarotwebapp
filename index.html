@@ -101,6 +101,7 @@
         <h2 class="text-xl font-bold mb-4">Draggable Canvas</h2>
         <div 
           x-data="draggableZone()"
+          id="draggable-container"
           class="draggable-container relative w-full bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden"
           style="height: 600px; min-height: 600px;">
           
@@ -108,9 +109,9 @@
             <div 
               :style="`transform: translate(${draggableCard.x}px, ${draggableCard.y}px) rotate(${draggableCard.rotation}deg) ${draggingCardId === draggableCard.id ? 'scale(1.05)' : ''}; transform-origin: 0 0; z-index: ${draggableCard.zIndex};`"
               class="absolute cursor-grab select-none will-change-transform inline-block"
-              :data-card-id="draggableCard.id"
-              @mousedown="onDragStart($event, draggableCard.id)"
-              @touchstart="onDragStart($event, draggableCard.id)">
+              :id="draggableCard.id"
+              draggable="true"
+              x-init="initCard(this)">
               <img 
                 :src="draggableCard.card.img" 
                 :alt="draggableCard.card.title"
