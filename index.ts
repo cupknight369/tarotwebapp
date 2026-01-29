@@ -152,7 +152,7 @@ function addCardToCanvas(card: TarotCard): void {
     zIndex: draggableZoneComponent.maxZIndex + 1
   };
   
-  draggableZoneComponent.draggableCards.push(draggableCard);
+  draggableZoneComponent.draggableCards = [...draggableZoneComponent.draggableCards, draggableCard];
   draggableZoneComponent.maxZIndex += 1;
 }
 
@@ -161,29 +161,22 @@ function draggableZone() {
   const component = {
     draggableCards: [] as DraggableCard[],
     maxZIndex: 0,
-    draggingCardId: null as string | null,
     dragStart: null as { offsetX: number; offsetY: number; } | null,
     dragContainer: null as HTMLElement | null,
+    draggingCard: null as HTMLElement | null,
     
     init() {
       // Store reference globally so buttons can access it
       (window as any).draggableZoneComponent = this;
       this.dragContainer = document.querySelector('#draggable-container') as HTMLElement;
-      this.dragContainer.addEventListener('dragstart', (e) => this.onDragStart(e));
-      this.dragContainer.addEventListener('dragover', (e) => e.preventDefault());
-      this.dragContainer.addEventListener('drop', (e) => this.onDragDrop(e));
     },
 
     onDragStart(event: DragEvent) {
-      const cardElement = event.target as HTMLElement;
-      if (!cardElement || !cardElement.id) return;
-
-      const cardId = cardElement.id;
-      const card = this.draggableCards.find(c => c.id === cardId);
-      if (!card) return;
+      this.draggingCard = event.target as HTMLElement;
+      if (!this.draggingCard) return;
 
       // Calculate the offset from where the user clicked relative to the card's top-left corner
-      const cardRect = cardElement.getBoundingClientRect();
+      const cardRect = this.draggingCard!.getBoundingClientRect();
       const offsetX = event.clientX - cardRect.left;
       const offsetY = event.clientY - cardRect.top;
       
@@ -192,34 +185,58 @@ function draggableZone() {
 
       // Bring card to front by updating zIndex in data model
       this.maxZIndex += 1;
-      card.zIndex = this.maxZIndex;
       
       // Trigger Alpine reactivity
-      this.draggableCards = [...this.draggableCards];
+      // this.draggableCards = [...this.draggableCards];
+      this.updateItem(this.draggingCard!.id, { zIndex: this.maxZIndex });
 
       // Set visual feedback (these are temporary, so direct DOM manipulation is fine)
-      cardElement.style.opacity = '0.5';
-      cardElement.style.cursor = 'grabbing';
+      this.draggingCard!.style.opacity = '0.5';
+      this.draggingCard!.style.cursor = 'grabbing';
 
-      event.dataTransfer?.setData('text/plain', cardId);
+      // Set drag image to the card's image
+      const draggableCardImg = this.draggingCard!.querySelector('img') as HTMLImageElement;
+      if (draggableCardImg) {
+          const dragImageHelper = document.createElement('div');
+          dragImageHelper.style.width = `150px`;
+          dragImageHelper.style.height = `257.15px`;
+          dragImageHelper.style.backgroundImage = `url(${draggableCardImg.src})`;
+          dragImageHelper.style.backgroundSize = 'contain';
+          dragImageHelper.style.backgroundRepeat = 'no-repeat';
+          document.body.appendChild(dragImageHelper);
+          event.dataTransfer?.setDragImage(dragImageHelper, offsetX, offsetY);
+          setTimeout(() => {
+            document.body.removeChild(dragImageHelper);
+          }, 100);
+      }
     },
     
-    onDragDrop(event: DragEvent) {
+    onDrag(event: DragEvent) {
+      if (!this.draggingCard || !this.dragStart) return;
+      
+      const rect = this.dragContainer!.getBoundingClientRect();
+      // Calculate position relative to container
+      let x = event.clientX - rect.left - this.dragStart.offsetX;
+      let y = event.clientY - rect.top - this.dragStart.offsetY;
+      
+      // Apply boundary constraints
+      const cardRect = this.draggingCard.getBoundingClientRect();
+      const cardWidth = cardRect.width;
+      const cardHeight = cardRect.height;
+      x = Math.max(0, Math.min(x, rect.width - cardWidth));
+      y = Math.max(0, Math.min(y, rect.height - cardHeight));
+      
+      this.updateItem(this.draggingCard!.id, { x, y });
+    },
+    
+    async onDrop(event: DragEvent) {
       event.preventDefault();
-      const cardId = event.dataTransfer?.getData('text/plain');
-      if (!cardId || !this.dragStart) return;
-
-      const cardElement = document.querySelector(`#${cardId}`) as HTMLElement;
-      if (!cardElement) return;
-
-      // Find the card in the data model
-      const card = this.draggableCards.find(c => c.id === cardId);
-      if (!card) return;
+      if (!this.draggingCard || !this.dragStart) return;
 
       const rect = this.dragContainer!.getBoundingClientRect();
       // Calculate drop position relative to container
-      const dropX = event.clientX - rect.x;
-      const dropY = event.clientY - rect.y;
+      const dropX = event.clientX - rect.left;
+      const dropY = event.clientY - rect.top;
       
       // Subtract the offset to maintain the relative position where the user started dragging
       let x = dropX - this.dragStart.offsetX;
@@ -227,32 +244,37 @@ function draggableZone() {
 
       // Constrain the card to stay within container bounds
       // Measure the actual card dimensions instead of calculating them
-      const cardRect = cardElement.getBoundingClientRect();
+      const cardRect = this.draggingCard.getBoundingClientRect();
       const cardWidth = cardRect.width;
       const cardHeight = cardRect.height;
       x = Math.max(0, Math.min(x, rect.width - cardWidth));
       y = Math.max(0, Math.min(y, rect.height - cardHeight));
-
-      // Update the card's position in the data model
-      card.x = x;
-      card.y = y;
       
-      // Trigger Alpine reactivity by reassigning the array
-      // This ensures Alpine detects the change and updates the DOM
-      this.draggableCards = [...this.draggableCards];
+      // Trigger Alpine reactivity 
+      this.updateItem(this.draggingCard!.id, { x, y });
 
-      cardElement.style.opacity = '1';
-      cardElement.style.cursor = 'grab';
-      
-      // Clear the drag start data
+      this.draggingCard.style.opacity = '1';
+      this.draggingCard.style.cursor = 'grab';
       this.dragStart = null;
+      this.draggingCard = null;
     },
     
     clearCanvas() {
       this.draggableCards = [];
       this.maxZIndex = 0;
-      this.draggingCardId = null;
+      this.draggingCard = null;
       this.dragStart = null;
+    },
+
+    updateItem(id: string, newProps: Partial<DraggableCard>) {
+      const index = this.draggableCards.findIndex(i => i.id === id)
+      if (index === -1) return
+
+      // Create a new object, keep the same index
+      this.draggableCards[index] = {
+        ...this.draggableCards[index],
+        ...newProps,
+      }
     }
   };
   

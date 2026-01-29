@@ -101,6 +101,9 @@
         <h2 class="text-xl font-bold mb-4">Draggable Canvas</h2>
         <div 
           x-data="draggableZone()"
+          @dragstart="onDragStart($event)"
+          @dragover="$event.preventDefault()"
+          @drop="onDrop($event)"
           id="draggable-container"
           class="draggable-container relative w-full bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden"
           style="height: 600px; min-height: 600px;">
@@ -109,7 +112,7 @@
             <div 
               class="absolute cursor-grab select-none will-change-transform"
               :id="draggableCard.id"
-              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex};`"
+              :style="`transform: translate(${draggableCard.x}px, ${draggableCard.y}px); z-index: ${draggableCard.zIndex};`"
               draggable="true">
               <img 
                 :src="draggableCard.card.img" 
