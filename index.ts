@@ -214,7 +214,7 @@ function draggableZone() {
       this.maxZIndex += 1;
       
       // Trigger Alpine reactivity
-      this.updateItem(this.draggingCard!.id, { zIndex: this.maxZIndex, opacity: 0.5, cursor: 'grabbing' });
+      this.updateItem(this.draggingCard!.id, { zIndex: this.maxZIndex, display: 'none', cursor: 'grabbing' });
     },
 
     onMouseMove(event: MouseEvent) {
@@ -257,7 +257,7 @@ function draggableZone() {
       y = Math.max(0, Math.min(y, rect.height - cardHeight));
       
       // Trigger Alpine reactivity 
-      this.updateItem(this.draggingCard!.id, { x, y, opacity: 1, cursor: 'grab' });
+      this.updateItem(this.draggingCard!.id, { x, y, display: 'block', cursor: 'grab' });
 
       this.dragStart = null;
       this.draggingCard = null;

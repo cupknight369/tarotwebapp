@@ -42,6 +42,7 @@ declare global {
     zIndex: number;
     opacity: number;
     cursor: string;
+    display: string;
   }
 }
 

@@ -113,7 +113,7 @@
             <div 
               class="absolute cursor-grab select-none will-change-transform"
               :id="draggableCard.id"
-              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor};`">
+              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display};`">
               <img 
                 :src="draggableCard.card.img" 
                 :alt="draggableCard.card.title"
