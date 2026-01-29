@@ -146,8 +146,27 @@ function addCardToCanvas(card: TarotCard): void {
   const draggableCard: DraggableCard = {
     card,
     id: generateCardId(),
-    x: Math.random() * 200 + 50, // Random initial position
-    y: Math.random() * 200 + 50,
+    // Place card at a random position within the draggable zone bounds
+    x: (() => {
+      const zone = document.getElementById('draggable-container');
+      const cardWidth = 150;   // Assumes card width in px (matches <img> CSS)
+      let x = 0;
+      if (zone) {
+        const zoneRect = zone.getBoundingClientRect();
+        x = Math.random() * Math.max(zoneRect.width - cardWidth, 0);
+      }
+      return x;
+    })(),
+    y: (() => {
+      const zone = document.getElementById('draggable-container');
+      const cardHeight = 231;
+      let y = 0;
+      if (zone) {
+        const zoneRect = zone.getBoundingClientRect();
+        y = Math.random() * Math.max(zoneRect.height - cardHeight, 0);
+      }
+      return y;
+    })(),
     rotation: 0,
     zIndex: draggableZoneComponent.maxZIndex + 1,
     opacity: 1,
