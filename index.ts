@@ -151,7 +151,8 @@ function addCardToCanvas(card: TarotCard): void {
     rotation: 0,
     zIndex: draggableZoneComponent.maxZIndex + 1,
     opacity: 1,
-    cursor: 'grab'
+    cursor: 'grab',
+    display: 'block'
   };
   
   draggableZoneComponent.draggableCards = [...draggableZoneComponent.draggableCards, draggableCard];
