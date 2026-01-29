@@ -101,9 +101,10 @@
         <h2 class="text-xl font-bold mb-4">Draggable Canvas</h2>
         <div 
           x-data="draggableZone()"
-          @dragstart="onDragStart($event)"
-          @dragover="$event.preventDefault()"
-          @drop="onDrop($event)"
+          @mousedown="onMouseDown($event)"
+          @mousemove="onMouseMove($event)"
+          @mouseup="onMouseUp($event)"
+          @mouseleave="onMouseUp($event)"
           id="draggable-container"
           class="draggable-container relative w-full bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden"
           style="height: 600px; min-height: 600px;">
@@ -112,14 +113,12 @@
             <div 
               class="absolute cursor-grab select-none will-change-transform"
               :id="draggableCard.id"
-              :style="`transform: translate(${draggableCard.x}px, ${draggableCard.y}px); z-index: ${draggableCard.zIndex};`"
-              draggable="true">
+              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor};`">
               <img 
                 :src="draggableCard.card.img" 
                 :alt="draggableCard.card.title"
                 class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
-                style="max-width: 150px; width: 150px;"
-                draggable="false" />
+                style="max-width: 150px; width: 150px;"/>
             </div>
           </template>
           
@@ -136,6 +135,8 @@
             @click="clearCanvas()">
             Clear Canvas
           </button>
+
+          <div id="drag-image-helper" class="select-none" style="display: none;position: absolute; top: -1000px; left: -1000px; background-size: contain; background-repeat: no-repeat;"></div>
         </div>
       </div>
     </main>

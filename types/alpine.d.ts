@@ -40,6 +40,8 @@ declare global {
     y: number;
     rotation: number;
     zIndex: number;
+    opacity: number;
+    cursor: string;
   }
 }
 

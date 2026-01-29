@@ -149,7 +149,9 @@ function addCardToCanvas(card: TarotCard): void {
     x: Math.random() * 200 + 50, // Random initial position
     y: Math.random() * 200 + 50,
     rotation: 0,
-    zIndex: draggableZoneComponent.maxZIndex + 1
+    zIndex: draggableZoneComponent.maxZIndex + 1,
+    opacity: 1,
+    cursor: 'grab'
   };
   
   draggableZoneComponent.draggableCards = [...draggableZoneComponent.draggableCards, draggableCard];
@@ -164,14 +166,18 @@ function draggableZone() {
     dragStart: null as { offsetX: number; offsetY: number; } | null,
     dragContainer: null as HTMLElement | null,
     draggingCard: null as HTMLElement | null,
+    dragImageHelper: null as HTMLElement | null,
     
     init() {
       // Store reference globally so buttons can access it
       (window as any).draggableZoneComponent = this;
       this.dragContainer = document.querySelector('#draggable-container') as HTMLElement;
+      this.dragImageHelper = document.querySelector('#drag-image-helper') as HTMLElement;
     },
 
-    onDragStart(event: DragEvent) {
+    onMouseDown(event: MouseEvent) {
+      if (event.target == this.dragContainer) return;
+
       this.draggingCard = event.target as HTMLElement;
       if (!this.draggingCard) return;
 
@@ -183,55 +189,55 @@ function draggableZone() {
       // Store the offset so we can maintain the relative position on drop
       this.dragStart = { offsetX, offsetY };
 
+      // Calculate position relative to container
+      const rect = this.dragContainer!.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const containerOffsetX = x - offsetX;
+      const containerOffsetY = y - offsetY;
+
+      // Set position of drag-image-helper
+      this.dragImageHelper!.style.top = `${containerOffsetY}px`;
+      this.dragImageHelper!.style.left = `${containerOffsetX}px`;
+
+      // Set drag-image-helper to the card's image
+      const draggableCardImg = this.draggingCard!.querySelector('img') as HTMLImageElement;
+      if (draggableCardImg) {
+        this.dragImageHelper!.style.width = `${this.draggingCard!.offsetWidth}px`;
+        this.dragImageHelper!.style.height = `${this.draggingCard!.offsetHeight}px`;
+        this.dragImageHelper!.style.backgroundImage = `url(${draggableCardImg.src})`;
+        this.dragImageHelper!.style.display = 'block';
+        this.dragImageHelper!.style.zIndex = (this.maxZIndex + 1).toString();
+      }
+
       // Bring card to front by updating zIndex in data model
       this.maxZIndex += 1;
       
       // Trigger Alpine reactivity
-      // this.draggableCards = [...this.draggableCards];
-      this.updateItem(this.draggingCard!.id, { zIndex: this.maxZIndex });
-
-      // Set visual feedback (these are temporary, so direct DOM manipulation is fine)
-      this.draggingCard!.style.opacity = '0.5';
-      this.draggingCard!.style.cursor = 'grabbing';
-
-      // Set drag image to the card's image
-      const draggableCardImg = this.draggingCard!.querySelector('img') as HTMLImageElement;
-      if (draggableCardImg) {
-          const dragImageHelper = document.createElement('div');
-          dragImageHelper.style.width = `150px`;
-          dragImageHelper.style.height = `257.15px`;
-          dragImageHelper.style.backgroundImage = `url(${draggableCardImg.src})`;
-          dragImageHelper.style.backgroundSize = 'contain';
-          dragImageHelper.style.backgroundRepeat = 'no-repeat';
-          document.body.appendChild(dragImageHelper);
-          event.dataTransfer?.setDragImage(dragImageHelper, offsetX, offsetY);
-          setTimeout(() => {
-            document.body.removeChild(dragImageHelper);
-          }, 100);
-      }
+      this.updateItem(this.draggingCard!.id, { zIndex: this.maxZIndex, opacity: 0.5, cursor: 'grabbing' });
     },
-    
-    onDrag(event: DragEvent) {
+
+    onMouseMove(event: MouseEvent) {
       if (!this.draggingCard || !this.dragStart) return;
-      
+
       const rect = this.dragContainer!.getBoundingClientRect();
-      // Calculate position relative to container
-      let x = event.clientX - rect.left - this.dragStart.offsetX;
-      let y = event.clientY - rect.top - this.dragStart.offsetY;
+
+      // Calculate drop position relative to container
+      const dropX = event.clientX - rect.left;
+      const dropY = event.clientY - rect.top;
       
-      // Apply boundary constraints
-      const cardRect = this.draggingCard.getBoundingClientRect();
-      const cardWidth = cardRect.width;
-      const cardHeight = cardRect.height;
-      x = Math.max(0, Math.min(x, rect.width - cardWidth));
-      y = Math.max(0, Math.min(y, rect.height - cardHeight));
-      
-      this.updateItem(this.draggingCard!.id, { x, y });
+      // Subtract the offset to maintain the relative position where the user started dragging
+      let x = dropX - this.dragStart.offsetX;
+      let y = dropY - this.dragStart.offsetY;
+
+      this.dragImageHelper!.style.top = `${y}px`;
+      this.dragImageHelper!.style.left = `${x}px`;
     },
-    
-    async onDrop(event: DragEvent) {
+
+    onMouseUp(event: MouseEvent) {
       event.preventDefault();
       if (!this.draggingCard || !this.dragStart) return;
+      this.dragImageHelper!.style.display = 'none';
 
       const rect = this.dragContainer!.getBoundingClientRect();
       // Calculate drop position relative to container
@@ -251,14 +257,12 @@ function draggableZone() {
       y = Math.max(0, Math.min(y, rect.height - cardHeight));
       
       // Trigger Alpine reactivity 
-      this.updateItem(this.draggingCard!.id, { x, y });
+      this.updateItem(this.draggingCard!.id, { x, y, opacity: 1, cursor: 'grab' });
 
-      this.draggingCard.style.opacity = '1';
-      this.draggingCard.style.cursor = 'grab';
       this.dragStart = null;
       this.draggingCard = null;
-    },
-    
+    },    
+
     clearCanvas() {
       this.draggableCards = [];
       this.maxZIndex = 0;
@@ -266,6 +270,7 @@ function draggableZone() {
       this.dragStart = null;
     },
 
+    // Triggers Alpine reactivity for the draggable card
     updateItem(id: string, newProps: Partial<DraggableCard>) {
       const index = this.draggableCards.findIndex(i => i.id === id)
       if (index === -1) return
