@@ -22,10 +22,10 @@
       <div>
         <div x-data="{ showShuffledConfirmation: false }">
           <button type="button" 
-            class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" 
+            class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" 
             @click="compSingleDraw($store, $data, $refs);">Single Draw</button>
           <button type="button" 
-            class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" 
+            class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" 
             @click="$store.shuffledCards = shuffle($store.cards); showShuffledConfirmation = true; setTimeout(()=> showShuffledConfirmation = false, 3000);">Shuffle Deck</button>
           <p 
             x-show="showShuffledConfirmation"
@@ -39,7 +39,7 @@
           <button 
             x-show="singleDrawNum !== null"
             type="button"
-            class="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            class="cursor-pointer mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
             @click="if (singleDrawNum !== null) { addCardToCanvas($store.shuffledCards[singleDrawNum]); }">
             Add to Canvas
           </button>
@@ -67,7 +67,7 @@
         <button 
           x-show="multiDrawNums.size > 0"
           type="button"
-          class="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          class="cursor-pointer mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
           @click="[...multiDrawNums].forEach(num => { if ($store.shuffledCards[num]) addCardToCanvas($store.shuffledCards[num]); });">
           Add All to Canvas
         </button>
@@ -90,7 +90,7 @@
         <button 
           x-show="specificIndexCard !== null"
           type="button"
-          class="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          class="cursor-pointer mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
           @click="if (specificIndexCard !== null) { addCardToCanvas(specificIndexCard); }">
           Add to Canvas
         </button>
@@ -131,12 +131,44 @@
           <button 
             x-show="draggableCards.length > 0"
             type="button"
-            class="absolute top-1 left-2 z-[9999] px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-            @click="clearCanvas()">
+            class="cursor-pointer absolute top-1 left-2 z-[9999] px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+            @click="showClearConfirm = true">
             Clear Canvas
           </button>
 
-          <div id="drag-image-helper" class="select-none" style="display: none;position: absolute; top: -1000px; left: -1000px; background-size: contain; background-repeat: no-repeat;"></div>
+          <!-- Clear canvas confirmation dialog -->
+          <div 
+            x-show="showClearConfirm"
+            x-transition
+            class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-confirm-title">
+            <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4">
+              <button 
+                type="button"
+                class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                aria-label="Close"
+                @click="showClearConfirm = false">
+                <span class="text-xl leading-none">×</span>
+              </button>
+              <p id="clear-confirm-title" class="text-xl font-bold text-gray-200 pr-8 mb-6">Are you sure you want to clear the canvas?</p>
+              <div class="flex gap-3 justify-end">
+                <button 
+                  type="button"
+                  class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                  @click="clearCanvas(); showClearConfirm = false">
+                  Yes
+                </button>
+                <button 
+                  type="button"
+                  class="cursor-pointer px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  @click="showClearConfirm = false">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>

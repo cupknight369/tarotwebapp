@@ -167,13 +167,12 @@ function draggableZone() {
     dragStart: null as { offsetX: number; offsetY: number; } | null,
     dragContainer: null as HTMLElement | null,
     draggingCard: null as HTMLElement | null,
-    dragImageHelper: null as HTMLElement | null,
-    
+    showClearConfirm: false,
+
     init() {
       // Store reference globally so buttons can access it
       (window as any).draggableZoneComponent = this;
       this.dragContainer = document.querySelector('#draggable-container') as HTMLElement;
-      this.dragImageHelper = document.querySelector('#drag-image-helper') as HTMLElement;
     },
 
     onMouseDown(event: MouseEvent) {
@@ -194,28 +193,12 @@ function draggableZone() {
       const rect = this.dragContainer!.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
-      const containerOffsetX = x - offsetX;
-      const containerOffsetY = y - offsetY;
-
-      // Set position of drag-image-helper
-      this.dragImageHelper!.style.top = `${containerOffsetY}px`;
-      this.dragImageHelper!.style.left = `${containerOffsetX}px`;
-
-      // Set drag-image-helper to the card's image
-      const draggableCardImg = this.draggingCard!.querySelector('img') as HTMLImageElement;
-      if (draggableCardImg) {
-        this.dragImageHelper!.style.width = `${this.draggingCard!.offsetWidth}px`;
-        this.dragImageHelper!.style.height = `${this.draggingCard!.offsetHeight}px`;
-        this.dragImageHelper!.style.backgroundImage = `url(${draggableCardImg.src})`;
-        this.dragImageHelper!.style.display = 'block';
-        this.dragImageHelper!.style.zIndex = (this.maxZIndex + 1).toString();
-      }
 
       // Bring card to front by updating zIndex in data model
       this.maxZIndex += 1;
       
       // Trigger Alpine reactivity
-      this.updateItem(this.draggingCard!.id, { zIndex: this.maxZIndex, display: 'none', cursor: 'grabbing' });
+      this.updateItem(this.draggingCard!.id, { zIndex: this.maxZIndex, cursor: 'grabbing' });
     },
 
     onMouseMove(event: MouseEvent) {
@@ -231,14 +214,13 @@ function draggableZone() {
       let x = dropX - this.dragStart.offsetX;
       let y = dropY - this.dragStart.offsetY;
 
-      this.dragImageHelper!.style.top = `${y}px`;
-      this.dragImageHelper!.style.left = `${x}px`;
+      // Trigger Alpine reactivity
+      this.updateItem(this.draggingCard!.id, { x, y });
     },
 
     onMouseUp(event: MouseEvent) {
       event.preventDefault();
       if (!this.draggingCard || !this.dragStart) return;
-      this.dragImageHelper!.style.display = 'none';
 
       const rect = this.dragContainer!.getBoundingClientRect();
       // Calculate drop position relative to container
