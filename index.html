@@ -105,27 +105,48 @@
           @mousemove="onMouseMove($event)"
           @mouseup="onMouseUp($event)"
           @mouseleave="onMouseUp($event)"
+          @mouseenter="onMouseMoveForZoom($event)"
+          @wheel.prevent="onWheel($event)"
           id="draggable-container"
           class="draggable-container relative w-full bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden"
           style="height: 600px; min-height: 600px;">
           
-          <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
-            <div 
-              class="absolute cursor-grab select-none will-change-transform"
-              :id="draggableCard.id"
-              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display};`">
-              <img 
-                :src="draggableCard.card.img" 
-                :alt="draggableCard.card.title"
-                class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
-                style="max-width: 150px; width: 150px;"/>
-            </div>
-          </template>
-          
           <div 
-            x-show="draggableCards.length === 0"
-            class="absolute inset-0 flex items-center justify-center text-gray-500">
-            <p>No cards on canvas. Add cards using the buttons above.</p>
+            id="zoom-wrapper"
+            class="absolute left-0 top-0 w-full h-full"
+            style="transform-origin: 0 0;"
+            :style="`transform: translate(${translateX}px, ${translateY}px) scale(${scale});`">
+            <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
+              <div 
+                class="absolute cursor-grab select-none will-change-transform"
+                :id="draggableCard.id"
+                :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display};`">
+                <img 
+                  :src="draggableCard.card.img" 
+                  :alt="draggableCard.card.title"
+                  class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
+                  style="max-width: 150px; width: 150px;"/>
+              </div>
+            </template>
+            
+            <div 
+              x-show="draggableCards.length === 0"
+              class="absolute inset-0 flex items-center justify-center text-gray-500">
+              <p>No cards on canvas. Add cards using the buttons above.</p>
+            </div>
+          </div>
+          
+          <div class="absolute top-1 right-2 z-[9999] flex gap-1">
+            <button 
+              type="button"
+              class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              aria-label="Zoom in"
+              @click="zoomIn()">+</button>
+            <button 
+              type="button"
+              class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              aria-label="Zoom out"
+              @click="zoomOut()">−</button>
           </div>
           
           <button 

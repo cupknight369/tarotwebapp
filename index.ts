@@ -183,10 +183,19 @@ function draggableZone() {
   const component = {
     draggableCards: [] as DraggableCard[],
     maxZIndex: 0,
-    dragStart: null as { offsetX: number; offsetY: number; } | null,
+    dragStart: null as { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null,
     dragContainer: null as HTMLElement | null,
     draggingCard: null as HTMLElement | null,
     showClearConfirm: false,
+    zoomLevel: 0,
+    translateX: 0,
+    translateY: 0,
+    lastMouseX: 0,
+    lastMouseY: 0,
+
+    get scale(): number {
+      return Math.pow(10, this.zoomLevel / 10);
+    },
 
     init() {
       // Store reference globally so buttons can access it
@@ -194,47 +203,98 @@ function draggableZone() {
       this.dragContainer = document.querySelector('#draggable-container') as HTMLElement;
     },
 
+    onMouseMoveForZoom(event: MouseEvent) {
+      this.lastMouseX = event.clientX;
+      this.lastMouseY = event.clientY;
+    },
+
+    onWheel(event: WheelEvent) {
+      const el = this.dragContainer!;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const currentScale = this.scale;
+      const step = 0.25;
+      const delta = event.deltaY < 0 ? step : -step;
+      const newLevel = Math.max(-10, Math.min(10, this.zoomLevel + delta));
+      if (newLevel === this.zoomLevel) return;
+      const newScale = Math.pow(10, newLevel / 10);
+      const scaleFactor = newScale / currentScale;
+      const mouseX = typeof event.clientX === 'number' ? event.clientX : this.lastMouseX;
+      const mouseY = typeof event.clientY === 'number' ? event.clientY : this.lastMouseY;
+      const contentLeft = rect.left + el.clientLeft;
+      const contentTop = rect.top + el.clientTop;
+      const fx = mouseX - contentLeft;
+      const fy = mouseY - contentTop;
+      this.translateX = fx - scaleFactor * (fx - this.translateX);
+      this.translateY = fy - scaleFactor * (fy - this.translateY);
+      this.zoomLevel = newLevel;
+    },
+
+    zoomIn() {
+      const el = this.dragContainer!;
+      const rect = el.getBoundingClientRect();
+      const currentScale = this.scale;
+      const newLevel = Math.min(10, this.zoomLevel + 1);
+      if (newLevel === this.zoomLevel) return;
+      const newScale = Math.pow(10, newLevel / 10);
+      const scaleFactor = newScale / currentScale;
+      const cx = (rect.width - 2 * el.clientLeft) / 2;
+      const cy = (rect.height - 2 * el.clientTop) / 2;
+      this.translateX = cx - scaleFactor * (cx - this.translateX);
+      this.translateY = cy - scaleFactor * (cy - this.translateY);
+      this.zoomLevel = newLevel;
+    },
+
+    zoomOut() {
+      const el = this.dragContainer!;
+      const rect = el.getBoundingClientRect();
+      const currentScale = this.scale;
+      const newLevel = Math.max(-10, this.zoomLevel - 1);
+      if (newLevel === this.zoomLevel) return;
+      const newScale = Math.pow(10, newLevel / 10);
+      const scaleFactor = newScale / currentScale;
+      const cx = (rect.width - 2 * el.clientLeft) / 2;
+      const cy = (rect.height - 2 * el.clientTop) / 2;
+      this.translateX = cx - scaleFactor * (cx - this.translateX);
+      this.translateY = cy - scaleFactor * (cy - this.translateY);
+      this.zoomLevel = newLevel;
+    },
+
     onMouseDown(event: MouseEvent) {
-      if (event.target == this.dragContainer) return;
+      if (event.target === this.dragContainer) return;
+      const target = event.target as HTMLElement;
+      const cardId = target.id;
+      if (!cardId || !this.draggableCards.some(c => c.id === cardId)) return;
+      this.draggingCard = target;
 
-      this.draggingCard = event.target as HTMLElement;
-      if (!this.draggingCard) return;
-
-      // Calculate the offset from where the user clicked relative to the card's top-left corner
-      const cardRect = this.draggingCard!.getBoundingClientRect();
-      const offsetX = event.clientX - cardRect.left;
-      const offsetY = event.clientY - cardRect.top;
-      
-      // Store the offset so we can maintain the relative position on drop
-      this.dragStart = { offsetX, offsetY };
-
-      // Calculate position relative to container
+      const card = this.draggableCards.find(c => c.id === cardId)!;
       const rect = this.dragContainer!.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      const startDropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
+      const startDropY = event.clientY - rect.top - this.dragContainer!.clientTop;
+      this.dragStart = {
+        startCardX: card.x,
+        startCardY: card.y,
+        startDropX,
+        startDropY,
+      };
 
-      // Bring card to front by updating zIndex in data model
       this.maxZIndex += 1;
-      
-      // Trigger Alpine reactivity
-      this.updateItem(this.draggingCard!.id, { zIndex: this.maxZIndex, cursor: 'grabbing' });
+      this.updateItem(this.draggingCard.id, { zIndex: this.maxZIndex, cursor: 'grabbing' });
     },
 
     onMouseMove(event: MouseEvent) {
+      this.lastMouseX = event.clientX;
+      this.lastMouseY = event.clientY;
       if (!this.draggingCard || !this.dragStart) return;
 
       const rect = this.dragContainer!.getBoundingClientRect();
+      const dropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
+      const dropY = event.clientY - rect.top - this.dragContainer!.clientTop;
+      // Move card by mouse delta in inner space so the same point stays under the cursor
+      const x = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
+      const y = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
 
-      // Calculate drop position relative to container
-      const dropX = event.clientX - rect.left;
-      const dropY = event.clientY - rect.top;
-      
-      // Subtract the offset to maintain the relative position where the user started dragging
-      let x = dropX - this.dragStart.offsetX;
-      let y = dropY - this.dragStart.offsetY;
-
-      // Trigger Alpine reactivity
-      this.updateItem(this.draggingCard!.id, { x, y });
+      this.updateItem(this.draggingCard.id, { x, y });
     },
 
     onMouseUp(event: MouseEvent) {
@@ -242,24 +302,12 @@ function draggableZone() {
       if (!this.draggingCard || !this.dragStart) return;
 
       const rect = this.dragContainer!.getBoundingClientRect();
-      // Calculate drop position relative to container
-      const dropX = event.clientX - rect.left;
-      const dropY = event.clientY - rect.top;
-      
-      // Subtract the offset to maintain the relative position where the user started dragging
-      let x = dropX - this.dragStart.offsetX;
-      let y = dropY - this.dragStart.offsetY;
+      const dropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
+      const dropY = event.clientY - rect.top - this.dragContainer!.clientTop;
+      const x = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
+      const y = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
 
-      // Constrain the card to stay within container bounds
-      // Measure the actual card dimensions instead of calculating them
-      const cardRect = this.draggingCard.getBoundingClientRect();
-      const cardWidth = cardRect.width;
-      const cardHeight = cardRect.height;
-      x = Math.max(0, Math.min(x, rect.width - cardWidth));
-      y = Math.max(0, Math.min(y, rect.height - cardHeight));
-      
-      // Trigger Alpine reactivity 
-      this.updateItem(this.draggingCard!.id, { x, y, display: 'block', cursor: 'grab' });
+      this.updateItem(this.draggingCard.id, { x, y, display: 'block', cursor: 'grab' });
 
       this.dragStart = null;
       this.draggingCard = null;
