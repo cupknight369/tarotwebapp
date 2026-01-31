@@ -7,10 +7,11 @@
     <title>Tarot</title>
     <link href="./dist/output.css" rel="stylesheet" />
     <script defer type="text/javascript" src="./dist/index.js"></script>
+    <script defer type="text/javascript" src="./dist/src/components/CanvasComponent.js"></script>
     <script defer type="text/javascript" src="alpine.min.js"></script>
   </head>
 
-  <body class="bg-gray-800 p-6 text-white ">
+  <body class="bg-gray-800 text-white ">
     <main x-data="{
         num: 0,
         singleDrawNum: null,
@@ -96,103 +97,104 @@
         </button>
       </div>
 
-      <!-- Draggable Zone -->
-      <div class="mt-8">
-        <h2 class="text-xl font-bold mb-4">Draggable Canvas</h2>
-        <div 
-          x-data="draggableZone()"
+    </main>
+
+    <!-- Draggable Zone -->
+    <div 
+      x-data="canvasComponent($refs)"
+      id="draggable-container"
+      class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden mt-8">
+      
+      <div 
+          x-ref="viewport"
           @mousedown="onMouseDown($event)"
           @mousemove="onMouseMove($event)"
           @mouseup="onMouseUp($event)"
           @mouseleave="onMouseUp($event)"
-          @mouseenter="onMouseMoveForZoom($event)"
           @wheel.prevent="onWheel($event)"
-          id="draggable-container"
-          class="draggable-container relative w-full bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden"
-          style="height: 600px; min-height: 600px;">
-          
-          <div 
-            id="zoom-wrapper"
-            class="absolute left-0 top-0 w-full h-full"
-            style="transform-origin: 0 0;"
-            :style="`transform: translate(${translateX}px, ${translateY}px) scale(${scale});`">
-            <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
-              <div 
-                class="absolute cursor-grab select-none will-change-transform"
-                :id="draggableCard.id"
-                :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display};`">
-                <img 
-                  :src="draggableCard.card.img" 
-                  :alt="draggableCard.card.title"
-                  class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
-                  style="max-width: 150px; width: 150px;"/>
-              </div>
-            </template>
-            
+          class="absolute inset-0 overflow-hidden cursor-grab">
+        <div
+          x-ref="content"
+          class="relative w-[2000px] h-[2000px] bg-slate-800"
+          :style="contentStyle">
+          <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
             <div 
-              x-show="draggableCards.length === 0"
-              class="absolute inset-0 flex items-center justify-center text-gray-500">
-              <p>No cards on canvas. Add cards using the buttons above.</p>
+              class="absolute cursor-grab select-none will-change-transform"
+              :id="draggableCard.id"
+              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display};`">
+              <img 
+                :src="draggableCard.card.img" 
+                :alt="draggableCard.card.title"
+                class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
+                style="max-width: 150px; width: 150px;"/>
             </div>
-          </div>
+          </template>
           
-          <div class="absolute top-1 right-2 z-[9999] flex gap-1">
-            <button 
-              type="button"
-              class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              aria-label="Zoom in"
-              @click="zoomIn()">+</button>
-            <button 
-              type="button"
-              class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              aria-label="Zoom out"
-              @click="zoomOut()">−</button>
-          </div>
-          
-          <button 
-            x-show="draggableCards.length > 0"
-            type="button"
-            class="cursor-pointer absolute top-1 left-2 z-[9999] px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-            @click="showClearConfirm = true">
-            Clear Canvas
-          </button>
-
-          <!-- Clear canvas confirmation dialog -->
           <div 
-            x-show="showClearConfirm"
-            x-transition
-            class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="clear-confirm-title">
-            <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4">
-              <button 
-                type="button"
-                class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                aria-label="Close"
-                @click="showClearConfirm = false">
-                <span class="text-xl leading-none">×</span>
-              </button>
-              <p id="clear-confirm-title" class="text-xl font-bold text-gray-200 pr-8 mb-6">Are you sure you want to clear the canvas?</p>
-              <div class="flex gap-3 justify-end">
-                <button 
-                  type="button"
-                  class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                  @click="clearCanvas(); showClearConfirm = false">
-                  Yes
-                </button>
-                <button 
-                  type="button"
-                  class="cursor-pointer px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                  @click="showClearConfirm = false">
-                  Cancel
-                </button>
-              </div>
-            </div>
+            x-show="draggableCards.length === 0"
+            x-ref="emptyCanvasMessage"
+            class="absolute inset-0 flex items-center justify-center text-gray-500">
+            <p>No cards on canvas. Add cards using the buttons above.</p>
           </div>
         </div>
       </div>
-    </main>
+      
+      <div class="absolute top-1 right-2 z-[9999] flex gap-1">
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Zoom in"
+          @click="zoomIn()">+</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Zoom out"
+          @click="zoomOut()">−</button>
+      </div>
+      
+      <button 
+        x-show="draggableCards.length > 0"
+        type="button"
+        class="cursor-pointer absolute top-1 left-2 z-[9999] px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+        @click="showClearConfirm = true">
+        Clear Canvas
+      </button>
+
+      <!-- Clear canvas confirmation dialog -->
+      <div 
+        x-show="showClearConfirm"
+        x-transition
+        class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="clear-confirm-title">
+        <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4">
+          <button 
+            type="button"
+            class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            aria-label="Close"
+            @click="showClearConfirm = false">
+            <span class="text-xl leading-none">×</span>
+          </button>
+          <p id="clear-confirm-title" class="text-xl font-bold text-gray-200 pr-8 mb-6">Are you sure you want to clear the canvas?</p>
+          <div class="flex gap-3 justify-end">
+            <button 
+              type="button"
+              class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              @click="clearCanvas(); showClearConfirm = false">
+              Yes
+            </button>
+            <button 
+              type="button"
+              class="cursor-pointer px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              @click="showClearConfirm = false">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </body>
 </html>
 

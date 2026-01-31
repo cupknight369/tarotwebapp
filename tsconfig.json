@@ -12,6 +12,6 @@
     "removeComments": true,
     "moduleResolution": "node"
   },
-  "include": ["*.ts", "types/**/*.ts"],
+  "include": ["*.ts", "types/**/*.ts", "src/**/*.ts"],
   "exclude": ["node_modules", "dist", "alpine.min.js"]
 }

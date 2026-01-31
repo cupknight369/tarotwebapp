@@ -25,6 +25,9 @@ declare global {
   
   interface AlpineRefs {
     cardImage: HTMLImageElement;
+    viewport: HTMLDivElement;
+    content: HTMLDivElement;
+    emptyCanvasMessage: HTMLDivElement;
   }
   
   interface TarotCard {
