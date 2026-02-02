@@ -8,6 +8,7 @@ declare global {
   
   interface Alpine {
     store(name: string, data?: any): any;
+    $refs: AlpineRefs;
   }
   
   interface AlpineStore {

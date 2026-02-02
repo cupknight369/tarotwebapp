@@ -12,98 +12,11 @@
   </head>
 
   <body class="bg-gray-800 text-white ">
-    <main x-data="{
-        num: 0,
-        singleDrawNum: null,
-        multiDrawNums: new Set(),
-      }" x-ref="main">
-      <h1 class="mt-5 text-xl font-medium tracking-tight">Hello Tarot!</h1>
-      <hr class="py-3"/>
-
-      <div>
-        <div x-data="{ showShuffledConfirmation: false }">
-          <button type="button" 
-            class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" 
-            @click="compSingleDraw($store, $data, $refs);">Single Draw</button>
-          <button type="button" 
-            class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2" 
-            @click="$store.shuffledCards = shuffle($store.cards); showShuffledConfirmation = true; setTimeout(()=> showShuffledConfirmation = false, 3000);">Shuffle Deck</button>
-          <p 
-            x-show="showShuffledConfirmation"
-            class="inline-block text-md">Shuffled!</p>
-        </div>
-        <div>
-          <img x-ref="cardImage" class="w-[150px]" />
-          <p 
-            x-text="singleDrawNum !== null ? $store.shuffledCards[singleDrawNum]?.title : 'Nothing drawn yet...'"
-            class="text-xl font-bold mt-3"></p>
-          <button 
-            x-show="singleDrawNum !== null"
-            type="button"
-            class="cursor-pointer mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-            @click="if (singleDrawNum !== null) { addCardToCanvas($store.shuffledCards[singleDrawNum]); }">
-            Add to Canvas
-          </button>
-        </div>
-      </div>
-      
-      <div>
-        <form class="flex flex-col mt-5" @submit.prevent="multiDrawNums = drawMultipleCards(parseInt(event.target.multiDraw.value));">
-          <label for="multiDraw" class="block text-xl font-bold text-gray-200 mb-1">Enter a number 1-10:</label>
-          <input name="multiDraw" 
-            class="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100
-              placeholder-gray-500
-              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-              px-3 py-2 shadow-sm" 
-            type="number" 
-            min="1" 
-            max="10" />
-        </form>
-
-        <ul>
-          <template x-for="num in [...multiDrawNums]">
-            <li class="text-xl font-bold text-gray-200" x-text="$store.shuffledCards[num]?.title"></li>
-          </template>
-        </ul>
-        <button 
-          x-show="multiDrawNums.size > 0"
-          type="button"
-          class="cursor-pointer mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-          @click="[...multiDrawNums].forEach(num => { if ($store.shuffledCards[num]) addCardToCanvas($store.shuffledCards[num]); });">
-          Add All to Canvas
-        </button>
-      </div>
-      
-      <div x-data="{ specificIndexCard: null }">
-        <form class="flex flex-col mt-5" @submit.prevent="specificIndexCard = $store.shuffledCards[event.target.specificCardIndex.value];">
-          <label for="multiDraw" class="block text-xl font-bold text-gray-200 mb-1">Enter a number 0-77:</label>
-          <input name="specificCardIndex" 
-            class="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100
-              placeholder-gray-500
-              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-              px-3 py-2 shadow-sm" 
-            type="number" 
-            min="0" 
-            max="77" />
-        </form>
-
-        <p class="text-xl font-bold text-gray-200" x-text="specificIndexCard?.title"></p>
-        <button 
-          x-show="specificIndexCard !== null"
-          type="button"
-          class="cursor-pointer mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-          @click="if (specificIndexCard !== null) { addCardToCanvas(specificIndexCard); }">
-          Add to Canvas
-        </button>
-      </div>
-
-    </main>
-
     <!-- Draggable Zone -->
     <div 
-      x-data="canvasComponent($refs)"
+      x-data="canvasComponent(Alpine)"
       id="draggable-container"
-      class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden mt-8">
+      class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden">
       
       <div 
           x-ref="viewport"
@@ -139,7 +52,31 @@
         </div>
       </div>
       
-      <div class="absolute top-1 right-2 z-[9999] flex gap-1">
+      <div class="absolute top-1 right-2 z-[9999] flex items-center gap-1">
+        <span 
+          x-show="showShuffledConfirmation"
+          x-transition
+          class="ml-1 text-sm text-gray-300">Shuffled!</span>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Single draw"
+          @click="addCardToCanvas(Alpine.store('shuffledCards')[cryptoRandomInt(Alpine.store('shuffledCards').length)])">1</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Multiple draw (1-10)"
+          @click="(function(){ const n = parseInt(prompt('Number of cards (1-10)?', '1'), 10); if (n >= 1 && n <= 10) { const draws = drawMultipleCards(n); if (draws) { const s = Alpine.store('shuffledCards'); draws.forEach(i => addCardToCanvas(s[i])); } } })()">N</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Draw at index (0-77)"
+          @click="(function(){ const i = parseInt(prompt('Card index (0-77)?', '0'), 10); if (i >= 0 && i <= 77) { addCardToCanvas(Alpine.store('shuffledCards')[i]); } })()">#</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Shuffle deck"
+          @click="shuffleDeck()">⇅</button>
         <button 
           type="button"
           class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
