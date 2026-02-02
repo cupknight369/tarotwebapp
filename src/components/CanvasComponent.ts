@@ -61,6 +61,14 @@
       this.zoomAt(mouseX, mouseY, factor);
     },
 
+    zoomIn() {
+      this.zoomAtCenter(1.1);
+    },
+
+    zoomOut() {
+      this.zoomAtCenter(0.9);
+    },
+
     zoomAt(screenX: number, screenY: number, factor: number) {
         const newScale = this.clamp(this.scale * factor, this.minScale, this.maxScale);
         const actual = newScale / this.scale;
