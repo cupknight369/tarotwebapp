@@ -4,8 +4,8 @@ const posthtml = require('posthtml');
 const include = require('posthtml-include');
 
 const rootDir = path.resolve(__dirname, '..');
-const templatePath = path.join(rootDir, 'index.template.html');
-const outputPath = path.join(rootDir, 'index.html');
+const templatePath = path.join(rootDir, './src/index.template.html');
+const outputPath = path.join(rootDir, './dist/index.html');
 
 const html = fs.readFileSync(templatePath, 'utf8');
 
