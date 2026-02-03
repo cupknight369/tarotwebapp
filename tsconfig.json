@@ -13,5 +13,5 @@
     "moduleResolution": "node"
   },
   "include": ["*.ts", "types/**/*.ts", "src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "alpine.min.js"]
+  "exclude": ["node_modules", "dist", "scripts/alpine.min.js"]
 }

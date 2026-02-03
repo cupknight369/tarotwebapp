@@ -1,0 +1,61 @@
+    <!-- Reusable dialog component -->
+    <div 
+      x-data="dialogComponent(Alpine)"
+      x-show="$store.dialog.open"
+      x-transition
+      class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="'dialog-title'">
+      <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4">
+        <button 
+          type="button"
+          class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Close"
+          @click="handleCancel()">
+          <span class="text-xl leading-none">×</span>
+        </button>
+
+        <template x-if="$store.dialog.type === 'confirm'">
+          <div>
+            <p id="dialog-title" class="text-xl font-bold text-gray-200 pr-8 mb-6" x-text="$store.dialog.title"></p>
+            <div class="flex gap-3 justify-end">
+              <button 
+                type="button"
+                class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                @click="handleConfirm()"
+                x-text="$store.dialog.confirmLabel || 'Yes'"></button>
+              <button 
+                type="button"
+                class="cursor-pointer px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                @click="handleCancel()"
+                x-text="$store.dialog.cancelLabel || 'Cancel'"></button>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="$store.dialog.type === 'input'">
+          <div x-init="initInputValue()">
+            <p id="dialog-title" class="text-xl font-bold text-gray-200 pr-8 mb-4" x-text="$store.dialog.title"></p>
+            <input 
+              type="number" 
+              x-model="inputValue"
+              :min="$store.dialog.inputMin"
+              :max="$store.dialog.inputMax"
+              :placeholder="$store.dialog.inputPlaceholder || ''"
+              class="w-full mb-6 px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+            <div class="flex gap-3 justify-end">
+              <button 
+                type="button"
+                class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                @click="handleInputSubmit()">Submit</button>
+              <button 
+                type="button"
+                class="cursor-pointer px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                @click="handleCancel()"
+                x-text="$store.dialog.cancelLabel || 'Cancel'"></button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>

@@ -1,0 +1,83 @@
+    <!-- Draggable Zone -->
+    <div 
+      x-data="canvasComponent(Alpine)"
+      id="draggable-container"
+      class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden">
+      
+      <div 
+          x-ref="viewport"
+          @mousedown="onMouseDown($event)"
+          @mousemove="onMouseMove($event)"
+          @mouseup="onMouseUp($event)"
+          @mouseleave="onMouseUp($event)"
+          @wheel.prevent="onWheel($event)"
+          class="absolute inset-0 overflow-hidden cursor-grab">
+        <div
+          x-ref="content"
+          class="relative w-[2000px] h-[2000px] bg-slate-800"
+          :style="contentStyle">
+          <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
+            <div 
+              class="absolute cursor-grab select-none will-change-transform"
+              :id="draggableCard.id"
+              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display};`">
+              <img 
+                :src="draggableCard.card.img" 
+                :alt="draggableCard.card.title"
+                class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
+                style="max-width: 150px; width: 150px;"/>
+            </div>
+          </template>
+          
+          <div 
+            x-show="draggableCards.length === 0"
+            x-ref="emptyCanvasMessage"
+            class="absolute inset-0 flex items-center justify-center text-gray-500">
+            <p>No cards on canvas. Add cards using the buttons above.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="absolute top-1 right-2 z-[9999] flex items-center gap-1">
+        <span 
+          x-show="showShuffledConfirmation"
+          x-transition
+          class="ml-1 text-sm text-gray-300">Shuffled!</span>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Single draw"
+          @click="addCardToCanvas(Alpine.store('shuffledCards')[cryptoRandomInt(Alpine.store('shuffledCards').length)])">1</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Multiple draw (1-10)"
+          @click="Alpine.store('dialog', { open: true, type: 'input', title: 'Number of cards (1-10)?', inputMin: 1, inputMax: 10, inputDefault: '1', onSubmit: (n) => { const draws = drawMultipleCards(n); if (draws) { const s = Alpine.store('shuffledCards'); draws.forEach(i => addCardToCanvas(s[i])); } }, onCancel: () => {} })">N</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Draw at index (0-77)"
+          @click="(function(){ const i = parseInt(prompt('Card index (0-77)?', '0'), 10); if (i >= 0 && i <= 77) { addCardToCanvas(Alpine.store('shuffledCards')[i]); } })()">#</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Shuffle deck"
+          @click="shuffleDeck()">⇅</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Zoom in"
+          @click="zoomIn()">+</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Zoom out"
+          @click="zoomOut()">−</button>
+        <button 
+          x-show="draggableCards.length > 0"
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Clear canvas"
+          @click="Alpine.store('dialog', { open: true, type: 'confirm', title: 'Are you sure you want to clear the canvas?', onConfirm: () => clearCanvas(), onCancel: () => {} })">🧹</button>
+      </div>
+    </div>
