@@ -8,7 +8,6 @@
     dragStart: null as { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null,
     dragContainer: null as HTMLElement | null,
     draggingCard: null as HTMLElement | null,
-    showClearConfirm: false,
     showShuffledConfirmation: false,
 
     scale: 1,

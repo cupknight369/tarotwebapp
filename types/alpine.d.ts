@@ -15,6 +15,23 @@ declare global {
     cards: TarotCard[];
     shuffledCards: TarotCard[];
   }
+
+  /** State for the global dialog store (Alpine.store('dialog')). */
+  interface DialogStoreState {
+    open: boolean;
+    type: 'confirm' | 'input';
+    title: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+    inputLabel?: string;
+    inputPlaceholder?: string;
+    inputMin?: number;
+    inputMax?: number;
+    inputDefault?: string;
+    onSubmit?: (value: number) => void;
+  }
   
   interface AlpineData {
     num: number;
