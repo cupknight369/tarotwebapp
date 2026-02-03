@@ -59,44 +59,43 @@
           class="ml-1 text-sm text-gray-300">Shuffled!</span>
         <button 
           type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
           aria-label="Single draw"
           @click="addCardToCanvas(Alpine.store('shuffledCards')[cryptoRandomInt(Alpine.store('shuffledCards').length)])">1</button>
         <button 
           type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
           aria-label="Multiple draw (1-10)"
           @click="(function(){ const n = parseInt(prompt('Number of cards (1-10)?', '1'), 10); if (n >= 1 && n <= 10) { const draws = drawMultipleCards(n); if (draws) { const s = Alpine.store('shuffledCards'); draws.forEach(i => addCardToCanvas(s[i])); } } })()">N</button>
         <button 
           type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
           aria-label="Draw at index (0-77)"
           @click="(function(){ const i = parseInt(prompt('Card index (0-77)?', '0'), 10); if (i >= 0 && i <= 77) { addCardToCanvas(Alpine.store('shuffledCards')[i]); } })()">#</button>
         <button 
           type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
           aria-label="Shuffle deck"
           @click="shuffleDeck()">⇅</button>
         <button 
           type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
           aria-label="Zoom in"
           @click="zoomIn()">+</button>
         <button 
           type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
           aria-label="Zoom out"
           @click="zoomOut()">−</button>
+        <button 
+          x-show="draggableCards.length > 0"
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Clear canvas"
+          @click="showClearConfirm = true">🧹</button>
       </div>
       
-      <button 
-        x-show="draggableCards.length > 0"
-        type="button"
-        class="cursor-pointer absolute top-1 left-2 z-[9999] px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-        @click="showClearConfirm = true">
-        Clear Canvas
-      </button>
-
+      
       <!-- Clear canvas confirmation dialog -->
       <div 
         x-show="showClearConfirm"
