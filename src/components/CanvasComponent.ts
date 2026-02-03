@@ -178,7 +178,7 @@
         const newArray = [...this.alpine.store('shuffledCards')];  // Create copy to preserve original
 
         for (let i = newArray.length - 1; i > 0; --i) {
-          const j = cryptoRandomInt(newArray.length);
+          const j = this.cryptoRandomInt(newArray.length);
           [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
         }
 
@@ -186,6 +186,82 @@
 
         this.showShuffledConfirmation = true;
         setTimeout(() => { this.showShuffledConfirmation = false; }, 3000);
+      }
+    },
+
+    addCardToCanvas(card: TarotCard): void {
+      const draggableCard: DraggableCard = {
+        card,
+        id: this.generateCardId(),
+        // Place card at a random position within the visible viewport (content-space bounds)
+        x: (() => {
+          const cardWidth = 150;   // Assumes card width in px (matches <img> CSS)
+          const vw = this.viewport!.getBoundingClientRect().width;
+          // Content-space visible range: viewport window maps to [-offsetX/scale, (vw - offsetX)/scale]
+          const visibleMinX = -this.offsetX / this.scale;
+          const visibleMaxX = (vw - this.offsetX) / this.scale - cardWidth;
+          const rangeX = Math.max(0, visibleMaxX - visibleMinX);
+          return visibleMinX + Math.random() * rangeX;
+        })(),
+        y: (() => {
+          const cardHeight = 231;
+          const vh = this.viewport!.getBoundingClientRect().height;
+          const visibleMinY = -this.offsetY / this.scale;
+          const visibleMaxY = (vh - this.offsetY) / this.scale - cardHeight;
+          const rangeY = Math.max(0, visibleMaxY - visibleMinY);
+          return visibleMinY + Math.random() * rangeY;
+        })(),
+        rotation: 0,
+        zIndex: this.maxZIndex + 1,
+        opacity: 1,
+        cursor: 'grab',
+        display: 'block'
+      };
+      
+      this.draggableCards = [...this.draggableCards, draggableCard];
+      this.maxZIndex += 1;
+    },
+
+    generateCardId(): string {
+      return `card-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    },
+
+    cryptoRandomInt(len: number): number {
+      // 1. Get a random 32-bit unsigned integer.
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf); // cryptographically strong random 32-bit value [0, 2^32 - 1][web:22]
+
+      // 2. Convert to a fraction in [0, 1).
+      const fraction = buf[0] / (0xFFFFFFFF + 1); // 0xFFFFFFFF = 2^32 - 1[web:21]
+
+      // 3. Scale to [0, len) and floor to get integer 0–(len-1).
+      const result = Math.floor(fraction * len);
+
+      return result; // integer from 0 to len-1 inclusive
+    },
+
+    drawMultipleCards(num: number): Set<number> | undefined {
+      if (num > 10 || num < 1) { return; }
+
+      const draws = new Set<number>();
+      const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
+
+      while (draws.size < num) {
+        const randomNum = this.cryptoRandomInt(shuffledCards.length);
+        if (!draws.has(randomNum)) { draws.add(randomNum); }
+      }
+      
+      return draws;
+    },
+
+    compSingleDraw(store: AlpineStore, data: AlpineData, refs: AlpineRefs): void {
+      data.singleDrawNum = this.cryptoRandomInt(store.cards.length);
+
+      // Set the image source and alt text to the current single draw card
+      const drawnCard = store.shuffledCards[data.singleDrawNum];
+      if (drawnCard) {
+        refs.cardImage.src = drawnCard.img;
+        refs.cardImage.alt = drawnCard.title;
       }
     },
 
