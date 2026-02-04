@@ -7,8 +7,8 @@
       <div 
           x-ref="viewport"
           @mousedown="onMouseDown($event)"
-          @mousemove="onMouseMove($event)"
-          @mouseup="onMouseUp($event)"
+          @mousemove.window="onMouseMove($event)"
+          @mouseup.window="onMouseUp($event)"
           @mouseleave="onMouseUp($event)"
           @wheel.prevent="onWheel($event)"
           class="absolute inset-0 overflow-hidden cursor-grab">
@@ -27,8 +27,17 @@
                 :alt="draggableCard.card.title"
                 class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
                 style="max-width: 150px; width: 150px;"/>
+              <div
+                x-show="selectedCardIds.includes(draggableCard.id)"
+                class="absolute inset-0 bg-purple-600/30 pointer-events-none rounded"
+              ></div>
             </div>
           </template>
+          <div
+            x-show="selectionBox"
+            x-transition
+            class="absolute pointer-events-none border-2 border-dashed border-purple-600 z-[99999]"
+            :style="selectionBoxStyle"></div>
           
           <div 
             x-show="draggableCards.length === 0"

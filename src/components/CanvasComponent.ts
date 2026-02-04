@@ -8,6 +8,11 @@ Alpine.data('canvasComponent', () => ({
   draggingCard: null as HTMLElement | null,
   showShuffledConfirmation: false,
 
+  selectedCardIds: [] as string[],
+  selectionBox: null as { startX: number; startY: number; currentX: number; currentY: number } | null,
+  selectionBoxStyle: '' as string,
+  groupDragOffsets: null as Record<string, { dx: number; dy: number }> | null,
+
   scale: 1,
   minScale: 0.2,
   maxScale: 4,
@@ -112,6 +117,40 @@ Alpine.data('canvasComponent', () => ({
               scale(${this.scale});
     transition: transform 0.03s linear;
     `;
+  },
+
+  screenToContent(screenX: number, screenY: number): { x: number; y: number } {
+    if (!this.viewport) return { x: 0, y: 0 };
+    const rect = this.viewport.getBoundingClientRect();
+    return {
+      x: (screenX - rect.left - this.offsetX) / this.scale,
+      y: (screenY - rect.top - this.offsetY) / this.scale,
+    };
+  },
+
+  boxesOverlap(
+    box1: { left: number; top: number; width: number; height: number },
+    box2: { left: number; top: number; width: number; height: number }
+  ): boolean {
+    return !(
+      box1.left + box1.width < box2.left ||
+      box2.left + box2.width < box1.left ||
+      box1.top + box1.height < box2.top ||
+      box2.top + box2.height < box1.top
+    );
+  },
+
+  updateSelectionBoxStyle() {
+    if (!this.selectionBox) {
+      this.selectionBoxStyle = '';
+      return;
+    }
+    const { startX, startY, currentX, currentY } = this.selectionBox;
+    const left = Math.min(startX, currentX);
+    const top = Math.min(startY, currentY);
+    const width = Math.abs(currentX - startX);
+    const height = Math.abs(currentY - startY);
+    this.selectionBoxStyle = `left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;`;
   },
 
   init() {
@@ -239,7 +278,21 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onMouseDown(event: MouseEvent) {
-    if (event.target === this.viewport || event.target === this.content || event.target === this.emptyCanvasMessage) {
+    if (event.button !== 0) return;
+
+    const target = event.target as HTMLElement;
+    const cardId = target.id && this.draggableCards.some(c => c.id === target.id) ? target.id : null;
+    const isOnEmpty = target === this.viewport || target === this.content || target === this.emptyCanvasMessage;
+
+    if (event.ctrlKey) {
+      const { x, y } = this.screenToContent(event.clientX, event.clientY);
+      this.selectionBox = { startX: x, startY: y, currentX: x, currentY: y };
+      this.updateSelectionBoxStyle();
+      return;
+    }
+
+    if (isOnEmpty) {
+      this.selectedCardIds = [];
       this.isPanning = true;
       this.panStartX = event.clientX - this.offsetX;
       this.panStartY = event.clientY - this.offsetY;
@@ -247,15 +300,27 @@ Alpine.data('canvasComponent', () => ({
       return;
     }
 
-    const target = event.target as HTMLElement;
-    const cardId = target.id;
-    if (!cardId || !this.draggableCards.some(c => c.id === cardId)) return;
+    if (!cardId) return;
     this.draggingCard = target;
 
     const card = this.draggableCards.find(c => c.id === cardId)!;
     const rect = this.dragContainer!.getBoundingClientRect();
     const startDropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
     const startDropY = event.clientY - rect.top - this.dragContainer!.clientTop;
+
+    if (this.selectedCardIds.includes(cardId)) {
+      this.groupDragOffsets = {};
+      const anchorX = card.x;
+      const anchorY = card.y;
+      for (const id of this.selectedCardIds) {
+        const c = this.draggableCards.find(dc => dc.id === id);
+        if (c) this.groupDragOffsets[id] = { dx: c.x - anchorX, dy: c.y - anchorY };
+      }
+    } else {
+      this.selectedCardIds = [];
+      this.groupDragOffsets = null;
+    }
+
     this.dragStart = {
       startCardX: card.x,
       startCardY: card.y,
@@ -268,6 +333,13 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onMouseMove(e: MouseEvent) {
+    if (this.selectionBox) {
+      const { x, y } = this.screenToContent(e.clientX, e.clientY);
+      this.selectionBox = { ...this.selectionBox!, currentX: x, currentY: y };
+      this.updateSelectionBoxStyle();
+      return;
+    }
+
     if (this.isPanning) {
       this.offsetX = e.clientX - this.panStartX;
       this.offsetY = e.clientY - this.panStartY;
@@ -279,10 +351,17 @@ Alpine.data('canvasComponent', () => ({
     const rect = this.dragContainer!.getBoundingClientRect();
     const dropX = e.clientX - rect.left - this.dragContainer!.clientLeft;
     const dropY = e.clientY - rect.top - this.dragContainer!.clientTop;
-    const x = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
-    const y = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
+    const newAnchorX = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
+    const newAnchorY = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
 
-    this.updateItem(this.draggingCard.id, { x, y });
+    if (this.groupDragOffsets) {
+      for (const id of Object.keys(this.groupDragOffsets)) {
+        const { dx, dy } = this.groupDragOffsets[id];
+        this.updateItem(id, { x: newAnchorX + dx, y: newAnchorY + dy });
+      }
+    } else {
+      this.updateItem(this.draggingCard.id, { x: newAnchorX, y: newAnchorY });
+    }
   },
 
   onMouseUp(event: MouseEvent) {
@@ -291,15 +370,44 @@ Alpine.data('canvasComponent', () => ({
     this.isPanning = false;
     if (this.viewport) this.viewport.style.cursor = "grab";
 
+    if (this.selectionBox) {
+      const { startX, startY, currentX, currentY } = this.selectionBox;
+      const left = Math.min(startX, currentX);
+      const top = Math.min(startY, currentY);
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+      const selectionRect = { left, top, width, height };
+
+      const cardWidth = 150;
+      const cardHeight = 231;
+      const ids: string[] = [];
+      for (const card of this.draggableCards) {
+        const cardRect = { left: card.x, top: card.y, width: cardWidth, height: cardHeight };
+        if (this.boxesOverlap(selectionRect, cardRect)) ids.push(card.id);
+      }
+      this.selectedCardIds = ids;
+      this.selectionBox = null;
+      this.selectionBoxStyle = '';
+      return;
+    }
+
     if (!this.draggingCard || !this.dragStart) return;
 
     const rect = this.dragContainer!.getBoundingClientRect();
     const dropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
     const dropY = event.clientY - rect.top - this.dragContainer!.clientTop;
-    const x = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
-    const y = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
+    const newAnchorX = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
+    const newAnchorY = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
 
-    this.updateItem(this.draggingCard.id, { x, y, display: 'block', cursor: 'grab' });
+    if (this.groupDragOffsets) {
+      for (const id of Object.keys(this.groupDragOffsets)) {
+        const { dx, dy } = this.groupDragOffsets[id];
+        this.updateItem(id, { x: newAnchorX + dx, y: newAnchorY + dy, display: 'block', cursor: 'grab' });
+      }
+      this.groupDragOffsets = null;
+    } else {
+      this.updateItem(this.draggingCard.id, { x: newAnchorX, y: newAnchorY, display: 'block', cursor: 'grab' });
+    }
 
     this.dragStart = null;
     this.draggingCard = null;
@@ -310,6 +418,10 @@ Alpine.data('canvasComponent', () => ({
     this.maxZIndex = 0;
     this.draggingCard = null;
     this.dragStart = null;
+    this.selectedCardIds = [];
+    this.selectionBox = null;
+    this.selectionBoxStyle = '';
+    this.groupDragOffsets = null;
     this.scale = 1;
 
     const viewportRect = this.viewport!.getBoundingClientRect();
