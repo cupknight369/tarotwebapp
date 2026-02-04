@@ -2,25 +2,28 @@
   "name": "tarot",
   "version": "1.0.0",
   "description": "Tarot card drawing application",
-  "main": "index.html",
+  "type": "module",
   "scripts": {
-    "build": "tsc && mkdir -p dist/src/lib/ && cp src/lib/alpine.min.js dist/src/lib/ && node scripts/build-html.js",
-    "watch": "tsc --watch",
-    "serve": "python3 -m http.server 8001 --directory dist",
-    "ts:watch": "tsc --watch",
-    "tw:watch": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
-    "dev": "concurrently -n build, server, typescript, tailwind \"npm run build\" \"npm run serve\" \"npm run ts:watch\" \"npm run tw:watch\""
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@tailwindcss/cli": "^4.1.18",
-    "@types/alpinejs": "^3.13.10",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/alpinejs": "^3.13.11",
+    "@vituum/vite-plugin-posthtml": "^1.1.0",
     "concurrently": "^5.3.0",
     "posthtml": "^0.16.7",
     "posthtml-include": "^2.0.1",
     "tailwindcss": "^4.1.18",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "alpinejs": "^3.15.8"
   }
 }
