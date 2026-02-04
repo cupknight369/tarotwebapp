@@ -1,369 +1,335 @@
 /// <reference path="../../types/alpine.d.ts" />
 
- function canvasComponent(alpine: Alpine) {
-  const component = {
-    alpine: alpine,
-    draggableCards: [] as DraggableCard[],
-    maxZIndex: 0,
-    dragStart: null as { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null,
-    dragContainer: null as HTMLElement | null,
-    draggingCard: null as HTMLElement | null,
-    showShuffledConfirmation: false,
+import Alpine from 'alpinejs'
 
-    scale: 1,
-    minScale: 0.2,
-    maxScale: 4,
-    offsetX: 0,
-    offsetY: 0,
+Alpine.data('canvasComponent', () => ({
+  draggableCards: [] as DraggableCard[],
+  maxZIndex: 0,
+  dragStart: null as { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null,
+  dragContainer: null as HTMLElement | null,
+  draggingCard: null as HTMLElement | null,
+  showShuffledConfirmation: false,
 
-    isPanning: false,
-    panStartX: 0,
-    panStartY: 0,
+  scale: 1,
+  minScale: 0.2,
+  maxScale: 4,
+  offsetX: 0,
+  offsetY: 0,
 
-    viewport: null as HTMLDivElement | null,
-    content: null as HTMLDivElement | null,
-    emptyCanvasMessage: null as HTMLDivElement | null,
+  isPanning: false,
+  panStartX: 0,
+  panStartY: 0,
 
-    cards: [
-  { title: 'The Fool', num: 0, img: '/cards/m00.jpg' },
-  { title: 'The Magician', num: 1, img: '/cards/m01.jpg' },
-  { title: 'The High Priestess', num: 2, img: '/cards/m02.jpg' },
-  { title: 'The Empress', num: 3, img: '/cards/m03.jpg' },
-  { title: 'The Emperor', num: 4, img: '/cards/m04.jpg' },
-  { title: 'The Hierophant', num: 5, img: '/cards/m05.jpg' },
-  { title: 'The Lovers', num: 6, img: '/cards/m06.jpg' },
-  { title: 'The Chariot', num: 7, img: '/cards/m07.jpg' },
-  { title: 'The Strength', num: 8, img: '/cards/m08.jpg' },
-  { title: 'The Hermit', num: 9, img: '/cards/m09.jpg' },
-  { title: 'The Wheel Of Fortune', num: 10, img: '/cards/m10.jpg' },
-  { title: 'Justice', num: 11, img: '/cards/m11.jpg' },
-  { title: 'The Hangman', num: 12, img: '/cards/m12.jpg' },
-  { title: 'Death', num: 13, img: '/cards/m13.jpg' },
-  { title: 'Temperance', num: 14, img: '/cards/m14.jpg' },
-  { title: 'The Devil', num: 15, img: '/cards/m15.jpg' },
-  { title: 'The Tower', num: 16, img: '/cards/m16.jpg' },
-  { title: 'The Star', num: 17, img: '/cards/m17.jpg' },
-  { title: 'The Moon', num: 18, img: '/cards/m18.jpg' },
-  { title: 'The Sun', num: 19, img: '/cards/m19.jpg' },
-  { title: 'Judgement', num: 20, img: '/cards/m20.jpg' },
-  { title: 'The World', num: 21, img: '/cards/m21.jpg' },
-  { title: 'Ace Of Wands', num: 22, img: '/cards/w01.jpg' },
-  { title: 'Two Of Wands', num: 23, img: '/cards/w02.jpg' },
-  { title: 'Three Of Wands', num: 24, img: '/cards/w03.jpg' },
-  { title: 'Four Of Wands', num: 25, img: '/cards/w04.jpg' },
-  { title: 'Five Of Wands', num: 26, img: '/cards/w05.jpg' },
-  { title: 'Six Of Wands', num: 27, img: '/cards/w06.jpg' },
-  { title: 'Seven Of Wands', num: 28, img: '/cards/w07.jpg' },
-  { title: 'Eight Of Wands', num: 29, img: '/cards/w08.jpg' },
-  { title: 'Nine Of Wands', num: 30, img: '/cards/w09.jpg' },
-  { title: 'Ten Of Wands', num: 31, img: '/cards/w10.jpg' },
-  { title: 'Page Of Wands', num: 32, img: '/cards/w11.jpg' },
-  { title: 'Knight Of Wands', num: 33, img: '/cards/w12.jpg' },
-  { title: 'Queen Of Wands', num: 34, img: '/cards/w13.jpg' },
-  { title: 'King Of Wands', num: 35, img: '/cards/w14.jpg' },  
-  { title: 'Ace Of Cups', num: 36, img: '/cards/c01.jpg' },
-  { title: 'Two Of Cups', num: 37, img: '/cards/c02.jpg' },
-  { title: 'Three Of Cups', num: 38, img: '/cards/c03.jpg' },
-  { title: 'Four Of Cups', num: 39, img: '/cards/c04.jpg' },
-  { title: 'Five Of Cups', num: 40, img: '/cards/c05.jpg' },
-  { title: 'Six Of Cups', num: 41, img: '/cards/c06.jpg' },
-  { title: 'Seven Of Cups', num: 42, img: '/cards/c07.jpg' },
-  { title: 'Eight Of Cups', num: 43, img: '/cards/c08.jpg' },
-  { title: 'Nine Of Cups', num: 44, img: '/cards/c09.jpg' },
-  { title: 'Ten Of Cups', num: 45, img: '/cards/c10.jpg' },
-  { title: 'Page Of Cups', num: 46, img: '/cards/c11.jpg' },
-  { title: 'Knight Of Cups', num: 47, img: '/cards/c12.jpg' },
-  { title: 'Queen Of Cups', num: 48, img: '/cards/c13.jpg' },
-  { title: 'King Of Cups', num: 49, img: '/cards/c14.jpg' },
-  { title: 'Ace Of Swords', num: 50, img: '/cards/s01.jpg' },
-  { title: 'Two Of Swords', num: 51, img: '/cards/s02.jpg' },
-  { title: 'Three Of Swords', num: 52, img: '/cards/s03.jpg' },
-  { title: 'Four Of Swords', num: 53, img: '/cards/s04.jpg' },
-  { title: 'Five Of Swords', num: 54, img: '/cards/s05.jpg' },
-  { title: 'Six Of Swords', num: 55, img: '/cards/s06.jpg' },
-  { title: 'Seven Of Swords', num: 56, img: '/cards/s07.jpg' },
-  { title: 'Eight Of Swords', num: 57, img: '/cards/s08.jpg' },
-  { title: 'Nine Of Swords', num: 58, img: '/cards/s09.jpg' },
-  { title: 'Ten Of Swords', num: 59, img: '/cards/s10.jpg' },
-  { title: 'Page Of Swords', num: 60, img: '/cards/s11.jpg' },
-  { title: 'Knight Of Swords', num: 61, img: '/cards/s12.jpg' },
-  { title: 'Queen Of Swords', num: 62, img: '/cards/s13.jpg' },
-  { title: 'King Of Swords', num: 63, img: '/cards/s14.jpg' },
-  { title: 'Ace Of Pentacles', num: 64, img: '/cards/p01.jpg' },
-  { title: 'Two Of Pentacles', num: 65, img: '/cards/p02.jpg' },
-  { title: 'Three Of Pentacles', num: 66, img: '/cards/p03.jpg' },
-  { title: 'Four Of Pentacles', num: 67, img: '/cards/p04.jpg' },
-  { title: 'Five Of Pentacles', num: 68, img: '/cards/p05.jpg' },
-  { title: 'Six Of Pentacles', num: 69, img: '/cards/p06.jpg' },
-  { title: 'Seven Of Pentacles', num: 70, img: '/cards/p07.jpg' },
-  { title: 'Eight Of Pentacles', num: 71, img: '/cards/p08.jpg' },
-  { title: 'Nine Of Pentacles', num: 72, img: '/cards/p09.jpg' },
-  { title: 'Ten Of Pentacles', num: 73, img: '/cards/p10.jpg' },
-  { title: 'Page Of Pentacles', num: 74, img: '/cards/p11.jpg' },
-  { title: 'Knight Of Pentacles', num: 75, img: '/cards/p12.jpg' },
-  { title: 'Queen Of Pentacles', num: 76, img: '/cards/p13.jpg' },
-  { title: 'King Of Pentacles', num: 77, img: '/cards/p14.jpg' },
-] as TarotCard[],
+  viewport: null as HTMLDivElement | null,
+  content: null as HTMLDivElement | null,
+  emptyCanvasMessage: null as HTMLDivElement | null,
 
-    $refs: alpine.$refs,
+  cards: [
+    { title: 'The Fool', num: 0, img: '/cards/m00.jpg' },
+    { title: 'The Magician', num: 1, img: '/cards/m01.jpg' },
+    { title: 'The High Priestess', num: 2, img: '/cards/m02.jpg' },
+    { title: 'The Empress', num: 3, img: '/cards/m03.jpg' },
+    { title: 'The Emperor', num: 4, img: '/cards/m04.jpg' },
+    { title: 'The Hierophant', num: 5, img: '/cards/m05.jpg' },
+    { title: 'The Lovers', num: 6, img: '/cards/m06.jpg' },
+    { title: 'The Chariot', num: 7, img: '/cards/m07.jpg' },
+    { title: 'The Strength', num: 8, img: '/cards/m08.jpg' },
+    { title: 'The Hermit', num: 9, img: '/cards/m09.jpg' },
+    { title: 'The Wheel Of Fortune', num: 10, img: '/cards/m10.jpg' },
+    { title: 'Justice', num: 11, img: '/cards/m11.jpg' },
+    { title: 'The Hangman', num: 12, img: '/cards/m12.jpg' },
+    { title: 'Death', num: 13, img: '/cards/m13.jpg' },
+    { title: 'Temperance', num: 14, img: '/cards/m14.jpg' },
+    { title: 'The Devil', num: 15, img: '/cards/m15.jpg' },
+    { title: 'The Tower', num: 16, img: '/cards/m16.jpg' },
+    { title: 'The Star', num: 17, img: '/cards/m17.jpg' },
+    { title: 'The Moon', num: 18, img: '/cards/m18.jpg' },
+    { title: 'The Sun', num: 19, img: '/cards/m19.jpg' },
+    { title: 'Judgement', num: 20, img: '/cards/m20.jpg' },
+    { title: 'The World', num: 21, img: '/cards/m21.jpg' },
+    { title: 'Ace Of Wands', num: 22, img: '/cards/w01.jpg' },
+    { title: 'Two Of Wands', num: 23, img: '/cards/w02.jpg' },
+    { title: 'Three Of Wands', num: 24, img: '/cards/w03.jpg' },
+    { title: 'Four Of Wands', num: 25, img: '/cards/w04.jpg' },
+    { title: 'Five Of Wands', num: 26, img: '/cards/w05.jpg' },
+    { title: 'Six Of Wands', num: 27, img: '/cards/w06.jpg' },
+    { title: 'Seven Of Wands', num: 28, img: '/cards/w07.jpg' },
+    { title: 'Eight Of Wands', num: 29, img: '/cards/w08.jpg' },
+    { title: 'Nine Of Wands', num: 30, img: '/cards/w09.jpg' },
+    { title: 'Ten Of Wands', num: 31, img: '/cards/w10.jpg' },
+    { title: 'Page Of Wands', num: 32, img: '/cards/w11.jpg' },
+    { title: 'Knight Of Wands', num: 33, img: '/cards/w12.jpg' },
+    { title: 'Queen Of Wands', num: 34, img: '/cards/w13.jpg' },
+    { title: 'King Of Wands', num: 35, img: '/cards/w14.jpg' },
+    { title: 'Ace Of Cups', num: 36, img: '/cards/c01.jpg' },
+    { title: 'Two Of Cups', num: 37, img: '/cards/c02.jpg' },
+    { title: 'Three Of Cups', num: 38, img: '/cards/c03.jpg' },
+    { title: 'Four Of Cups', num: 39, img: '/cards/c04.jpg' },
+    { title: 'Five Of Cups', num: 40, img: '/cards/c05.jpg' },
+    { title: 'Six Of Cups', num: 41, img: '/cards/c06.jpg' },
+    { title: 'Seven Of Cups', num: 42, img: '/cards/c07.jpg' },
+    { title: 'Eight Of Cups', num: 43, img: '/cards/c08.jpg' },
+    { title: 'Nine Of Cups', num: 44, img: '/cards/c09.jpg' },
+    { title: 'Ten Of Cups', num: 45, img: '/cards/c10.jpg' },
+    { title: 'Page Of Cups', num: 46, img: '/cards/c11.jpg' },
+    { title: 'Knight Of Cups', num: 47, img: '/cards/c12.jpg' },
+    { title: 'Queen Of Cups', num: 48, img: '/cards/c13.jpg' },
+    { title: 'King Of Cups', num: 49, img: '/cards/c14.jpg' },
+    { title: 'Ace Of Swords', num: 50, img: '/cards/s01.jpg' },
+    { title: 'Two Of Swords', num: 51, img: '/cards/s02.jpg' },
+    { title: 'Three Of Swords', num: 52, img: '/cards/s03.jpg' },
+    { title: 'Four Of Swords', num: 53, img: '/cards/s04.jpg' },
+    { title: 'Five Of Swords', num: 54, img: '/cards/s05.jpg' },
+    { title: 'Six Of Swords', num: 55, img: '/cards/s06.jpg' },
+    { title: 'Seven Of Swords', num: 56, img: '/cards/s07.jpg' },
+    { title: 'Eight Of Swords', num: 57, img: '/cards/s08.jpg' },
+    { title: 'Nine Of Swords', num: 58, img: '/cards/s09.jpg' },
+    { title: 'Ten Of Swords', num: 59, img: '/cards/s10.jpg' },
+    { title: 'Page Of Swords', num: 60, img: '/cards/s11.jpg' },
+    { title: 'Knight Of Swords', num: 61, img: '/cards/s12.jpg' },
+    { title: 'Queen Of Swords', num: 62, img: '/cards/s13.jpg' },
+    { title: 'King Of Swords', num: 63, img: '/cards/s14.jpg' },
+    { title: 'Ace Of Pentacles', num: 64, img: '/cards/p01.jpg' },
+    { title: 'Two Of Pentacles', num: 65, img: '/cards/p02.jpg' },
+    { title: 'Three Of Pentacles', num: 66, img: '/cards/p03.jpg' },
+    { title: 'Four Of Pentacles', num: 67, img: '/cards/p04.jpg' },
+    { title: 'Five Of Pentacles', num: 68, img: '/cards/p05.jpg' },
+    { title: 'Six Of Pentacles', num: 69, img: '/cards/p06.jpg' },
+    { title: 'Seven Of Pentacles', num: 70, img: '/cards/p07.jpg' },
+    { title: 'Eight Of Pentacles', num: 71, img: '/cards/p08.jpg' },
+    { title: 'Nine Of Pentacles', num: 72, img: '/cards/p09.jpg' },
+    { title: 'Ten Of Pentacles', num: 73, img: '/cards/p10.jpg' },
+    { title: 'Page Of Pentacles', num: 74, img: '/cards/p11.jpg' },
+    { title: 'Knight Of Pentacles', num: 75, img: '/cards/p12.jpg' },
+    { title: 'Queen Of Pentacles', num: 76, img: '/cards/p13.jpg' },
+    { title: 'King Of Pentacles', num: 77, img: '/cards/p14.jpg' },
+  ] as TarotCard[],
 
-    get contentStyle() {
-        return `
-        transform-origin: 0 0;
-        transform: translate3d(${this.offsetX}px, ${this.offsetY}px, 0)
-                    scale(${this.scale});
-        transition: transform 0.03s linear;
-        `;
-    },
+  get contentStyle() {
+    return `
+    transform-origin: 0 0;
+    transform: translate3d(${this.offsetX}px, ${this.offsetY}px, 0)
+              scale(${this.scale});
+    transition: transform 0.03s linear;
+    `;
+  },
 
-    init() {
-      // Setup canvas dependencies
-      this.alpine.store('shuffledCards', this.cards);
-      this.shuffleDeck();
+  init() {
+    Alpine.store('shuffledCards', this.cards);
+    this.shuffleDeck();
 
-      // Store reference globally so buttons can access it
-      (window as any).draggableZoneComponent = this;
-      this.dragContainer = document.querySelector('#draggable-container') as HTMLElement;
-      this.viewport = this.$refs!.viewport as HTMLDivElement;
-      this.content = this.$refs!.content as HTMLDivElement;
-      this.emptyCanvasMessage = this.$refs!.emptyCanvasMessage as HTMLDivElement;
+    (window as any).draggableZoneComponent = this;
+    this.dragContainer = document.querySelector('#draggable-container') as HTMLElement;
+    this.viewport = this.$refs.viewport as HTMLDivElement;
+    this.content = this.$refs.content as HTMLDivElement;
+    this.emptyCanvasMessage = this.$refs.emptyCanvasMessage as HTMLDivElement;
 
-      const viewportRect = this.viewport!.getBoundingClientRect();
-      const contentW = this.content!.offsetWidth;
-      const contentH = this.content!.offsetHeight;
-      this.offsetX = viewportRect.width / 2 - contentW / 2;
-      this.offsetY = viewportRect.height / 2 - contentH / 2;
-    },
+    const viewportRect = this.viewport!.getBoundingClientRect();
+    const contentW = this.content!.offsetWidth;
+    const contentH = this.content!.offsetHeight;
+    this.offsetX = viewportRect.width / 2 - contentW / 2;
+    this.offsetY = viewportRect.height / 2 - contentH / 2;
+  },
 
-    onWheel(e: WheelEvent) {
-      if (!this.viewport) return;
-      e.preventDefault();
+  onWheel(e: WheelEvent) {
+    if (!this.viewport) return;
+    e.preventDefault();
 
-      const rect = this.viewport!.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      const factor = e.deltaY < 0 ? 1.1 : 0.9;
-      this.zoomAt(mouseX, mouseY, factor);
-    },
+    const rect = this.viewport!.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    this.zoomAt(mouseX, mouseY, factor);
+  },
 
-    zoomIn() {
-      this.zoomAtCenter(1.1);
-    },
+  zoomIn() {
+    this.zoomAtCenter(1.1);
+  },
 
-    zoomOut() {
-      this.zoomAtCenter(0.9);
-    },
+  zoomOut() {
+    this.zoomAtCenter(0.9);
+  },
 
-    zoomAt(screenX: number, screenY: number, factor: number) {
-        const newScale = this.clamp(this.scale * factor, this.minScale, this.maxScale);
-        const actual = newScale / this.scale;
-        if (actual === 1) return;
+  zoomAt(screenX: number, screenY: number, factor: number) {
+    const newScale = this.clamp(this.scale * factor, this.minScale, this.maxScale);
+    const actual = newScale / this.scale;
+    if (actual === 1) return;
 
-        // Same math as canvas: keep mouse‑anchored point stable in screen space
-        this.offsetX = screenX - (screenX - this.offsetX) * actual;
-        this.offsetY = screenY - (screenY - this.offsetY) * actual;
+    this.offsetX = screenX - (screenX - this.offsetX) * actual;
+    this.offsetY = screenY - (screenY - this.offsetY) * actual;
 
-        this.scale = newScale;
-    },
+    this.scale = newScale;
+  },
 
-    zoomAtCenter(factor: number) {
-        if (!this.viewport) return;
-        const rect = this.viewport.getBoundingClientRect();
-        this.zoomAt(rect.width / 2, rect.height / 2, factor);
-    },
+  zoomAtCenter(factor: number) {
+    if (!this.viewport) return;
+    const rect = this.viewport.getBoundingClientRect();
+    this.zoomAt(rect.width / 2, rect.height / 2, factor);
+  },
 
-    shuffleDeck() {
-      if (this.alpine) {
-        const newArray = [...this.alpine.store('shuffledCards')];  // Create copy to preserve original
+  shuffleDeck() {
+    const newArray = [...(Alpine.store('shuffledCards') as TarotCard[])];
 
-        for (let i = newArray.length - 1; i > 0; --i) {
-          const j = this.cryptoRandomInt(newArray.length);
-          [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-        }
+    for (let i = newArray.length - 1; i > 0; --i) {
+      const j = this.cryptoRandomInt(newArray.length);
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
 
-        this.alpine.store('shuffledCards', newArray);
+    Alpine.store('shuffledCards', newArray);
 
-        this.showShuffledConfirmation = true;
-        setTimeout(() => { this.showShuffledConfirmation = false; }, 3000);
-      }
-    },
+    this.showShuffledConfirmation = true;
+    setTimeout(() => { this.showShuffledConfirmation = false; }, 3000);
+  },
 
-    addCardToCanvas(card: TarotCard): void {
-      const draggableCard: DraggableCard = {
-        card,
-        id: this.generateCardId(),
-        // Place card at a random position within the visible viewport (content-space bounds)
-        x: (() => {
-          const cardWidth = 150;   // Assumes card width in px (matches <img> CSS)
-          const vw = this.viewport!.getBoundingClientRect().width;
-          // Content-space visible range: viewport window maps to [-offsetX/scale, (vw - offsetX)/scale]
-          const visibleMinX = -this.offsetX / this.scale;
-          const visibleMaxX = (vw - this.offsetX) / this.scale - cardWidth;
-          const rangeX = Math.max(0, visibleMaxX - visibleMinX);
-          return visibleMinX + Math.random() * rangeX;
-        })(),
-        y: (() => {
-          const cardHeight = 231;
-          const vh = this.viewport!.getBoundingClientRect().height;
-          const visibleMinY = -this.offsetY / this.scale;
-          const visibleMaxY = (vh - this.offsetY) / this.scale - cardHeight;
-          const rangeY = Math.max(0, visibleMaxY - visibleMinY);
-          return visibleMinY + Math.random() * rangeY;
-        })(),
-        rotation: 0,
-        zIndex: this.maxZIndex + 1,
-        opacity: 1,
-        cursor: 'grab',
-        display: 'block'
-      };
-      
-      this.draggableCards = [...this.draggableCards, draggableCard];
-      this.maxZIndex += 1;
-    },
+  addCardToCanvas(card: TarotCard): void {
+    const draggableCard: DraggableCard = {
+      card,
+      id: this.generateCardId(),
+      x: (() => {
+        const cardWidth = 150;
+        const vw = this.viewport!.getBoundingClientRect().width;
+        const visibleMinX = -this.offsetX / this.scale;
+        const visibleMaxX = (vw - this.offsetX) / this.scale - cardWidth;
+        const rangeX = Math.max(0, visibleMaxX - visibleMinX);
+        return visibleMinX + Math.random() * rangeX;
+      })(),
+      y: (() => {
+        const cardHeight = 231;
+        const vh = this.viewport!.getBoundingClientRect().height;
+        const visibleMinY = -this.offsetY / this.scale;
+        const visibleMaxY = (vh - this.offsetY) / this.scale - cardHeight;
+        const rangeY = Math.max(0, visibleMaxY - visibleMinY);
+        return visibleMinY + Math.random() * rangeY;
+      })(),
+      rotation: 0,
+      zIndex: this.maxZIndex + 1,
+      opacity: 1,
+      cursor: 'grab',
+      display: 'block'
+    };
 
-    generateCardId(): string {
-      return `card-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-    },
+    this.draggableCards = [...this.draggableCards, draggableCard];
+    this.maxZIndex += 1;
+  },
 
-    cryptoRandomInt(len: number): number {
-      // 1. Get a random 32-bit unsigned integer.
-      const buf = new Uint32Array(1);
-      crypto.getRandomValues(buf); // cryptographically strong random 32-bit value [0, 2^32 - 1][web:22]
+  generateCardId(): string {
+    return `card-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  },
 
-      // 2. Convert to a fraction in [0, 1).
-      const fraction = buf[0] / (0xFFFFFFFF + 1); // 0xFFFFFFFF = 2^32 - 1[web:21]
+  cryptoRandomInt(len: number): number {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const fraction = buf[0] / (0xFFFFFFFF + 1);
+    const result = Math.floor(fraction * len);
+    return result;
+  },
 
-      // 3. Scale to [0, len) and floor to get integer 0–(len-1).
-      const result = Math.floor(fraction * len);
+  drawMultipleCards(num: number): Set<number> | undefined {
+    if (num > 10 || num < 1) { return; }
 
-      return result; // integer from 0 to len-1 inclusive
-    },
+    const draws = new Set<number>();
+    const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
 
-    drawMultipleCards(num: number): Set<number> | undefined {
-      if (num > 10 || num < 1) { return; }
+    while (draws.size < num) {
+      const randomNum = this.cryptoRandomInt(shuffledCards.length);
+      if (!draws.has(randomNum)) { draws.add(randomNum); }
+    }
 
-      const draws = new Set<number>();
-      const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
+    return draws;
+  },
 
-      while (draws.size < num) {
-        const randomNum = this.cryptoRandomInt(shuffledCards.length);
-        if (!draws.has(randomNum)) { draws.add(randomNum); }
-      }
-      
-      return draws;
-    },
+  onMouseDown(event: MouseEvent) {
+    if (event.target === this.viewport || event.target === this.content || event.target === this.emptyCanvasMessage) {
+      this.isPanning = true;
+      this.panStartX = event.clientX - this.offsetX;
+      this.panStartY = event.clientY - this.offsetY;
+      this.viewport!.style.cursor = "grabbing";
+      return;
+    }
 
-    compSingleDraw(store: AlpineStore, data: AlpineData, refs: AlpineRefs): void {
-      data.singleDrawNum = this.cryptoRandomInt(store.cards.length);
+    const target = event.target as HTMLElement;
+    const cardId = target.id;
+    if (!cardId || !this.draggableCards.some(c => c.id === cardId)) return;
+    this.draggingCard = target;
 
-      // Set the image source and alt text to the current single draw card
-      const drawnCard = store.shuffledCards[data.singleDrawNum];
-      if (drawnCard) {
-        refs.cardImage.src = drawnCard.img;
-        refs.cardImage.alt = drawnCard.title;
-      }
-    },
+    const card = this.draggableCards.find(c => c.id === cardId)!;
+    const rect = this.dragContainer!.getBoundingClientRect();
+    const startDropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
+    const startDropY = event.clientY - rect.top - this.dragContainer!.clientTop;
+    this.dragStart = {
+      startCardX: card.x,
+      startCardY: card.y,
+      startDropX,
+      startDropY,
+    };
 
-    onMouseDown(event: MouseEvent) {
-      if (event.target === this.viewport || event.target === this.content || event.target === this.emptyCanvasMessage) {
-        this.isPanning = true;
-        this.panStartX = event.clientX - this.offsetX;
-        this.panStartY = event.clientY - this.offsetY;
-        this.viewport!.style.cursor = "grabbing";
-        return;
-      }
+    this.maxZIndex += 1;
+    this.updateItem(this.draggingCard.id, { zIndex: this.maxZIndex, cursor: 'grabbing' });
+  },
 
-      const target = event.target as HTMLElement;
-      const cardId = target.id;
-      if (!cardId || !this.draggableCards.some(c => c.id === cardId)) return;
-      this.draggingCard = target;
+  onMouseMove(e: MouseEvent) {
+    if (this.isPanning) {
+      this.offsetX = e.clientX - this.panStartX;
+      this.offsetY = e.clientY - this.panStartY;
+      return;
+    }
 
-      const card = this.draggableCards.find(c => c.id === cardId)!;
-      const rect = this.dragContainer!.getBoundingClientRect();
-      const startDropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
-      const startDropY = event.clientY - rect.top - this.dragContainer!.clientTop;
-      this.dragStart = {
-        startCardX: card.x,
-        startCardY: card.y,
-        startDropX,
-        startDropY,
-      };
+    if (!this.draggingCard || !this.dragStart) return;
 
-      this.maxZIndex += 1;
-      this.updateItem(this.draggingCard.id, { zIndex: this.maxZIndex, cursor: 'grabbing' });
-    },
+    const rect = this.dragContainer!.getBoundingClientRect();
+    const dropX = e.clientX - rect.left - this.dragContainer!.clientLeft;
+    const dropY = e.clientY - rect.top - this.dragContainer!.clientTop;
+    const x = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
+    const y = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
 
-    onMouseMove(e: MouseEvent) {
-      if (this.isPanning) {
-        this.offsetX = e.clientX - this.panStartX;
-        this.offsetY = e.clientY - this.panStartY;
-        return;
-      }
+    this.updateItem(this.draggingCard.id, { x, y });
+  },
 
-      if (!this.draggingCard || !this.dragStart) return;
+  onMouseUp(event: MouseEvent) {
+    event.preventDefault();
 
-      const rect = this.dragContainer!.getBoundingClientRect();
-      const dropX = e.clientX - rect.left - this.dragContainer!.clientLeft;
-      const dropY = e.clientY - rect.top - this.dragContainer!.clientTop;
-      // Move card by mouse delta in inner space so the same point stays under the cursor
-      const x = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
-      const y = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
+    this.isPanning = false;
+    if (this.viewport) this.viewport.style.cursor = "grab";
 
-      this.updateItem(this.draggingCard.id, { x, y });
-    },
+    if (!this.draggingCard || !this.dragStart) return;
 
-    onMouseUp(event: MouseEvent) {
-      event.preventDefault();
+    const rect = this.dragContainer!.getBoundingClientRect();
+    const dropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
+    const dropY = event.clientY - rect.top - this.dragContainer!.clientTop;
+    const x = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
+    const y = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
 
-      this.isPanning = false;
-      if (this.viewport) this.viewport.style.cursor = "grab";
+    this.updateItem(this.draggingCard.id, { x, y, display: 'block', cursor: 'grab' });
 
-      if (!this.draggingCard || !this.dragStart) return;
+    this.dragStart = null;
+    this.draggingCard = null;
+  },
 
-      const rect = this.dragContainer!.getBoundingClientRect();
-      const dropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
-      const dropY = event.clientY - rect.top - this.dragContainer!.clientTop;
-      const x = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
-      const y = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
+  clearCanvas() {
+    this.draggableCards = [];
+    this.maxZIndex = 0;
+    this.draggingCard = null;
+    this.dragStart = null;
+    this.scale = 1;
 
-      this.updateItem(this.draggingCard.id, { x, y, display: 'block', cursor: 'grab' });
+    const viewportRect = this.viewport!.getBoundingClientRect();
+    const contentW = this.content!.offsetWidth;
+    const contentH = this.content!.offsetHeight;
+    this.offsetX = viewportRect.width / 2 - contentW / 2;
+    this.offsetY = viewportRect.height / 2 - contentH / 2;
+  },
 
-      this.dragStart = null;
-      this.draggingCard = null;
-    },    
+  updateItem(id: string, newProps: Partial<DraggableCard>) {
+    const index = this.draggableCards.findIndex(i => i.id === id)
+    if (index === -1) return
 
-    clearCanvas() {
-      this.draggableCards = [];
-      this.maxZIndex = 0;
-      this.draggingCard = null;
-      this.dragStart = null;
-      this.scale = 1;
+    this.draggableCards[index] = {
+      ...this.draggableCards[index],
+      ...newProps,
+    }
+  },
 
-      const viewportRect = this.viewport!.getBoundingClientRect();
-      const contentW = this.content!.offsetWidth;
-      const contentH = this.content!.offsetHeight;
-      this.offsetX = viewportRect.width / 2 - contentW / 2;
-      this.offsetY = viewportRect.height / 2 - contentH / 2;
-    },
-
-    // Triggers Alpine reactivity for the draggable card
-    updateItem(id: string, newProps: Partial<DraggableCard>) {
-      const index = this.draggableCards.findIndex(i => i.id === id)
-      if (index === -1) return
-
-      // Create a new object, keep the same index
-      this.draggableCards[index] = {
-        ...this.draggableCards[index],
-        ...newProps,
-      }
-    },
-
-    clamp(v: number, min: number, max: number) {
-      return Math.max(min, Math.min(max, v));
-    },
-  };
-  
-  return component;
-};
-
-(window as any).canvasComponent = canvasComponent;
+  clamp(v: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, v));
+  },
+}))
