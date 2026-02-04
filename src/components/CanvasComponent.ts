@@ -22,6 +22,8 @@ Alpine.data('canvasComponent', () => ({
   content: null as HTMLDivElement | null,
   emptyCanvasMessage: null as HTMLDivElement | null,
 
+  contextMenu: { open: false, x: 0, y: 0, cardId: null as string | null },
+
   cards: [
     { title: 'The Fool', num: 0, img: '/cards/m00.jpg' },
     { title: 'The Magician', num: 1, img: '/cards/m01.jpg' },
@@ -325,6 +327,31 @@ Alpine.data('canvasComponent', () => ({
       ...this.draggableCards[index],
       ...newProps,
     }
+  },
+
+  rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise') {
+    const card = this.draggableCards.find(c => c.id === cardId);
+    if (!card) return;
+    const delta = direction === 'clockwise' ? 90 : -90;
+    this.updateItem(cardId, { rotation: card.rotation + delta });
+  },
+
+  onContextMenu(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    const cardId = target.id;
+    if (!cardId || !this.draggableCards.some(c => c.id === cardId)) return;
+    event.preventDefault();
+    this.contextMenu = {
+      open: true,
+      x: event.clientX,
+      y: event.clientY,
+      cardId,
+    };
+  },
+
+  closeContextMenu() {
+    this.contextMenu.open = false;
+    this.contextMenu.cardId = null;
   },
 
   clamp(v: number, min: number, max: number) {

@@ -18,9 +18,10 @@
           :style="contentStyle">
           <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
             <div 
-              class="absolute cursor-grab select-none will-change-transform"
+              class="absolute cursor-grab select-none will-change-transform origin-center"
               :id="draggableCard.id"
-              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display};`">
+              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
+              @contextmenu.prevent="onContextMenu($event)">
               <img 
                 :src="draggableCard.card.img" 
                 :alt="draggableCard.card.title"
@@ -36,6 +37,26 @@
             <p>No cards on canvas. Add cards using the buttons above.</p>
           </div>
         </div>
+      </div>
+
+      <div
+        x-show="contextMenu.open"
+        x-transition
+        @click.outside="closeContextMenu()"
+        class="fixed z-[10000] min-w-[180px] py-1 bg-gray-800 border border-gray-600 rounded shadow-lg"
+        :style="`left: ${contextMenu.x}px; top: ${contextMenu.y}px;`">
+        <button
+          type="button"
+          class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+          @click="rotateCard(contextMenu.cardId, 'clockwise'); closeContextMenu()">
+          Rotate clockwise
+        </button>
+        <button
+          type="button"
+          class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+          @click="rotateCard(contextMenu.cardId, 'counter-clockwise'); closeContextMenu()">
+          Rotate counter-clockwise
+        </button>
       </div>
       
       <div class="absolute top-1 right-2 z-[9999] flex items-center gap-1">
