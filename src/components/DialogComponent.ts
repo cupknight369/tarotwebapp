@@ -1,5 +1,3 @@
-/// <reference path="../../types/alpine.d.ts" />
-
 import Alpine from 'alpinejs'
 
 const DEFAULT_DIALOG_STATE: DialogStoreState = {

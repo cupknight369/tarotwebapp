@@ -1,16 +1,6 @@
-// Type definitions for Alpine.js global
+// Custom app types and Alpine store augmentation (Alpine core from @types/alpinejs)
+
 declare global {
-  interface Window {
-    Alpine: Alpine;
-  }
-  
-  var Alpine: Alpine;
-  
-  interface Alpine {
-    store(name: string, data?: any): any;
-    $refs: AlpineRefs;
-  }
-  
   interface AlpineStore {
     cards: TarotCard[];
     shuffledCards: TarotCard[];
@@ -32,7 +22,7 @@ declare global {
     inputDefault?: string;
     onSubmit?: (value: number) => void;
   }
-  
+
   interface AlpineData {
     num: number;
     singleDrawNum: number | null;
@@ -40,20 +30,20 @@ declare global {
     showShuffledConfirmation?: boolean;
     specificIndexCard?: TarotCard | null;
   }
-  
+
   interface AlpineRefs {
     cardImage: HTMLImageElement;
     viewport: HTMLDivElement;
     content: HTMLDivElement;
     emptyCanvasMessage: HTMLDivElement;
   }
-  
+
   interface TarotCard {
     title: string;
     num: number;
     img: string;
   }
-  
+
   interface DraggableCard {
     card: TarotCard;
     id: string;
@@ -64,6 +54,13 @@ declare global {
     opacity: number;
     cursor: string;
     display: string;
+  }
+}
+
+declare namespace Alpine {
+  interface Stores {
+    dialog: DialogStoreState;
+    shuffledCards: TarotCard[];
   }
 }
 
