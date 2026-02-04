@@ -441,10 +441,10 @@ Alpine.data('canvasComponent', () => ({
     }
   },
 
-  rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise') {
+  rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180') {
     const card = this.draggableCards.find(c => c.id === cardId);
     if (!card) return;
-    const delta = direction === 'clockwise' ? 90 : -90;
+    const delta = direction === 'clockwise' ? 90 : direction === 'counter-clockwise' ? -90 : 180;
     this.updateItem(cardId, { rotation: card.rotation + delta });
   },
 
