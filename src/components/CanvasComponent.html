@@ -23,7 +23,7 @@
               :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
               @contextmenu.prevent="onContextMenu($event)">
               <img 
-                :src="draggableCard.card.img" 
+                :src="getCardImg(draggableCard.card, $store.settings.censored)" 
                 :alt="draggableCard.card.title"
                 class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
                 style="max-width: 150px; width: 150px;"/>
@@ -114,5 +114,10 @@
           class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
           aria-label="Clear canvas"
           @click="Alpine.store('dialog', { open: true, type: 'confirm', title: 'Are you sure you want to clear the canvas?', onConfirm: () => clearCanvas(), onCancel: () => {} })">🧹</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Settings"
+          @click="$store.settings.open = true">⚙</button>
       </div>
     </div>

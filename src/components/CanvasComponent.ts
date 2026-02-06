@@ -36,22 +36,22 @@ Alpine.data('canvasComponent', () => ({
     { title: 'The Empress', num: 3, img: '/cards/m03.jpg' },
     { title: 'The Emperor', num: 4, img: '/cards/m04.jpg' },
     { title: 'The Hierophant', num: 5, img: '/cards/m05.jpg' },
-    { title: 'The Lovers', num: 6, img: '/cards/m06.jpg' },
-    { title: 'The Chariot', num: 7, img: '/cards/m07.jpg' },
+    { title: 'The Lovers', num: 6, img: '/cards/m06.jpg', censoredImg: '/cards/m06c.jpg' },
+    { title: 'The Chariot', num: 7, img: '/cards/m07.jpg', censoredImg: '/cards/m07c.jpg' },
     { title: 'The Strength', num: 8, img: '/cards/m08.jpg' },
     { title: 'The Hermit', num: 9, img: '/cards/m09.jpg' },
-    { title: 'The Wheel Of Fortune', num: 10, img: '/cards/m10.jpg' },
+    { title: 'The Wheel Of Fortune', num: 10, img: '/cards/m10.jpg', censoredImg: '/cards/m10c.jpg' },
     { title: 'Justice', num: 11, img: '/cards/m11.jpg' },
     { title: 'The Hangman', num: 12, img: '/cards/m12.jpg' },
     { title: 'Death', num: 13, img: '/cards/m13.jpg' },
     { title: 'Temperance', num: 14, img: '/cards/m14.jpg' },
-    { title: 'The Devil', num: 15, img: '/cards/m15.jpg' },
+    { title: 'The Devil', num: 15, img: '/cards/m15.jpg', censoredImg: '/cards/m15c.jpg' },
     { title: 'The Tower', num: 16, img: '/cards/m16.jpg' },
-    { title: 'The Star', num: 17, img: '/cards/m17.jpg' },
+    { title: 'The Star', num: 17, img: '/cards/m17.jpg', censoredImg: '/cards/m17c.jpg' },
     { title: 'The Moon', num: 18, img: '/cards/m18.jpg' },
-    { title: 'The Sun', num: 19, img: '/cards/m19.jpg' },
-    { title: 'Judgement', num: 20, img: '/cards/m20.jpg' },
-    { title: 'The World', num: 21, img: '/cards/m21.jpg' },
+    { title: 'The Sun', num: 19, img: '/cards/m19.jpg', censoredImg: '/cards/m19c.jpg' },
+    { title: 'Judgement', num: 20, img: '/cards/m20.jpg', censoredImg: '/cards/m20c.jpg' },
+    { title: 'The World', num: 21, img: '/cards/m21.jpg', censoredImg: '/cards/m21c.jpg' },
     { title: 'Ace Of Wands', num: 22, img: '/cards/w01.jpg' },
     { title: 'Two Of Wands', num: 23, img: '/cards/w02.jpg' },
     { title: 'Three Of Wands', num: 24, img: '/cards/w03.jpg' },
@@ -109,6 +109,11 @@ Alpine.data('canvasComponent', () => ({
     { title: 'Queen Of Pentacles', num: 76, img: '/cards/p13.jpg' },
     { title: 'King Of Pentacles', num: 77, img: '/cards/p14.jpg' },
   ] as TarotCard[],
+
+  getCardImg(card: TarotCard, censored: boolean): string {
+    if (censored && card.censoredImg) return card.censoredImg;
+    return card.img;
+  },
 
   get contentStyle() {
     return `

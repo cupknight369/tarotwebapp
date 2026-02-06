@@ -42,6 +42,7 @@ declare global {
     title: string;
     num: number;
     img: string;
+    censoredImg?: string | null;
   }
 
   interface DraggableCard {
@@ -55,11 +56,18 @@ declare global {
     cursor: string;
     display: string;
   }
+
+  /** State for the global settings store (Alpine.store('settings')). */
+  interface SettingsStoreState {
+    open: boolean;
+    censored: boolean;
+  }
 }
 
 declare namespace Alpine {
   interface Stores {
     dialog: DialogStoreState;
+    settings: SettingsStoreState;
     shuffledCards: TarotCard[];
   }
 }

@@ -1,0 +1,28 @@
+    <!-- Settings modal component -->
+    <div 
+      x-data="settingsComponent"
+      x-show="$store.settings.open"
+      x-transition
+      class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title">
+      <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4">
+        <button 
+          type="button"
+          class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          aria-label="Close"
+          @click="$store.settings.open = false">
+          <span class="text-xl leading-none">×</span>
+        </button>
+
+        <p id="settings-title" class="text-xl font-bold text-gray-200 pr-8 mb-6">App Settings</p>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input 
+            type="checkbox"
+            x-model="$store.settings.censored"
+            class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer">
+          <span class="text-gray-200">Censored</span>
+        </label>
+      </div>
+    </div>

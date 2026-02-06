@@ -3,6 +3,7 @@ import './input.css'
 
 import './components/CanvasComponent'
 import './components/DialogComponent'
+import './components/SettingsComponent'
 
 // Global Alpine setup
 declare global {
