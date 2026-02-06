@@ -18,7 +18,7 @@
           :style="contentStyle">
           <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
             <div 
-              class="absolute cursor-grab select-none will-change-transform origin-center"
+              class="absolute cursor-grab select-none will-change-transform origin-center hover:border-5 hover:border-purple-600"
               :id="draggableCard.id"
               :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
               @contextmenu.prevent="onContextMenu($event)">
