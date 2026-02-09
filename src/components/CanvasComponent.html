@@ -72,6 +72,12 @@
           @click="rotateCard(contextMenu.cardId, 'counter-clockwise'); closeContextMenu()">
           Rotate 90 counter-clockwise
         </button>
+        <button
+          type="button"
+          class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+          @click="deleteCard(contextMenu.cardId); closeContextMenu()">
+          Delete card
+        </button>
       </div>
       
       <div class="absolute top-1 right-2 z-[9999] flex items-center gap-1">
