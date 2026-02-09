@@ -450,6 +450,11 @@ Alpine.data('canvasComponent', () => ({
     this.draggableCards = this.draggableCards.filter(c => c.id !== cardId);
   },
 
+  deleteSelectedCards() {
+    this.draggableCards = this.draggableCards.filter(c => !this.selectedCardIds.includes(c.id));
+    this.selectedCardIds = [];
+  },
+
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180') {
     const card = this.draggableCards.find(c => c.id === cardId);
     if (!card) return;
