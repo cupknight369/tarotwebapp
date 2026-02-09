@@ -282,7 +282,34 @@ Alpine.data('canvasComponent', () => ({
     return draws;
   },
 
+  onMouseWheelClick(event: MouseEvent) {
+    if (event.target !== this.viewport 
+        && event.target !== this.content 
+        && event.target !== this.emptyCanvasMessage) 
+    { return; }
+
+    this.contextMenu = {
+      open: true,
+      x: event.clientX,
+      y: event.clientY,
+      cardId: null,
+    };
+  },
+
+  drawCardAt(x: number, y: number) {
+    // Convert the given screen coordinates (x, y) to the content (canvas) coordinates
+    const { x: contentX, y: contentY } = this.screenToContent(x, y);
+    this.addCardToCanvas((Alpine.store('shuffledCards') as TarotCard[])[this.cryptoRandomInt((Alpine.store('shuffledCards') as TarotCard[]).length)]);
+    // Place top-left corner of card at mouse pointer position in canvas coordinates
+    this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, { x: contentX, y: contentY });
+  },
+
   onMouseDown(event: MouseEvent) {
+    if (event.button === 1) {
+      this.onMouseWheelClick(event);
+      return;
+    }
+
     if (event.button !== 0) return;
 
     const target = event.target as HTMLElement;
