@@ -209,21 +209,26 @@ Alpine.data('canvasComponent', () => ({
 
   onTouchStart(e: TouchEvent) {
     if (!this.viewport) return;
+
     if (e.touches.length === 2) {
       if (this.longPressTimerId) {
         clearTimeout(this.longPressTimerId);
         this.longPressTimerId = null;
       }
+
       this.longPressActivated = false;
       this.activeTouchId = null;
       const t1 = e.touches[0];
       const t2 = e.touches[1];
       this.pinchStartDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       this.pinchStartScale = this.scale;
+
       return;
     }
+
     if (e.touches.length === 1) {
       e.preventDefault();
+
       const touch = e.touches[0];
       this.activeTouchId = touch.identifier;
       const target = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -231,6 +236,7 @@ Alpine.data('canvasComponent', () => ({
       this.touchGestureStarted = false;
       this.touchMovedAfterLongPress = false;
       this.longPressActivated = false;
+
       if (this.longPressTimerId) clearTimeout(this.longPressTimerId);
       this.longPressTimerId = setTimeout(() => {
         this.longPressTimerId = null;
@@ -241,11 +247,13 @@ Alpine.data('canvasComponent', () => ({
 
   onTouchMove(e: TouchEvent) {
     if (!this.viewport) return;
+
     if (e.touches.length === 2) {
       if (this.longPressTimerId) {
         clearTimeout(this.longPressTimerId);
         this.longPressTimerId = null;
       }
+
       if (this.pinchStartDistance <= 0) return;
       const t1 = e.touches[0];
       const t2 = e.touches[1];
@@ -255,21 +263,27 @@ Alpine.data('canvasComponent', () => ({
       const factor = dist / this.pinchStartDistance;
       const newScale = this.clamp(this.pinchStartScale * factor, this.minScale, this.maxScale);
       const actual = newScale / this.scale;
+
       if (actual !== 1) {
         this.zoomAt(centerX, centerY, actual);
       }
+
       e.preventDefault();
       return;
     }
+
     if (e.touches.length === 1) {
       const touch = this.activeTouchId !== null ? this.getTouchById(e, this.activeTouchId) : null;
       if (!touch || !this.touchStartPos) return;
+
       if (this.longPressTimerId) {
         clearTimeout(this.longPressTimerId);
         this.longPressTimerId = null;
       }
+
       const pos = this.touchStartPos;
       const moveSyn = this.touchToMouseLike(touch);
+
       if (this.longPressActivated) {
         if (!this.touchMovedAfterLongPress) {
           const downSyn: MouseLikeEvent = { ...this.touchToMouseLike(touch, pos.target, true), clientX: pos.clientX, clientY: pos.clientY };
@@ -283,6 +297,7 @@ Alpine.data('canvasComponent', () => ({
         e.preventDefault();
         return;
       }
+
       if (!this.touchGestureStarted) {
         const downSyn: MouseLikeEvent = { ...this.touchToMouseLike(touch, pos.target), clientX: pos.clientX, clientY: pos.clientY };
         this.onMouseDown(downSyn);
@@ -291,6 +306,7 @@ Alpine.data('canvasComponent', () => ({
       } else {
         this.onMouseMove(moveSyn);
       }
+
       e.preventDefault();
     }
   },
@@ -844,15 +860,28 @@ Alpine.data('canvasComponent', () => ({
       return;
     }
     const cardId = target.id;
-    if (!cardId || !this.draggableCards.some(c => c.id === cardId)) return;
-    if (event.preventDefault) event.preventDefault();
-    this.contextMenu = {
-      open: true,
-      x: event.clientX,
-      y: event.clientY,
-      cardId,
-      textId: null,
-    };
+    if (cardId && this.draggableCards.some(c => c.id === cardId)) {
+      if (event.preventDefault) event.preventDefault();
+      this.contextMenu = {
+        open: true,
+        x: event.clientX,
+        y: event.clientY,
+        cardId,
+        textId: null,
+      };
+      return;
+    }
+    const isOnCanvas = target === this.viewport || target === this.content || target === this.emptyCanvasMessage;
+    if (isOnCanvas) {
+      if (event.preventDefault) event.preventDefault();
+      this.contextMenu = {
+        open: true,
+        x: event.clientX,
+        y: event.clientY,
+        cardId: null,
+        textId: null,
+      };
+    }
   },
 
   closeContextMenu() {
