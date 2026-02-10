@@ -34,7 +34,7 @@ Alpine.data('canvasComponent', () => ({
   draggingTextId: null as string | null,
   textDragStart: null as { startX: number; startY: number; startDropX: number; startDropY: number } | null,
   editingTextId: null as string | null,
-  pendingAnchor: null as { textId: string; cardId: string } | null,
+  pendingAnchor: null as { textId: string; cardId: string; screenX: number; screenY: number } | null,
 
   CARD_WIDTH: 150,
   CARD_HEIGHT: 231,
@@ -530,13 +530,13 @@ Alpine.data('canvasComponent', () => ({
       this.textDragStart = null;
 
       const label = this.textLabels.find(l => l.id === textId);
-      if (label) {
+      if (label && !label.anchorCardId) {
         const pos = this.getTextLabelPosition(label);
         const textBox = { left: pos.x, top: pos.y, width: 100, height: 30 };
         for (const card of this.draggableCards) {
           const cardRect = { left: card.x, top: card.y, width: this.CARD_WIDTH, height: this.CARD_HEIGHT };
           if (this.boxesOverlap(textBox, cardRect)) {
-            this.pendingAnchor = { textId, cardId: card.id };
+            this.pendingAnchor = { textId, cardId: card.id, screenX: event.clientX, screenY: event.clientY };
             break;
           }
         }
@@ -624,7 +624,6 @@ Alpine.data('canvasComponent', () => ({
     const label = this.textLabels.find(l => l.id === textId)!;
     const pos = this.getTextLabelPosition(label);
     this.updateTextLabel(textId, { x: pos.x, y: pos.y });
-    this.pendingAnchor = null;
   },
 
   cancelPendingAnchor() {

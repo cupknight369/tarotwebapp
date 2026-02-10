@@ -149,7 +149,7 @@
         x-transition
         @click.outside="cancelPendingAnchor()"
         class="fixed z-[10001] min-w-[160px] py-1 bg-gray-800 border border-gray-600 rounded shadow-lg"
-        style="left: 50%; top: 50%; transform: translate(-50%, -50%);">
+        :style="pendingAnchor ? `left: ${pendingAnchor.screenX}px; top: ${pendingAnchor.screenY}px;` : `display: none;`">
         <p class="px-4 py-2 text-xs text-gray-400 border-b border-gray-600">Anchor text to card</p>
         <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'above'); cancelPendingAnchor()">Above</button>
         <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'below'); cancelPendingAnchor()">Below</button>
