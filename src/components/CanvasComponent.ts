@@ -1,5 +1,14 @@
 import Alpine from 'alpinejs'
 
+interface MouseLikeEvent {
+  clientX: number;
+  clientY: number;
+  target: EventTarget | null;
+  button?: number;
+  ctrlKey?: boolean;
+  preventDefault?: () => void;
+}
+
 Alpine.data('canvasComponent', () => ({
   draggableCards: [] as DraggableCard[],
   maxZIndex: 0,
@@ -35,6 +44,15 @@ Alpine.data('canvasComponent', () => ({
   textDragStart: null as { startX: number; startY: number; startDropX: number; startDropY: number } | null,
   editingTextId: null as string | null,
   pendingAnchor: null as { textId: string; cardId: string; screenX: number; screenY: number } | null,
+
+  activeTouchId: null as number | null,
+  touchStartPos: null as { clientX: number; clientY: number; target: EventTarget | null } | null,
+  longPressTimerId: null as ReturnType<typeof setTimeout> | null,
+  longPressActivated: false,
+  touchMovedAfterLongPress: false,
+  touchGestureStarted: false,
+  pinchStartDistance: 0,
+  pinchStartScale: 1,
 
   CARD_WIDTH: 150,
   CARD_HEIGHT: 231,
@@ -170,6 +188,141 @@ Alpine.data('canvasComponent', () => ({
     this.selectionBoxStyle = `left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;`;
   },
 
+  touchToMouseLike(touch: Touch, target?: EventTarget | null, ctrlKey = false): MouseLikeEvent {
+    return {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      target: target ?? document.elementFromPoint(touch.clientX, touch.clientY),
+      button: 0,
+      ctrlKey,
+      preventDefault: () => {},
+    };
+  },
+
+  getTouchById(ev: TouchEvent, id: number): Touch | null {
+    const fromList = (list: TouchList) => {
+      for (let i = 0; i < list.length; i++) if (list[i].identifier === id) return list[i];
+      return null;
+    };
+    return fromList(ev.touches) ?? fromList(ev.changedTouches) ?? null;
+  },
+
+  onTouchStart(e: TouchEvent) {
+    if (!this.viewport) return;
+    if (e.touches.length === 2) {
+      if (this.longPressTimerId) {
+        clearTimeout(this.longPressTimerId);
+        this.longPressTimerId = null;
+      }
+      this.longPressActivated = false;
+      this.activeTouchId = null;
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      this.pinchStartDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      this.pinchStartScale = this.scale;
+      return;
+    }
+    if (e.touches.length === 1) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.activeTouchId = touch.identifier;
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      this.touchStartPos = { clientX: touch.clientX, clientY: touch.clientY, target };
+      this.touchGestureStarted = false;
+      this.touchMovedAfterLongPress = false;
+      this.longPressActivated = false;
+      if (this.longPressTimerId) clearTimeout(this.longPressTimerId);
+      this.longPressTimerId = setTimeout(() => {
+        this.longPressTimerId = null;
+        this.longPressActivated = true;
+      }, 500);
+    }
+  },
+
+  onTouchMove(e: TouchEvent) {
+    if (!this.viewport) return;
+    if (e.touches.length === 2) {
+      if (this.longPressTimerId) {
+        clearTimeout(this.longPressTimerId);
+        this.longPressTimerId = null;
+      }
+      if (this.pinchStartDistance <= 0) return;
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const centerX = (t1.clientX + t2.clientX) / 2;
+      const centerY = (t1.clientY + t2.clientY) / 2;
+      const factor = dist / this.pinchStartDistance;
+      const newScale = this.clamp(this.pinchStartScale * factor, this.minScale, this.maxScale);
+      const actual = newScale / this.scale;
+      if (actual !== 1) {
+        this.zoomAt(centerX, centerY, actual);
+      }
+      e.preventDefault();
+      return;
+    }
+    if (e.touches.length === 1) {
+      const touch = this.activeTouchId !== null ? this.getTouchById(e, this.activeTouchId) : null;
+      if (!touch || !this.touchStartPos) return;
+      if (this.longPressTimerId) {
+        clearTimeout(this.longPressTimerId);
+        this.longPressTimerId = null;
+      }
+      const pos = this.touchStartPos;
+      const moveSyn = this.touchToMouseLike(touch);
+      if (this.longPressActivated) {
+        if (!this.touchMovedAfterLongPress) {
+          const downSyn: MouseLikeEvent = { ...this.touchToMouseLike(touch, pos.target, true), clientX: pos.clientX, clientY: pos.clientY };
+          this.onMouseDown(downSyn);
+          this.onMouseMove(moveSyn);
+          this.touchMovedAfterLongPress = true;
+          this.touchGestureStarted = true;
+        } else {
+          this.onMouseMove(moveSyn);
+        }
+        e.preventDefault();
+        return;
+      }
+      if (!this.touchGestureStarted) {
+        const downSyn: MouseLikeEvent = { ...this.touchToMouseLike(touch, pos.target), clientX: pos.clientX, clientY: pos.clientY };
+        this.onMouseDown(downSyn);
+        this.onMouseMove(moveSyn);
+        this.touchGestureStarted = true;
+      } else {
+        this.onMouseMove(moveSyn);
+      }
+      e.preventDefault();
+    }
+  },
+
+  onTouchEnd(e: TouchEvent) {
+    if (!this.viewport) return;
+    if (e.touches.length < 2 && this.pinchStartDistance > 0) {
+      this.pinchStartDistance = 0;
+      this.pinchStartScale = 1;
+    }
+    const ended = Array.from(e.changedTouches).find(t => t.identifier === this.activeTouchId);
+    if (ended !== undefined) {
+      if (this.longPressActivated && !this.touchMovedAfterLongPress) {
+        this.clearDragState();
+        const pos = this.touchStartPos!;
+        const syn: MouseLikeEvent = { clientX: pos.clientX, clientY: pos.clientY, target: pos.target, preventDefault: () => {} };
+        this.onContextMenu(syn);
+      } else if (this.touchGestureStarted) {
+        this.onMouseUp(this.touchToMouseLike(ended));
+      }
+    }
+    this.activeTouchId = null;
+    this.touchStartPos = null;
+    this.longPressActivated = false;
+    this.touchMovedAfterLongPress = false;
+    this.touchGestureStarted = false;
+  },
+
+  onTouchCancel(e: TouchEvent) {
+    this.onTouchEnd(e);
+  },
+
   init() {
     Alpine.store('shuffledCards', this.cards);
     this.shuffleDeck();
@@ -185,6 +338,11 @@ Alpine.data('canvasComponent', () => ({
     const contentH = this.content!.offsetHeight;
     this.offsetX = viewportRect.width / 2 - contentW / 2;
     this.offsetY = viewportRect.height / 2 - contentH / 2;
+
+    this.viewport!.addEventListener('touchstart', (ev: TouchEvent) => this.onTouchStart(ev));
+    this.viewport!.addEventListener('touchmove', (ev: TouchEvent) => this.onTouchMove(ev), { passive: false });
+    this.viewport!.addEventListener('touchend', (ev: TouchEvent) => this.onTouchEnd(ev));
+    this.viewport!.addEventListener('touchcancel', (ev: TouchEvent) => this.onTouchCancel(ev));
   },
 
   onWheel(e: WheelEvent) {
@@ -353,7 +511,7 @@ Alpine.data('canvasComponent', () => ({
     return draws;
   },
 
-  onMouseWheelClick(event: MouseEvent) {
+  onMouseWheelClick(event: MouseLikeEvent) {
     if (event.target !== this.viewport 
         && event.target !== this.content 
         && event.target !== this.emptyCanvasMessage) 
@@ -376,7 +534,7 @@ Alpine.data('canvasComponent', () => ({
     this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, { x: contentX, y: contentY });
   },
 
-  onMouseDown(event: MouseEvent) {
+  onMouseDown(event: MouseLikeEvent) {
     if (event.button === 1) {
       this.onMouseWheelClick(event);
       return;
@@ -454,7 +612,7 @@ Alpine.data('canvasComponent', () => ({
     this.updateItem(this.draggingCard.id, { zIndex: this.maxZIndex, cursor: 'grabbing' });
   },
 
-  onMouseMove(e: MouseEvent) {
+  onMouseMove(e: MouseLikeEvent) {
     if (this.selectionBox) {
       const { x, y } = this.screenToContent(e.clientX, e.clientY);
       this.selectionBox = { ...this.selectionBox!, currentX: x, currentY: y };
@@ -496,8 +654,8 @@ Alpine.data('canvasComponent', () => ({
     }
   },
 
-  onMouseUp(event: MouseEvent) {
-    event.preventDefault();
+  onMouseUp(event: MouseLikeEvent) {
+    if (event.preventDefault) event.preventDefault();
 
     this.isPanning = false;
     if (this.viewport) this.viewport.style.cursor = "grab";
@@ -626,6 +784,18 @@ Alpine.data('canvasComponent', () => ({
     this.updateTextLabel(textId, { x: pos.x, y: pos.y });
   },
 
+  clearDragState() {
+    this.isPanning = false;
+    this.draggingCard = null;
+    this.dragStart = null;
+    this.draggingTextId = null;
+    this.textDragStart = null;
+    this.selectionBox = null;
+    this.selectionBoxStyle = '';
+    this.groupDragOffsets = null;
+    if (this.viewport) this.viewport.style.cursor = 'grab';
+  },
+
   cancelPendingAnchor() {
     this.pendingAnchor = null;
   },
@@ -644,7 +814,7 @@ Alpine.data('canvasComponent', () => ({
 
   deleteSelectedCards() {
     this.draggableCards = this.draggableCards.filter(c => !this.selectedCardIds.includes(c.id));
-    const textLabels = this.textLabels.filter(l => this.selectedCardIds.includes(l.anchorCardId));
+    const textLabels = this.textLabels.filter(l => l.anchorCardId !== null && this.selectedCardIds.includes(l.anchorCardId));
     for (const textLabel of textLabels) {
       this.updateTextLabel(textLabel.id, { anchorCardId: null, anchorPosition: null });
     }
@@ -658,12 +828,12 @@ Alpine.data('canvasComponent', () => ({
     this.updateItem(cardId, { rotation: card.rotation + delta });
   },
 
-  onContextMenu(event: MouseEvent) {
+  onContextMenu(event: MouseLikeEvent) {
     const target = event.target as HTMLElement;
     const textEl = target.closest('[data-text-id]') as HTMLElement | null;
     const textId = textEl ? textEl.getAttribute('data-text-id') : null;
     if (textId && this.textLabels.some(l => l.id === textId)) {
-      event.preventDefault();
+      if (event.preventDefault) event.preventDefault();
       this.contextMenu = {
         open: true,
         x: event.clientX,
@@ -675,7 +845,7 @@ Alpine.data('canvasComponent', () => ({
     }
     const cardId = target.id;
     if (!cardId || !this.draggableCards.some(c => c.id === cardId)) return;
-    event.preventDefault();
+    if (event.preventDefault) event.preventDefault();
     this.contextMenu = {
       open: true,
       x: event.clientX,
