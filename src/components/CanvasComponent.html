@@ -33,6 +33,37 @@
               ></div>
             </div>
           </template>
+          <template x-for="label in textLabels" :key="label.id">
+            <div
+              :data-text-id="label.id"
+              class="absolute select-none will-change-transform origin-top-left cursor-grab hover:border-5 hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em]"
+              :style="getTextLabelStyle(label)"
+              @dblclick.stop="editingTextId = label.id"
+              @contextmenu.prevent="onContextMenu($event)">
+              <template x-if="editingTextId !== label.id">
+                <span x-text="label.text"></span>
+              </template>
+              <template x-if="editingTextId === label.id">
+                <div class="flex flex-col gap-1 bg-gray-800 border border-gray-600 rounded-lg p-2 shadow-lg">
+                  <input
+                    type="text"
+                    :value="label.text"
+                    @input="updateTextLabel(label.id, { text: $event.target.value })"
+                    @blur="commitEditTextLabel()"
+                    @keydown.enter="commitEditTextLabel()"
+                    class="px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full min-w-[200px]"
+                    :style="`font-size: ${label.fontSize}px; font-weight: ${label.fontWeight}; font-style: ${label.fontStyle}; text-decoration: ${label.textDecoration}; color: ${label.color};`">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <input type="number" :value="label.fontSize" @input="updateTextLabel(label.id, { fontSize: parseInt($event.target.value) || 16 })" min="8" max="72" class="w-14 px-2 py-1 rounded bg-gray-700 text-gray-200 border border-gray-600 text-sm">
+                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer" @click="updateTextLabel(label.id, { fontWeight: label.fontWeight === 700 ? 400 : 700 })" :class="{ 'bg-purple-600': label.fontWeight === 700 }" title="Bold">B</button>
+                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer italic" @click="updateTextLabel(label.id, { fontStyle: label.fontStyle === 'italic' ? 'normal' : 'italic' })" :class="{ 'bg-purple-600': label.fontStyle === 'italic' }" title="Italic">I</button>
+                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer underline" @click="updateTextLabel(label.id, { textDecoration: label.textDecoration === 'underline' ? 'none' : 'underline' })" :class="{ 'bg-purple-600': label.textDecoration === 'underline' }" title="Underline">U</button>
+                    <input type="color" :value="label.color" @input="updateTextLabel(label.id, { color: $event.target.value })" class="w-8 h-8 rounded border border-gray-600 cursor-pointer bg-gray-700">
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
           <div
             x-show="selectionBox"
             x-transition
@@ -89,14 +120,42 @@
             Delete selected cards
           </button>
         </div>
-        <div x-show="!contextMenu.cardId">
+        <div x-show="contextMenu.textId">
+          <button
+            type="button"
+            class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+            @click="deleteTextLabel(contextMenu.textId); closeContextMenu()">
+            Delete
+          </button>
+        </div>
+        <div x-show="!contextMenu.cardId && !contextMenu.textId">
           <button
             type="button"
             class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
             @click="drawCardAt($event.clientX, $event.clientY); closeContextMenu()">
             Draw card here
           </button>
+          <button
+            type="button"
+            class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+            @click="addTextAt(contextMenu.x, contextMenu.y); closeContextMenu()">
+            Add text
+          </button>
         </div>
+      </div>
+
+      <div
+        x-show="pendingAnchor"
+        x-transition
+        @click.outside="cancelPendingAnchor()"
+        class="fixed z-[10001] min-w-[160px] py-1 bg-gray-800 border border-gray-600 rounded shadow-lg"
+        style="left: 50%; top: 50%; transform: translate(-50%, -50%);">
+        <p class="px-4 py-2 text-xs text-gray-400 border-b border-gray-600">Anchor text to card</p>
+        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'above'); cancelPendingAnchor()">Above</button>
+        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'below'); cancelPendingAnchor()">Below</button>
+        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'left'); cancelPendingAnchor()">Left</button>
+        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'right'); cancelPendingAnchor()">Right</button>
+        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-400 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="cancelPendingAnchor()">Don't anchor</button>
       </div>
       
       <div class="absolute top-1 right-2 z-[9999] flex items-center gap-1">

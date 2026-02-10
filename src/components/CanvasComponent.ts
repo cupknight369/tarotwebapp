@@ -27,7 +27,19 @@ Alpine.data('canvasComponent', () => ({
   content: null as HTMLDivElement | null,
   emptyCanvasMessage: null as HTMLDivElement | null,
 
-  contextMenu: { open: false, x: 0, y: 0, cardId: null as string | null },
+  contextMenu: { open: false, x: 0, y: 0, cardId: null as string | null, textId: null as string | null },
+
+  textLabels: [] as TextLabel[],
+  maxTextZIndex: 0,
+  draggingTextId: null as string | null,
+  textDragStart: null as { startX: number; startY: number; startDropX: number; startDropY: number } | null,
+  editingTextId: null as string | null,
+  pendingAnchor: null as { textId: string; cardId: string } | null,
+
+  CARD_WIDTH: 150,
+  CARD_HEIGHT: 231,
+  TEXT_ANCHOR_GAP: 10,
+  TEXT_LABEL_DEFAULT_HEIGHT: 24,
 
   cards: [
     { title: 'The Fool', num: 0, img: '/cards/m00.jpg' },
@@ -260,6 +272,65 @@ Alpine.data('canvasComponent', () => ({
     return `card-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   },
 
+  generateTextId(): string {
+    return `text-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  },
+
+  addTextAt(screenX: number, screenY: number): void {
+    const { x, y } = this.screenToContent(screenX, screenY);
+    const label: TextLabel = {
+      id: this.generateTextId(),
+      text: 'Double Click To Edit This Label',
+      x,
+      y,
+      fontSize: 16,
+      fontWeight: 400,
+      fontStyle: 'normal',
+      textDecoration: 'none',
+      color: '#e5e7eb',
+      zIndex: this.maxTextZIndex + 1,
+      cursor: 'grab',
+      display: 'block',
+      anchorCardId: null,
+      anchorPosition: null,
+    };
+    this.textLabels = [...this.textLabels, label];
+    this.maxTextZIndex += 1;
+  },
+
+  getTextLabelPosition(label: TextLabel): { x: number; y: number } {
+    if (!label.anchorCardId || !label.anchorPosition) return { x: label.x, y: label.y };
+    const card = this.draggableCards.find(c => c.id === label.anchorCardId);
+    if (!card) return { x: label.x, y: label.y };
+    const gap = this.TEXT_ANCHOR_GAP;
+    const w = this.CARD_WIDTH;
+    const h = this.CARD_HEIGHT;
+    const labelH = this.TEXT_LABEL_DEFAULT_HEIGHT;
+    switch (label.anchorPosition) {
+      case 'above':
+        return { x: card.x, y: card.y - gap - labelH };
+      case 'below':
+        return { x: card.x, y: card.y + h + gap + labelH};
+      case 'left':
+        return { x: card.x - gap, y: card.y };
+      case 'right':
+        return { x: card.x + w + gap, y: card.y };
+      default:
+        return { x: label.x, y: label.y };
+    }
+  },
+
+  getTextLabelStyle(label: TextLabel): string {
+    const pos = this.getTextLabelPosition(label);
+    const vertical = label.anchorPosition === 'left' || label.anchorPosition === 'right';
+    const base = `left: ${pos.x}px; top: ${pos.y}px; z-index: ${label.zIndex}; cursor: ${label.cursor}; display: ${label.display}; font-size: ${label.fontSize}px; font-weight: ${label.fontWeight}; font-style: ${label.fontStyle}; text-decoration: ${label.textDecoration}; color: ${label.color};`;
+    if (vertical) {
+      const transform = label.anchorPosition === 'left' ? ' transform: translateY(110%) rotate(180deg);' : '';
+      return base + `writing-mode: vertical-lr; min-height: ${this.CARD_HEIGHT}px;${transform}`;
+    }
+    return base;
+  },
+
   cryptoRandomInt(len: number): number {
     const buf = new Uint32Array(1);
     crypto.getRandomValues(buf);
@@ -293,6 +364,7 @@ Alpine.data('canvasComponent', () => ({
       x: event.clientX,
       y: event.clientY,
       cardId: null,
+      textId: null,
     };
   },
 
@@ -313,6 +385,24 @@ Alpine.data('canvasComponent', () => ({
     if (event.button !== 0) return;
 
     const target = event.target as HTMLElement;
+    const textEl = target.closest('[data-text-id]') as HTMLElement | null;
+    const textId = textEl ? textEl.getAttribute('data-text-id') : null;
+    if (textId && this.textLabels.some(l => l.id === textId)) {
+      this.draggingTextId = textId;
+      const label = this.textLabels.find(l => l.id === textId)!;
+      const pos = this.getTextLabelPosition(label);
+      const rect = this.dragContainer!.getBoundingClientRect();
+      this.textDragStart = {
+        startX: pos.x,
+        startY: pos.y,
+        startDropX: event.clientX - rect.left - this.dragContainer!.clientLeft,
+        startDropY: event.clientY - rect.top - this.dragContainer!.clientTop,
+      };
+      this.maxTextZIndex += 1;
+      this.updateTextLabel(textId, { zIndex: this.maxTextZIndex, cursor: 'grabbing' });
+      return;
+    }
+
     const cardId = target.id && this.draggableCards.some(c => c.id === target.id) ? target.id : null;
     const isOnEmpty = target === this.viewport || target === this.content || target === this.emptyCanvasMessage;
 
@@ -372,6 +462,16 @@ Alpine.data('canvasComponent', () => ({
       return;
     }
 
+    if (this.draggingTextId && this.textDragStart) {
+      const rect = this.dragContainer!.getBoundingClientRect();
+      const dropX = e.clientX - rect.left - this.dragContainer!.clientLeft;
+      const dropY = e.clientY - rect.top - this.dragContainer!.clientTop;
+      const newX = this.textDragStart.startX + (dropX - this.textDragStart.startDropX) / this.scale;
+      const newY = this.textDragStart.startY + (dropY - this.textDragStart.startDropY) / this.scale;
+      this.updateTextLabel(this.draggingTextId, { x: newX, y: newY });
+      return;
+    }
+
     if (this.isPanning) {
       this.offsetX = e.clientX - this.panStartX;
       this.offsetY = e.clientY - this.panStartY;
@@ -410,8 +510,8 @@ Alpine.data('canvasComponent', () => ({
       const height = Math.abs(currentY - startY);
       const selectionRect = { left, top, width, height };
 
-      const cardWidth = 150;
-      const cardHeight = 231;
+      const cardWidth = this.CARD_WIDTH;
+      const cardHeight = this.CARD_HEIGHT;
       const ids: string[] = [];
       for (const card of this.draggableCards) {
         const cardRect = { left: card.x, top: card.y, width: cardWidth, height: cardHeight };
@@ -423,6 +523,27 @@ Alpine.data('canvasComponent', () => ({
       return;
     }
 
+    if (this.draggingTextId && this.textDragStart) {
+      const textId = this.draggingTextId;
+      this.updateTextLabel(textId, { display: 'block', cursor: 'grab' });
+      this.draggingTextId = null;
+      this.textDragStart = null;
+
+      const label = this.textLabels.find(l => l.id === textId);
+      if (label) {
+        const pos = this.getTextLabelPosition(label);
+        const textBox = { left: pos.x, top: pos.y, width: 100, height: 30 };
+        for (const card of this.draggableCards) {
+          const cardRect = { left: card.x, top: card.y, width: this.CARD_WIDTH, height: this.CARD_HEIGHT };
+          if (this.boxesOverlap(textBox, cardRect)) {
+            this.pendingAnchor = { textId, cardId: card.id };
+            break;
+          }
+        }
+      }
+      return;
+    }
+
     if (!this.draggingCard || !this.dragStart) return;
 
     const rect = this.dragContainer!.getBoundingClientRect();
@@ -430,6 +551,8 @@ Alpine.data('canvasComponent', () => ({
     const dropY = event.clientY - rect.top - this.dragContainer!.clientTop;
     const newAnchorX = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
     const newAnchorY = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
+
+    const movedCardIds = this.groupDragOffsets ? this.selectedCardIds : (this.draggingCard ? [this.draggingCard.id] : []);
 
     if (this.groupDragOffsets) {
       for (const id of Object.keys(this.groupDragOffsets)) {
@@ -439,6 +562,13 @@ Alpine.data('canvasComponent', () => ({
       this.groupDragOffsets = null;
     } else {
       this.updateItem(this.draggingCard.id, { x: newAnchorX, y: newAnchorY, display: 'block', cursor: 'grab' });
+    }
+
+    for (const tl of this.textLabels) {
+      if (tl.anchorCardId && movedCardIds.includes(tl.anchorCardId)) {
+        const pos = this.getTextLabelPosition(tl);
+        this.updateTextLabel(tl.id, { x: pos.x, y: pos.y });
+      }
     }
 
     this.dragStart = null;
@@ -454,6 +584,12 @@ Alpine.data('canvasComponent', () => ({
     this.selectionBox = null;
     this.selectionBoxStyle = '';
     this.groupDragOffsets = null;
+    this.textLabels = [];
+    this.maxTextZIndex = 0;
+    this.draggingTextId = null;
+    this.textDragStart = null;
+    this.editingTextId = null;
+    this.pendingAnchor = null;
     this.scale = 1;
 
     const viewportRect = this.viewport!.getBoundingClientRect();
@@ -471,6 +607,32 @@ Alpine.data('canvasComponent', () => ({
       ...this.draggableCards[index],
       ...newProps,
     }
+  },
+
+  updateTextLabel(id: string, newProps: Partial<TextLabel>) {
+    const index = this.textLabels.findIndex(l => l.id === id);
+    if (index === -1) return;
+    this.textLabels[index] = { ...this.textLabels[index], ...newProps };
+  },
+
+  deleteTextLabel(id: string) {
+    this.textLabels = this.textLabels.filter(l => l.id !== id);
+  },
+
+  setTextLabelAnchor(textId: string, cardId: string, position: TextLabelAnchorPosition) {
+    this.updateTextLabel(textId, { anchorCardId: cardId, anchorPosition: position });
+    const label = this.textLabels.find(l => l.id === textId)!;
+    const pos = this.getTextLabelPosition(label);
+    this.updateTextLabel(textId, { x: pos.x, y: pos.y });
+    this.pendingAnchor = null;
+  },
+
+  cancelPendingAnchor() {
+    this.pendingAnchor = null;
+  },
+
+  commitEditTextLabel() {
+    this.editingTextId = null;
   },
 
   deleteCard(cardId: string) {
@@ -491,6 +653,19 @@ Alpine.data('canvasComponent', () => ({
 
   onContextMenu(event: MouseEvent) {
     const target = event.target as HTMLElement;
+    const textEl = target.closest('[data-text-id]') as HTMLElement | null;
+    const textId = textEl ? textEl.getAttribute('data-text-id') : null;
+    if (textId && this.textLabels.some(l => l.id === textId)) {
+      event.preventDefault();
+      this.contextMenu = {
+        open: true,
+        x: event.clientX,
+        y: event.clientY,
+        cardId: null,
+        textId,
+      };
+      return;
+    }
     const cardId = target.id;
     if (!cardId || !this.draggableCards.some(c => c.id === cardId)) return;
     event.preventDefault();
@@ -499,12 +674,14 @@ Alpine.data('canvasComponent', () => ({
       x: event.clientX,
       y: event.clientY,
       cardId,
+      textId: null,
     };
   },
 
   closeContextMenu() {
     this.contextMenu.open = false;
     this.contextMenu.cardId = null;
+    this.contextMenu.textId = null;
   },
 
   clamp(v: number, min: number, max: number) {

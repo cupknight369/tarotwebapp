@@ -57,6 +57,25 @@ declare global {
     display: string;
   }
 
+  type TextLabelAnchorPosition = 'above' | 'below' | 'left' | 'right';
+
+  interface TextLabel {
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+    fontSize: number;
+    fontWeight: number;
+    fontStyle: 'normal' | 'italic';
+    textDecoration: 'none' | 'underline';
+    color: string;
+    zIndex: number;
+    cursor: string;
+    display: string;
+    anchorCardId: string | null;
+    anchorPosition: TextLabelAnchorPosition | null;
+  }
+
   /** State for the global settings store (Alpine.store('settings')). */
   interface SettingsStoreState {
     open: boolean;
