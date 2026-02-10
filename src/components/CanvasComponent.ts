@@ -280,7 +280,7 @@ Alpine.data('canvasComponent', () => ({
     const { x, y } = this.screenToContent(screenX, screenY);
     const label: TextLabel = {
       id: this.generateTextId(),
-      text: 'Double Click To Edit This Label',
+      text: 'Double Click To Edit',
       x,
       y,
       fontSize: 16,
@@ -324,7 +324,7 @@ Alpine.data('canvasComponent', () => ({
     const pos = this.getTextLabelPosition(label);
     const vertical = label.anchorPosition === 'left' || label.anchorPosition === 'right';
     const base = `left: ${pos.x}px; top: ${pos.y}px; z-index: ${label.zIndex}; cursor: ${label.cursor}; display: ${label.display}; font-size: ${label.fontSize}px; font-weight: ${label.fontWeight}; font-style: ${label.fontStyle}; text-decoration: ${label.textDecoration}; color: ${label.color};`;
-    if (vertical) {
+    if (vertical && this.editingTextId !== label.id) {
       const transform = label.anchorPosition === 'left' ? ' transform: translateY(110%) rotate(180deg);' : '';
       return base + `writing-mode: vertical-lr; min-height: ${this.CARD_HEIGHT}px;${transform}`;
     }
