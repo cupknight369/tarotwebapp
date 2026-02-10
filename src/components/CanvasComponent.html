@@ -45,6 +45,13 @@
               </template>
               <template x-if="editingTextId === label.id">
                 <div class="flex flex-col gap-1 bg-gray-800 border border-gray-600 rounded-lg p-2 shadow-lg">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <input type="number" :value="label.fontSize" @input="updateTextLabel(label.id, { fontSize: parseInt($event.target.value) || 16 })" min="8" max="72" class="w-14 px-2 py-1 rounded bg-gray-700 text-gray-200 border border-gray-600 text-sm">
+                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer" @click="updateTextLabel(label.id, { fontWeight: label.fontWeight === 700 ? 400 : 700 })" :class="{ 'bg-purple-600': label.fontWeight === 700 }" title="Bold">B</button>
+                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer italic" @click="updateTextLabel(label.id, { fontStyle: label.fontStyle === 'italic' ? 'normal' : 'italic' })" :class="{ 'bg-purple-600': label.fontStyle === 'italic' }" title="Italic">I</button>
+                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer underline" @click="updateTextLabel(label.id, { textDecoration: label.textDecoration === 'underline' ? 'none' : 'underline' })" :class="{ 'bg-purple-600': label.textDecoration === 'underline' }" title="Underline">U</button>
+                    <input type="color" :value="label.color" @input="updateTextLabel(label.id, { color: $event.target.value })" class="w-8 h-8 rounded border border-gray-600 cursor-pointer bg-gray-700">
+                  </div>
                   <input
                     type="text"
                     :value="label.text"
@@ -53,13 +60,6 @@
                     @keydown.enter="commitEditTextLabel()"
                     class="px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full min-w-[200px]"
                     :style="`font-size: ${label.fontSize}px; font-weight: ${label.fontWeight}; font-style: ${label.fontStyle}; text-decoration: ${label.textDecoration}; color: ${label.color};`">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <input type="number" :value="label.fontSize" @input="updateTextLabel(label.id, { fontSize: parseInt($event.target.value) || 16 })" min="8" max="72" class="w-14 px-2 py-1 rounded bg-gray-700 text-gray-200 border border-gray-600 text-sm">
-                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer" @click="updateTextLabel(label.id, { fontWeight: label.fontWeight === 700 ? 400 : 700 })" :class="{ 'bg-purple-600': label.fontWeight === 700 }" title="Bold">B</button>
-                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer italic" @click="updateTextLabel(label.id, { fontStyle: label.fontStyle === 'italic' ? 'normal' : 'italic' })" :class="{ 'bg-purple-600': label.fontStyle === 'italic' }" title="Italic">I</button>
-                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer underline" @click="updateTextLabel(label.id, { textDecoration: label.textDecoration === 'underline' ? 'none' : 'underline' })" :class="{ 'bg-purple-600': label.textDecoration === 'underline' }" title="Underline">U</button>
-                    <input type="color" :value="label.color" @input="updateTextLabel(label.id, { color: $event.target.value })" class="w-8 h-8 rounded border border-gray-600 cursor-pointer bg-gray-700">
-                  </div>
                 </div>
               </template>
             </div>

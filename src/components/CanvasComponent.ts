@@ -636,10 +636,18 @@ Alpine.data('canvasComponent', () => ({
 
   deleteCard(cardId: string) {
     this.draggableCards = this.draggableCards.filter(c => c.id !== cardId);
+    const textLabels = this.textLabels.filter(l => l.anchorCardId === cardId);
+    for (const textLabel of textLabels) {
+      this.updateTextLabel(textLabel.id, { anchorCardId: null, anchorPosition: null });
+    }
   },
 
   deleteSelectedCards() {
     this.draggableCards = this.draggableCards.filter(c => !this.selectedCardIds.includes(c.id));
+    const textLabels = this.textLabels.filter(l => this.selectedCardIds.includes(l.anchorCardId));
+    for (const textLabel of textLabels) {
+      this.updateTextLabel(textLabel.id, { anchorCardId: null, anchorPosition: null });
+    }
     this.selectedCardIds = [];
   },
 
