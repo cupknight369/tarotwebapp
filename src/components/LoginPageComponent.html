@@ -1,0 +1,83 @@
+<!-- Full-page login - shown when user is not authenticated (visibility controlled by parent) -->
+<div
+  x-data="loginPageComponent"
+  class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-800">
+  <div class="w-full max-w-md mx-4">
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-8 shadow-xl">
+      <h1 class="text-2xl font-bold text-gray-200 mb-6">Sign in</h1>
+
+      <template x-if="auth.error">
+        <p class="mb-4 text-sm text-red-400" x-text="auth.error"></p>
+      </template>
+
+      <template x-if="!magicLinkSent">
+        <div>
+          <div class="flex gap-2 mb-4">
+            <button
+              type="button"
+              :class="loginMode === 'password' ? 'bg-purple-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'"
+              class="px-3 py-2 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
+              @click="setLoginMode('password')">
+              Password
+            </button>
+            <button
+              type="button"
+              :class="loginMode === 'magiclink' ? 'bg-purple-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'"
+              class="px-3 py-2 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
+              @click="setLoginMode('magiclink')">
+              Magic link
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label for="login-email" class="block text-sm text-gray-300 mb-1">Email</label>
+              <input
+                id="login-email"
+                type="email"
+                x-model="email"
+                placeholder="you@example.com"
+                class="w-full px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+            </div>
+
+            <template x-if="loginMode === 'password'">
+              <div>
+                <label for="login-password" class="block text-sm text-gray-300 mb-1">Password</label>
+                <input
+                  id="login-password"
+                  type="password"
+                  x-model="password"
+                  class="w-full px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+              </div>
+            </template>
+          </div>
+
+          <div class="mt-6 flex gap-3">
+            <template x-if="loginMode === 'password'">
+              <button
+                type="button"
+                class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                @click="submitPasswordLogin()">
+                Sign in
+              </button>
+            </template>
+            <template x-if="loginMode === 'magiclink'">
+              <button
+                type="button"
+                class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                @click="submitMagicLink()">
+                Send magic link
+              </button>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="magicLinkSent">
+        <div>
+          <p class="text-gray-200 mb-4">Check your email for a sign-in link. Click the link to complete sign in.</p>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

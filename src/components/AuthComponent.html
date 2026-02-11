@@ -1,0 +1,10 @@
+<!-- Auth bar: user email + logout - only shown when authenticated (inside app view) -->
+<div x-data="authComponent" class="fixed top-2 left-2 z-[9999] flex flex-col gap-2">
+  <span class="text-sm text-gray-300" x-text="userEmail"></span>
+  <button
+    type="button"
+    class="px-3 py-1.5 rounded bg-gray-600/70 text-white text-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+    @click="logout()">
+    Log out
+  </button>
+</div>
