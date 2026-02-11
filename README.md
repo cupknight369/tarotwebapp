@@ -1,6 +1,6 @@
 # Tarot Card Application
 
-A TypeScript-based tarot card drawing application using Alpine.js.
+A TypeScript-based tarot card drawing application using Alpine.js, with Express server-side auth and Supabase.
 
 ## Setup
 
@@ -9,29 +9,35 @@ A TypeScript-based tarot card drawing application using Alpine.js.
 npm install
 ```
 
-2. Build the TypeScript code:
-```bash
-npm run build
-```
+2. Copy `.env.example` to `.env` and set your Supabase URL and anon key.
 
-This will compile `index.ts` to `dist/index.js`.
+3. In Supabase Dashboard → Authentication → URL Configuration, add:
+   - **Site URL**: `http://localhost:8001`
+   - **Redirect URLs**: `http://localhost:8001/auth/callback`
 
 ## Development
 
 ```bash
 npm run dev
 ```
-This will run a python3 http server on port 8000 and watch for file changes.
 
-## Project Structure
+This runs:
+- **Vite** on port 5173 (frontend dev server)
+- **Express** on port 8001 (proxies to Vite, enforces auth)
 
-- `index.ts` - Main TypeScript source file
-- `dist/index.js` - Compiled JavaScript (generated, do not edit)
-- `types/alpine.d.ts` - TypeScript type definitions for Alpine.js
-- `tsconfig.json` - TypeScript configuration
-- `package.json` - Node.js dependencies and scripts
+Open http://localhost:8001. Unauthenticated users are redirected to `/auth`.
 
-## Notes
+## Production
 
-- The HTML file uses ES modules (`type="module"`) to load the compiled JavaScript
-- Alpine.js functions (`shuffle`, `drawMultipleCards`, etc.) are exposed globally via the `window` object for Alpine.js template access
+```bash
+npm run build
+npm run start
+```
+
+Express serves the built app from `dist/` on port 8001.
+
+## Routes
+
+- `/` – Main app (canvas). Requires authentication.
+- `/auth` – Login page (password or magic link).
+- `/auth/callback` – Magic link callback (handled automatically).

@@ -2,7 +2,7 @@ import Alpine from 'alpinejs'
 import { supabase } from '../lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
 
-export function initAuthStore() {
+export async function initAuthStore() {
   const authStore = {
     user: null as User | null,
     session: null as Session | null,
@@ -46,7 +46,7 @@ export function initAuthStore() {
       const { data, error } = await supabase.auth.signInWithOtp({ email, 
         options: { 
           shouldCreateUser: false,
-          emailRedirectTo: 'http://localhost:8001'
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined
         } 
       })
       if (error) {
@@ -76,5 +76,5 @@ export function initAuthStore() {
   }
 
   Alpine.store('auth', authStore)
-  void authStore.init()
+  await authStore.init()
 }

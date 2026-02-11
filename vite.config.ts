@@ -19,7 +19,10 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      input: './index.html'  // Your main HTML entry
+      input: {
+        main: './index.html',
+        auth: './auth.html'
+      }
     }
   },
   server: {

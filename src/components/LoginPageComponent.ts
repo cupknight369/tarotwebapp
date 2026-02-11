@@ -21,6 +21,7 @@ Alpine.data('loginPageComponent', () => ({
     if (!this.email.trim() || !this.password) return
     try {
       await this.auth.signInWithPassword(this.email.trim(), this.password)
+      window.location.href = '/'
     } catch (_e) {
       // Error shown via auth.error
     }

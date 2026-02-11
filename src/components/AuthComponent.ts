@@ -14,5 +14,6 @@ Alpine.data('authComponent', () => ({
 
   async logout() {
     await this.auth.signOut()
+    window.location.href = '/auth'
   }
 }))
