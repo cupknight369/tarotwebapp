@@ -10,13 +10,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export function createSupabaseClient(req: Request, res: Response) {
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient(supabaseUrl as string, supabaseAnonKey as string, {
     cookies: {
       getAll() {
         const cookieHeader = req.headers.cookie
         if (!cookieHeader) return []
         const parsed = parseCookie(cookieHeader)
-        return Object.entries(parsed).map(([name, value]) => ({ name, value }))
+        return Object.entries(parsed).map(([name, value]) => ({ name, value: value ?? '' }))
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
