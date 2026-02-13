@@ -70,6 +70,16 @@ export async function initAuthStore() {
       this.user = session?.user ?? null
     },
 
+    async resetPassword(password: string) {
+      const { data, error } = await supabase.auth.updateUser({ password })
+      if (error) {
+        this.error = error.message;
+        throw error;
+      }
+
+      this.error = null;
+    },
+
     clearError() {
       this.error = null
     }

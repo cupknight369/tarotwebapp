@@ -1,10 +1,64 @@
-<!-- Auth bar: user email + logout - only shown when authenticated (inside app view) -->
-<div x-data="authComponent" class="fixed top-2 left-2 z-[9999] flex flex-col gap-2">
-  <span class="text-sm text-gray-300" x-text="userEmail"></span>
+<div x-data="authComponent">
   <button
     type="button"
-    class="px-3 py-1.5 rounded bg-gray-600/70 text-white text-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-    @click="logout()">
-    Log out
-  </button>
+    @click="toggleAccountMenu()"
+    class="fixed top-2 left-2 z-[9999] w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer">👤</button>
+
+  <div
+    class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+    aria-modal="true"
+    x-show="isAccountMenuOpen">
+    <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4">
+      <button 
+        type="button"
+        class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+        aria-label="Close"
+        @click="toggleAccountMenu()">
+        <span class="text-xl leading-none">×</span>
+      </button>
+      <p class="text-xl font-bold text-gray-200 pr-8 mb-6">Account Settings</p>
+
+      <span class="text-sm text-green-300" x-text="pwResetSuccessMessage"></span>
+      <span class="text-sm text-red-500" x-text="auth.error"></span>
+
+      <div x-show="!isPassResetOpen"class="flex flex-col gap-3 justify-end">
+        <span class="text-sm text-gray-300" x-text="userEmail"></span>
+        <div>
+          <button
+            type="button"
+            class="w-fit px-3 py-1.5 rounded bg-gray-600/70 text-white text-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            @click="logout()">
+            Log out
+          </button>
+          | 
+          <a 
+            href="#"
+            class="text-sm text-gray-300 hover:text-white"
+            @click="togglePassResetForm()">
+            Reset password
+          </a>
+        </div>
+      </div>
+
+      <div x-show="isPassResetOpen"class="flex flex-col gap-3 justify-end">
+        <input type="password" :value="newPassword" @input="newPassword = $event.target.value" class="w-full px-3 py-2 rounded bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="New password">
+        <input type="password" :value="confirmNewPassword" @input="confirmNewPassword = $event.target.value" class="w-full px-3 py-2 rounded bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Confirm new password">
+        <span class="text-sm text-red-500" x-text="newPassword !== confirmNewPassword ? 'Passwords do not match' : ''"></span>
+        <button
+          type="button"
+          class="w-content px-3 py-1.5 rounded bg-gray-600/70 text-white text-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          :disabled="newPassword !== confirmNewPassword"
+          @click="resetPassword()">
+          Reset password
+        </button>
+        <button
+          type="button"
+          class="w-fit px-3 py-1.5 rounded bg-gray-600/70 text-white text-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          @click="togglePassResetForm()">
+          Cancel
+        </button>
+      </div>
+
+    </div>
+  </div>
 </div>
