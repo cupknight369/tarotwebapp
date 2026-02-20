@@ -2,7 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import { createServer } from 'http'
-import { createSupabaseClient } from './lib/supabase'
+import { createSupabaseClient } from './lib/supabase.js'
 
 const app = express();
 const PORT = process.env.PORT ?? 8001;
@@ -20,7 +20,7 @@ function authMiddleware(req: express.Request, res: express.Response, next: expre
     }
     const supabase = createSupabaseClient(req, res);
     supabase.auth.exchangeCodeForSession(req.query.code)
-      .then(({ data, error }) => {
+      .then(({ data, error }: { data: unknown; error: unknown }) => {
         if (error) {
           return res.redirect(302, '/auth');
         }
@@ -33,7 +33,7 @@ function authMiddleware(req: express.Request, res: express.Response, next: expre
   const supabase = createSupabaseClient(req, res);
 
   supabase.auth.getUser()
-    .then(({ data: { user }, error }) => {
+    .then(({ data: { user }, error }: { data: { user: unknown }; error: unknown }) => {
       const hasSession = !error && !!user;
 
       if (path === '/' || path === '') {
@@ -62,7 +62,7 @@ if (isDev) {
   app.get(['/auth', '/auth/callback'], (_req, res) => {
     res.sendFile('auth.html', { root: 'dist' });
   });
-  app.get('*', (_req, res) => {
+  app.get('/{*splat}', (_req, res) => {
     res.sendFile('index.html', { root: 'dist' });
   });
 }

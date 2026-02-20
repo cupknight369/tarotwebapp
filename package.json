@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server/index.ts",
-    "build": "vite build",
+    "build": "vite build && tsc -p tsconfig.server.json",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "supabase:restart": "npx supabase stop && npx supabase start",
     "dev:vite": "vite",
-    "start": "NODE_ENV=production tsx server/index.ts"
+    "start": "NODE_ENV=production node dist/server/index.js"
   },
   "keywords": [],
   "author": "",
