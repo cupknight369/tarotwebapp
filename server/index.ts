@@ -8,6 +8,11 @@ const app = express();
 const PORT = process.env.PORT ?? 8001;
 const isDev = process.env.NODE_ENV !== 'production';
 
+// Production specific settings
+if (!isDev) {
+  app.set('trust proxy', true);
+}
+
 app.use(cookieParser());
 
 function authMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
