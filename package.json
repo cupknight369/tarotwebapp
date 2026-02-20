@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server/index.ts",
-    "build": "vite build && tsc -p tsconfig.server.json",
+    "build": "vite build && node scripts/build-server.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "supabase:restart": "npx supabase stop && npx supabase start",
     "dev:vite": "vite",
-    "start": "NODE_ENV=production node dist/server/index.js"
+    "start": "NODE_ENV=production node dist/index.cjs"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +22,7 @@
     "@types/express": "^5.0.6",
     "@vituum/vite-plugin-posthtml": "^1.1.0",
     "concurrently": "^5.3.0",
+    "esbuild": "^0.27.3",
     "posthtml": "^0.16.7",
     "posthtml-include": "^2.0.1",
     "supabase": "^2.76.8",

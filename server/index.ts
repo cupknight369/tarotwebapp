@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import express from 'express'
+declare const __dirname: string
 import cookieParser from 'cookie-parser'
 import { createServer } from 'http'
 import { createSupabaseClient } from './lib/supabase.js'
@@ -58,23 +59,26 @@ function authMiddleware(req: express.Request, res: express.Response, next: expre
 
 app.use(authMiddleware);
 
-if (isDev) {
-  const { createServer: createViteServer } = await import('vite');
-  const vite = await createViteServer({ server: { middlewareMode: true } });
-  app.use(vite.middlewares);
-} else {
-  app.use(express.static('dist'));
-  app.get(['/auth', '/auth/callback'], (_req, res) => {
-    res.sendFile('auth.html', { root: 'dist' });
-  });
-  app.get('/{*splat}', (_req, res) => {
-    res.sendFile('index.html', { root: 'dist' });
+async function setupMiddleware() {
+  if (isDev) {
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({ server: { middlewareMode: true } });
+    app.use(vite.middlewares);
+  } else {
+    const staticDir = __dirname;
+    app.use(express.static(staticDir));
+    app.get(['/auth', '/auth/callback'], (_req, res) => {
+      res.sendFile('auth.html', { root: staticDir });
+    });
+    app.get('/{*splat}', (_req, res) => {
+      res.sendFile('index.html', { root: staticDir });
+    });
+  }
+  createServer(app).listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+    if (isDev) {
+      console.log('Vite integrated (all requests go through Express auth)');
+    }
   });
 }
-
-createServer(app).listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  if (isDev) {
-    console.log('Vite integrated (all requests go through Express auth)');
-  }
-})
+setupMiddleware();
