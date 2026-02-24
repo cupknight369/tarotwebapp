@@ -1,5 +1,5 @@
 import Alpine from 'alpinejs'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase.js'
 import type { User, Session } from '@supabase/supabase-js'
 
 export async function initAuthStore() {
@@ -46,7 +46,7 @@ export async function initAuthStore() {
       const { data, error } = await supabase.auth.signInWithOtp({ email, 
         options: { 
           shouldCreateUser: false,
-          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : undefined
+          emailRedirectTo: import.meta.env.VITE_APP_URL + '/auth/callback' 
         } 
       })
       if (error) {
