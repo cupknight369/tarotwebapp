@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs'
+import * as readingsLib from '../lib/readings.js'
 
 interface MouseLikeEvent {
   clientX: number;
@@ -12,6 +13,11 @@ interface MouseLikeEvent {
 Alpine.data('canvasComponent', () => ({
   draggableCards: [] as DraggableCard[],
   maxZIndex: 0,
+  loadedReadingId: null as string | null,
+  dirty: false,
+  loadModalOpen: false,
+  loadModalConfirmingForId: null as string | null,
+  savedReadings: [] as { id: string; name: string; updated_at: string }[],
   dragStart: null as { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null,
   dragContainer: null as HTMLElement | null,
   draggingCard: null as HTMLElement | null,
@@ -389,6 +395,7 @@ Alpine.data('canvasComponent', () => ({
     this.offsetY = screenY - (screenY - this.offsetY) * actual;
 
     this.scale = newScale;
+    this.dirty = true;
   },
 
   zoomAtCenter(factor: number) {
@@ -409,6 +416,169 @@ Alpine.data('canvasComponent', () => ({
 
     this.showShuffledConfirmation = true;
     setTimeout(() => { this.showShuffledConfirmation = false; }, 3000);
+  },
+
+  serializeState(): SavedReadingState {
+    return {
+      viewport: { scale: this.scale, offsetX: this.offsetX, offsetY: this.offsetY },
+      cards: this.draggableCards.map(c => ({
+        id: c.id,
+        cardNum: c.card.num,
+        x: c.x,
+        y: c.y,
+        rotation: c.rotation,
+        zIndex: c.zIndex,
+        opacity: c.opacity,
+      })),
+      textLabels: this.textLabels.map(l => ({
+        id: l.id,
+        text: l.text,
+        x: l.x,
+        y: l.y,
+        fontSize: l.fontSize,
+        fontWeight: l.fontWeight,
+        fontStyle: l.fontStyle,
+        textDecoration: l.textDecoration,
+        color: l.color,
+        zIndex: l.zIndex,
+        anchorCardId: l.anchorCardId,
+        anchorPosition: l.anchorPosition,
+      })),
+    };
+  },
+
+  deserializeState(state: SavedReadingState): void {
+    const cardByNum = new Map(this.cards.map(c => [c.num, c]));
+    this.draggableCards = state.cards.map(c => ({
+      card: cardByNum.get(c.cardNum) ?? this.cards[0],
+      id: c.id,
+      x: c.x,
+      y: c.y,
+      rotation: c.rotation,
+      zIndex: c.zIndex,
+      opacity: c.opacity,
+      cursor: 'grab',
+      display: 'block',
+    }));
+    this.textLabels = state.textLabels.map(l => ({
+      id: l.id,
+      text: l.text,
+      x: l.x,
+      y: l.y,
+      fontSize: l.fontSize,
+      fontWeight: l.fontWeight,
+      fontStyle: l.fontStyle,
+      textDecoration: l.textDecoration,
+      color: l.color,
+      zIndex: l.zIndex,
+      cursor: 'grab',
+      display: 'block',
+      anchorCardId: l.anchorCardId,
+      anchorPosition: l.anchorPosition,
+    }));
+    if (state.viewport) {
+      this.scale = state.viewport.scale;
+      this.offsetX = state.viewport.offsetX;
+      this.offsetY = state.viewport.offsetY;
+    }
+    this.maxZIndex = Math.max(0, ...this.draggableCards.map(c => c.zIndex));
+    this.maxTextZIndex = Math.max(0, ...this.textLabels.map(l => l.zIndex));
+    this.selectedCardIds = [];
+    this.contextMenu = { open: false, x: 0, y: 0, cardId: null, textId: null };
+    this.editingTextId = null;
+    this.dirty = false;
+  },
+
+  async saveCurrentReading(): Promise<{ ok: boolean; error?: string }> {
+    if (this.loadedReadingId) {
+      const result = await readingsLib.saveReading(this.serializeState(), undefined, this.loadedReadingId);
+      if ('error' in result) return { ok: false, error: result.error };
+      this.dirty = false;
+      return { ok: true };
+    }
+    const limit = await readingsLib.getSavedStateLimit();
+    const count = await readingsLib.getReadingsCount();
+    if (count >= limit) {
+      return { ok: false, error: `You've reached the limit of ${limit} saved readings` };
+    }
+    const result = await readingsLib.saveReading(this.serializeState());
+    if ('error' in result) return { ok: false, error: result.error };
+    this.loadedReadingId = result.id;
+    this.dirty = false;
+    return { ok: true };
+  },
+
+  async loadReadingById(id: string): Promise<void> {
+    const data = await readingsLib.loadReading(id);
+    if (!data) return;
+    this.deserializeState(data.state);
+    this.loadedReadingId = id;
+  },
+
+  async openLoadModal(): Promise<void> {
+    this.loadModalOpen = true;
+    this.loadModalConfirmingForId = null;
+    this.savedReadings = await readingsLib.listReadings();
+  },
+
+  closeLoadModal(): void {
+    this.loadModalOpen = false;
+    this.loadModalConfirmingForId = null;
+  },
+
+  async onSelectReadingToLoad(id: string): Promise<void> {
+    if (this.dirty) {
+      this.loadModalConfirmingForId = id;
+      return;
+    }
+    await this.loadReadingById(id);
+    this.closeLoadModal();
+  },
+
+  async saveAndLoad(id: string): Promise<void> {
+    const result = await this.saveCurrentReading();
+    if (!result.ok) {
+      Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+      return;
+    }
+    await this.loadReadingById(id);
+    this.closeLoadModal();
+  },
+
+  async discardAndLoad(id: string): Promise<void> {
+    await this.loadReadingById(id);
+    this.closeLoadModal();
+  },
+
+  cancelLoadConfirm(): void {
+    this.loadModalConfirmingForId = null;
+  },
+
+  async handleSaveClick(): Promise<void> {
+    const result = await this.saveCurrentReading();
+    if (!result.ok) {
+      Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+    }
+  },
+
+  async deleteReading(id: string): Promise<void> {
+    const confirmed = await new Promise<boolean>(resolve => {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'confirm',
+        title: 'Delete this saved reading?',
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+    await readingsLib.deleteReading(id);
+    this.savedReadings = this.savedReadings.filter(r => r.id !== id);
+    if (this.loadedReadingId === id) {
+      this.loadedReadingId = null;
+    }
   },
 
   addCardToCanvas(card: TarotCard): void {
@@ -440,6 +610,7 @@ Alpine.data('canvasComponent', () => ({
 
     this.draggableCards = [...this.draggableCards, draggableCard];
     this.maxZIndex += 1;
+    this.dirty = true;
   },
 
   generateCardId(): string {
@@ -470,6 +641,7 @@ Alpine.data('canvasComponent', () => ({
     };
     this.textLabels = [...this.textLabels, label];
     this.maxTextZIndex += 1;
+    this.dirty = true;
   },
 
   getTextLabelPosition(label: TextLabel): { x: number; y: number } {
@@ -673,6 +845,7 @@ Alpine.data('canvasComponent', () => ({
   onMouseUp(event: MouseLikeEvent) {
     if (event.preventDefault) event.preventDefault();
 
+    if (this.isPanning) this.dirty = true;
     this.isPanning = false;
     if (this.viewport) this.viewport.style.cursor = "grab";
 
@@ -764,6 +937,7 @@ Alpine.data('canvasComponent', () => ({
     this.textDragStart = null;
     this.editingTextId = null;
     this.pendingAnchor = null;
+    this.dirty = true;
     this.scale = 1;
 
     const viewportRect = this.viewport!.getBoundingClientRect();
@@ -781,16 +955,19 @@ Alpine.data('canvasComponent', () => ({
       ...this.draggableCards[index],
       ...newProps,
     }
+    this.dirty = true;
   },
 
   updateTextLabel(id: string, newProps: Partial<TextLabel>) {
     const index = this.textLabels.findIndex(l => l.id === id);
     if (index === -1) return;
     this.textLabels[index] = { ...this.textLabels[index], ...newProps };
+    this.dirty = true;
   },
 
   deleteTextLabel(id: string) {
     this.textLabels = this.textLabels.filter(l => l.id !== id);
+    this.dirty = true;
   },
 
   setTextLabelAnchor(textId: string, cardId: string, position: TextLabelAnchorPosition) {
@@ -826,6 +1003,7 @@ Alpine.data('canvasComponent', () => ({
     for (const textLabel of textLabels) {
       this.updateTextLabel(textLabel.id, { anchorCardId: null, anchorPosition: null });
     }
+    this.dirty = true;
   },
 
   deleteSelectedCards() {
@@ -835,6 +1013,7 @@ Alpine.data('canvasComponent', () => ({
       this.updateTextLabel(textLabel.id, { anchorCardId: null, anchorPosition: null });
     }
     this.selectedCardIds = [];
+    this.dirty = true;
   },
 
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180') {

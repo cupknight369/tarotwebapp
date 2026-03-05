@@ -44,7 +44,8 @@ function authMiddleware(req: express.Request, res: express.Response, next: expre
 
       if (path === '/' || path === '') {
         if (!hasSession) {
-          return res.redirect(302, '/auth');
+          supabase.auth.signOut().then(error => res.redirect(302, '/auth'));
+          return;
         }
       } else if (path === '/auth') {
         if (hasSession) {
