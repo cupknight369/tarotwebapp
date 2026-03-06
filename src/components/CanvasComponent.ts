@@ -485,7 +485,6 @@ Alpine.data('canvasComponent', () => ({
     this.maxZIndex = Math.max(0, ...this.draggableCards.map(c => c.zIndex));
     this.maxTextZIndex = Math.max(0, ...this.textLabels.map(l => l.zIndex));
     this.selectedCardIds = [];
-    this.contextMenu = { open: false, x: 0, y: 0, cardId: null, textId: null };
     this.editingTextId = null;
     this.dirty = false;
   },
