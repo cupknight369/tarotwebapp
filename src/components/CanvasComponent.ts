@@ -18,6 +18,7 @@ Alpine.data('canvasComponent', () => ({
   loadModalOpen: false,
   loadModalConfirmingForId: null as string | null,
   savedReadings: [] as { id: string; name: string; updated_at: string }[],
+  saveAndLoadTargetId: null as string | null,
   dragStart: null as { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null,
   dragContainer: null as HTMLElement | null,
   draggingCard: null as HTMLElement | null,
@@ -489,7 +490,7 @@ Alpine.data('canvasComponent', () => ({
     this.dirty = false;
   },
 
-  async saveCurrentReading(): Promise<{ ok: boolean; error?: string }> {
+  async saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }> {
     if (this.loadedReadingId) {
       const result = await readingsLib.saveReading(this.serializeState(), undefined, this.loadedReadingId);
       if ('error' in result) return { ok: false, error: result.error };
@@ -501,7 +502,7 @@ Alpine.data('canvasComponent', () => ({
     if (count >= limit) {
       return { ok: false, error: `You've reached the limit of ${limit} saved readings` };
     }
-    const result = await readingsLib.saveReading(this.serializeState());
+    const result = await readingsLib.saveReading(this.serializeState(), name ?? 'Untitled Reading');
     if ('error' in result) return { ok: false, error: result.error };
     this.loadedReadingId = result.id;
     this.dirty = false;
@@ -536,13 +537,43 @@ Alpine.data('canvasComponent', () => ({
   },
 
   async saveAndLoad(id: string): Promise<void> {
-    const result = await this.saveCurrentReading();
-    if (!result.ok) {
-      Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+    if (this.loadedReadingId) {
+      const result = await this.saveCurrentReading();
+      if (!result.ok) {
+        Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+        return;
+      }
+      await this.loadReadingById(id);
+      this.closeLoadModal();
       return;
     }
-    await this.loadReadingById(id);
-    this.closeLoadModal();
+    this.saveAndLoadTargetId = id;
+    Alpine.store('dialog', {
+      open: true,
+      type: 'inputText',
+      title: 'Name your reading',
+      inputPlaceholder: 'Enter a title...',
+      confirmLabel: 'Save & Load',
+      cancelLabel: 'Cancel',
+      inputDefault: '',
+      onSubmitText: (title: string) => {
+        this.saveCurrentReading(title).then(async result => {
+          const targetId = this.saveAndLoadTargetId;
+          this.saveAndLoadTargetId = null;
+          if (!result.ok) {
+            Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+            return;
+          }
+          if (targetId) {
+            await this.loadReadingById(targetId);
+            this.closeLoadModal();
+          }
+        });
+      },
+      onCancel: () => {
+        this.saveAndLoadTargetId = null;
+      },
+    });
   },
 
   async discardAndLoad(id: string): Promise<void> {
@@ -554,11 +585,32 @@ Alpine.data('canvasComponent', () => ({
     this.loadModalConfirmingForId = null;
   },
 
-  async handleSaveClick(): Promise<void> {
-    const result = await this.saveCurrentReading();
-    if (!result.ok) {
-      Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+  handleSaveClick(): void {
+    if (this.loadedReadingId) {
+      this.saveCurrentReading().then(result => {
+        if (!result.ok) {
+          Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+        }
+      });
+      return;
     }
+    Alpine.store('dialog', {
+      open: true,
+      type: 'inputText',
+      title: 'Name your reading',
+      inputPlaceholder: 'Enter a title...',
+      confirmLabel: 'Save',
+      cancelLabel: 'Cancel',
+      inputDefault: '',
+      onSubmitText: (title: string) => {
+        this.saveCurrentReading(title).then(result => {
+          if (!result.ok) {
+            Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+          }
+        });
+      },
+      onCancel: () => {},
+    });
   },
 
   async deleteReading(id: string): Promise<void> {

@@ -9,7 +9,7 @@ declare global {
   /** State for the global dialog store (Alpine.store('dialog')). */
   interface DialogStoreState {
     open: boolean;
-    type: 'confirm' | 'input';
+    type: 'confirm' | 'input' | 'inputText';
     title: string;
     confirmLabel?: string;
     cancelLabel?: string;
@@ -21,6 +21,7 @@ declare global {
     inputMax?: number;
     inputDefault?: string;
     onSubmit?: (value: number) => void;
+    onSubmitText?: (value: string) => void;
   }
 
   interface AlpineData {

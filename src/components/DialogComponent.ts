@@ -14,6 +14,7 @@ const DEFAULT_DIALOG_STATE: DialogStoreState = {
   inputMax: undefined,
   inputDefault: undefined,
   onSubmit: undefined,
+  onSubmitText: undefined,
 };
 
 Alpine.data('dialogComponent', () => ({
@@ -59,8 +60,20 @@ Alpine.data('dialogComponent', () => ({
     this.close();
   },
 
+  handleInputTextSubmit() {
+    const d = this.store;
+    const text = (this.inputValue ?? '').trim();
+    if (d?.onSubmitText) d.onSubmitText(text || 'Untitled Reading');
+    this.close();
+  },
+
   initInputValue() {
     const d = this.store;
     this.inputValue = d?.inputDefault ?? '1';
+  },
+
+  initInputTextValue() {
+    const d = this.store;
+    this.inputValue = d?.inputDefault ?? '';
   },
 }))
