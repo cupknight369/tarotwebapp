@@ -74,7 +74,7 @@ export async function saveReading(
   if (readingId) {
     const { data, error } = await supabase
       .from('readings')
-      .update({ state: payload.state, name: payload.name, updated_at: payload.updated_at })
+      .update({ state: payload.state, updated_at: payload.updated_at })
       .eq('id', readingId)
       .eq('user_id', user.id)
       .select('id')
