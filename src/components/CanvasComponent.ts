@@ -489,6 +489,49 @@ Alpine.data('canvasComponent', () => ({
     this.dirty = false;
   },
 
+  async createNewReading(): Promise<void> {
+    const confirmed = await new Promise<boolean>(resolve => {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'confirm',
+        title: 'Create a new reading?',
+        confirmLabel: 'Confirm',
+        cancelLabel: 'Cancel',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+
+    if (!confirmed) return;
+
+    if (this.loadedReadingId) {
+      const confirmSave = await new Promise<boolean>(resolve => {
+        Alpine.store('dialog', {
+          open: true,
+          type: 'confirm',
+          title: 'Save current reading?',
+          confirmLabel: 'Yes',
+          cancelLabel: 'No',
+          onConfirm: () => resolve(true),
+          onCancel: () => resolve(false),
+        });
+      });
+
+      if (confirmSave) {
+        const result = await this.saveCurrentReading();
+        if (!result.ok) {
+          Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+          return;
+        }
+      }
+    }
+
+    this.shuffleDeck();
+    this.clearCanvas();
+    this.loadedReadingId = null;
+    this.dirty = false;
+  },
+
   async saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }> {
     if (this.loadedReadingId) {
       const result = await readingsLib.saveReading(this.serializeState(), undefined, this.loadedReadingId);
