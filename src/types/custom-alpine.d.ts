@@ -13,6 +13,7 @@ declare global {
     title: string;
     confirmLabel?: string;
     cancelLabel?: string;
+    cancelLabelVisible: boolean;
     onConfirm?: () => void;
     onCancel?: () => void;
     inputLabel?: string;

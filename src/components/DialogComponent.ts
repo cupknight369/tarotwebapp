@@ -6,6 +6,7 @@ const DEFAULT_DIALOG_STATE: DialogStoreState = {
   title: '',
   confirmLabel: 'Yes',
   cancelLabel: 'Cancel',
+  cancelLabelVisible: true,
   onConfirm: undefined,
   onCancel: undefined,
   inputLabel: undefined,

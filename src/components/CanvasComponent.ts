@@ -495,8 +495,9 @@ Alpine.data('canvasComponent', () => ({
         open: true,
         type: 'confirm',
         title: 'Create a new reading?',
-        confirmLabel: 'Confirm',
+        confirmLabel: 'Yes',
         cancelLabel: 'Cancel',
+        cancelLabelVisible: true,
         onConfirm: () => resolve(true),
         onCancel: () => resolve(false),
       });
@@ -512,6 +513,7 @@ Alpine.data('canvasComponent', () => ({
           title: 'Save current reading?',
           confirmLabel: 'Yes',
           cancelLabel: 'No',
+          cancelLabelVisible: true,
           onConfirm: () => resolve(true),
           onCancel: () => resolve(false),
         });
@@ -524,6 +526,27 @@ Alpine.data('canvasComponent', () => ({
           return;
         }
       }
+    } else if (this.dirty) {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'inputText',
+        title: 'Save current reading before creating a new one?',
+        inputPlaceholder: 'Enter a title...',
+        cancelLabelVisible: true,
+        confirmLabel: 'Save',
+        cancelLabel: 'Don\'t Save',
+        inputDefault: '',
+        onSubmitText: (title: string) => {
+          this.saveCurrentReading(title).then(async result => {
+            if (!result.ok) {
+              Alpine.store('dialog', 
+                { open: true, type: 'confirm', title: result.error ?? 'Failed to save', cancelLabelVisible: false, onConfirm: () => {}, onCancel: () => {} });
+              return;
+            }
+          });
+        },
+        onCancel: () => {},
+      });
     }
 
     this.shuffleDeck();
@@ -596,10 +619,11 @@ Alpine.data('canvasComponent', () => ({
   handleSaveClick(): void {
     if (this.loadedReadingId) {
       this.saveCurrentReading().then(result => {
-        if (!result.ok) {
-          Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
-        }
+        result.ok 
+        ? Alpine.store('dialog', { open: true, type: 'confirm', title: 'Reading Saved Successfully', confirmLabel: 'Ok', cancelLabelVisible: false, onConfirm: () => {} })
+        : Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', confirmLabel: 'Ok', cancelLabelVisible: false, onConfirm: () => {} });
       });
+
       return;
     }
 
@@ -612,15 +636,17 @@ Alpine.data('canvasComponent', () => ({
       type: 'inputText',
       title: 'Name your reading',
       inputPlaceholder: 'Enter a title...',
-      confirmLabel: 'Save & Load',
+      confirmLabel: 'Save',
       cancelLabel: 'Cancel',
+      cancelLabelVisible: true,
       inputDefault: '',
       onSubmitText: (title: string) => {
         this.saveCurrentReading(title).then(async result => {
           const targetId = this.saveAndLoadTargetId;
           this.saveAndLoadTargetId = null;
           if (!result.ok) {
-            Alpine.store('dialog', { open: true, type: 'confirm', title: result.error ?? 'Failed to save', onConfirm: () => {}, onCancel: () => {} });
+            Alpine.store('dialog', 
+              { open: true, type: 'confirm', title: result.error ?? 'Failed to save', cancelLabelVisible: false, onConfirm: () => {}, onCancel: () => {} });
             return;
           }
           if (targetId) {
