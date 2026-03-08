@@ -17,6 +17,8 @@ create policy "Authenticated can read app_configuration"
 grant select on table public.app_configuration to authenticated;
 grant select on table public.app_configuration to anon;
 
+insert into public.app_configuration (key, value) values ('SavedStateLimit', '500');
+
 -- Readings table for saved canvas states
 create table public.readings (
   id uuid primary key default gen_random_uuid(),
