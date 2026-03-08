@@ -10,6 +10,14 @@
   <body class="bg-gray-800 text-white">
     <include src="./src/components/LoginPageComponent.html"></include>
 
+    <div id="loading-splash"  
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #101828;"></div>
+
     <script type="module" src="./src/auth.ts"></script>
+    <script type="text/javascript">
+      document.addEventListener('alpine:initialized', () => {
+        document.getElementById('loading-splash').remove();
+      });
+    </script>
   </body>
 </html>
