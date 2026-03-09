@@ -1,7 +1,8 @@
 import Alpine from 'alpinejs'
 import './input.css'
 
-import { initAuthStore } from './stores/authStore'
+import { initAuthStore } from './stores/authStore.js'
+import { initSettingsStore } from './stores/settingsStore.js'
 import './components/CanvasComponent'
 import './components/DialogComponent'
 import './components/SettingsComponent'
@@ -15,5 +16,6 @@ window.Alpine = Alpine
 
 ;(async () => {
   await initAuthStore()
+  initSettingsStore()
   Alpine.start()
 })()
