@@ -346,6 +346,15 @@ Alpine.data('canvasComponent', () => ({
     this.onTouchEnd(e);
   },
 
+  centerViewport() {
+    if (!this.viewport || !this.content) return;
+    const viewportRect = this.viewport.getBoundingClientRect();
+    const contentW = this.content.offsetWidth;
+    const contentH = this.content.offsetHeight;
+    this.offsetX = viewportRect.width / 2 - contentW / 2;
+    this.offsetY = viewportRect.height / 2 - contentH / 2;
+  },
+
   init() {
     Alpine.store('shuffledCards', this.cards);
     this.shuffleDeck();
@@ -356,11 +365,11 @@ Alpine.data('canvasComponent', () => ({
     this.content = this.$refs.content as HTMLDivElement;
     this.emptyCanvasMessage = this.$refs.emptyCanvasMessage as HTMLDivElement;
 
-    const viewportRect = this.viewport!.getBoundingClientRect();
-    const contentW = this.content!.offsetWidth;
-    const contentH = this.content!.offsetHeight;
-    this.offsetX = viewportRect.width / 2 - contentW / 2;
-    this.offsetY = viewportRect.height / 2 - contentH / 2;
+    this.$nextTick(() => {
+      requestAnimationFrame(() => {
+        this.centerViewport();
+      });
+    });
 
     this.viewport!.addEventListener('touchstart', (ev: TouchEvent) => this.onTouchStart(ev));
     this.viewport!.addEventListener('touchmove', (ev: TouchEvent) => this.onTouchMove(ev), { passive: false });
@@ -1049,11 +1058,7 @@ Alpine.data('canvasComponent', () => ({
     this.dirty = true;
     this.scale = 1;
 
-    const viewportRect = this.viewport!.getBoundingClientRect();
-    const contentW = this.content!.offsetWidth;
-    const contentH = this.content!.offsetHeight;
-    this.offsetX = viewportRect.width / 2 - contentW / 2;
-    this.offsetY = viewportRect.height / 2 - contentH / 2;
+    this.centerViewport();
   },
 
   updateItem(id: string, newProps: Partial<DraggableCard>) {
