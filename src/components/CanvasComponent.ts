@@ -1,14 +1,6 @@
+import { MouseLikeEvent, MergedThis } from '../types/canvas.js'
 import Alpine from 'alpinejs'
 import * as readingsLib from '../lib/readings.js'
-
-interface MouseLikeEvent {
-  clientX: number;
-  clientY: number;
-  target: EventTarget | null;
-  button?: number;
-  ctrlKey?: boolean;
-  preventDefault?: () => void;
-}
 
 Alpine.data('canvasComponent', () => ({
   draggableCards: [] as DraggableCard[],
@@ -28,12 +20,6 @@ Alpine.data('canvasComponent', () => ({
   selectionBox: null as { startX: number; startY: number; currentX: number; currentY: number } | null,
   selectionBoxStyle: '' as string,
   groupDragOffsets: null as Record<string, { dx: number; dy: number }> | null,
-
-  scale: 1,
-  minScale: 0.2,
-  maxScale: 4,
-  offsetX: 0,
-  offsetY: 0,
 
   isPanning: false,
   panStartX: 0,
@@ -152,16 +138,7 @@ Alpine.data('canvasComponent', () => ({
     return card.img;
   },
 
-  get contentStyle() {
-    return `
-    transform-origin: 0 0;
-    transform: translate3d(${this.offsetX}px, ${this.offsetY}px, 0)
-              scale(${this.scale});
-    transition: transform 0.03s linear;
-    `;
-  },
-
-  screenToContent(screenX: number, screenY: number): { x: number; y: number } {
+  screenToContent(this: MergedThis, screenX: number, screenY: number): { x: number; y: number } {
     if (!this.viewport) return { x: 0, y: 0 };
     const rect = this.viewport.getBoundingClientRect();
     return {
@@ -214,7 +191,7 @@ Alpine.data('canvasComponent', () => ({
     return fromList(ev.touches) ?? fromList(ev.changedTouches) ?? null;
   },
 
-  onTouchStart(e: TouchEvent) {
+  onTouchStart(this: MergedThis, e: TouchEvent) {
     if (!this.viewport) return;
 
     if (e.touches.length === 2) {
@@ -252,7 +229,7 @@ Alpine.data('canvasComponent', () => ({
     }
   },
 
-  onTouchMove(e: TouchEvent) {
+  onTouchMove(this: MergedThis, e: TouchEvent) {
     if (!this.viewport) return;
 
     if (e.touches.length === 2) {
@@ -346,7 +323,7 @@ Alpine.data('canvasComponent', () => ({
     this.onTouchEnd(e);
   },
 
-  centerViewport() {
+  centerViewport(this: MergedThis, ) {
     if (!this.viewport || !this.content) return;
     const viewportRect = this.viewport.getBoundingClientRect();
     const contentW = this.content.offsetWidth;
@@ -355,7 +332,7 @@ Alpine.data('canvasComponent', () => ({
     this.offsetY = viewportRect.height / 2 - contentH / 2;
   },
 
-  init() {
+  init(this: MergedThis) {
     Alpine.store('shuffledCards', this.cards);
     this.shuffleDeck();
 
@@ -377,43 +354,6 @@ Alpine.data('canvasComponent', () => ({
     this.viewport!.addEventListener('touchcancel', (ev: TouchEvent) => this.onTouchCancel(ev));
   },
 
-  onWheel(e: WheelEvent) {
-    if (!this.viewport) return;
-    e.preventDefault();
-
-    const rect = this.viewport!.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    this.zoomAt(mouseX, mouseY, factor);
-  },
-
-  zoomIn() {
-    this.zoomAtCenter(1.1);
-  },
-
-  zoomOut() {
-    this.zoomAtCenter(0.9);
-  },
-
-  zoomAt(screenX: number, screenY: number, factor: number) {
-    const newScale = this.clamp(this.scale * factor, this.minScale, this.maxScale);
-    const actual = newScale / this.scale;
-    if (actual === 1) return;
-
-    this.offsetX = screenX - (screenX - this.offsetX) * actual;
-    this.offsetY = screenY - (screenY - this.offsetY) * actual;
-
-    this.scale = newScale;
-    this.dirty = true;
-  },
-
-  zoomAtCenter(factor: number) {
-    if (!this.viewport) return;
-    const rect = this.viewport.getBoundingClientRect();
-    this.zoomAt(rect.width / 2, rect.height / 2, factor);
-  },
-
   shuffleDeck() {
     const newArray = [...(Alpine.store('shuffledCards') as TarotCard[])];
 
@@ -428,7 +368,7 @@ Alpine.data('canvasComponent', () => ({
     setTimeout(() => { this.showShuffledConfirmation = false; }, 3000);
   },
 
-  serializeState(): SavedReadingState {
+  serializeState(this: MergedThis): SavedReadingState {
     return {
       viewport: { scale: this.scale, offsetX: this.offsetX, offsetY: this.offsetY },
       cards: this.draggableCards.map(c => ({
@@ -457,7 +397,7 @@ Alpine.data('canvasComponent', () => ({
     };
   },
 
-  deserializeState(state: SavedReadingState): void {
+  deserializeState(this: MergedThis, state: SavedReadingState): void {
     const cardByNum = new Map(this.cards.map(c => [c.num, c]));
     this.draggableCards = state.cards.map(c => ({
       card: cardByNum.get(c.cardNum) ?? this.cards[0],
@@ -498,7 +438,7 @@ Alpine.data('canvasComponent', () => ({
     this.dirty = false;
   },
 
-  async createNewReading(): Promise<void> {
+  async createNewReading(this: MergedThis): Promise<void> {
     const confirmed = await new Promise<boolean>(resolve => {
       Alpine.store('dialog', {
         open: true,
@@ -564,7 +504,7 @@ Alpine.data('canvasComponent', () => ({
     this.dirty = false;
   },
 
-  async saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }> {
+  async saveCurrentReading(this: MergedThis, name?: string): Promise<{ ok: boolean; error?: string }> {
     if (this.loadedReadingId) {
       const result = await readingsLib.saveReading(this.serializeState(), undefined, this.loadedReadingId);
       if ('error' in result) return { ok: false, error: result.error };
@@ -583,7 +523,7 @@ Alpine.data('canvasComponent', () => ({
     return { ok: true };
   },
 
-  async loadReadingById(id: string): Promise<void> {
+  async loadReadingById(this: MergedThis, id: string): Promise<void> {
     const data = await readingsLib.loadReading(id);
     if (!data) return;
     this.deserializeState(data.state);
@@ -601,7 +541,7 @@ Alpine.data('canvasComponent', () => ({
     this.loadModalConfirmingForId = null;
   },
 
-  async onSelectReadingToLoad(id: string): Promise<void> {
+  async onSelectReadingToLoad(this: MergedThis, id: string): Promise<void> {
     if (this.dirty) {
       this.loadModalConfirmingForId = id;
       return;
@@ -610,7 +550,7 @@ Alpine.data('canvasComponent', () => ({
     this.closeLoadModal();
   },
 
-  async saveAndLoad(id: string): Promise<void> {
+  async saveAndLoad(this: MergedThis, id: string): Promise<void> {
     if (this.loadedReadingId) {
       const result = await this.saveCurrentReading();
       if (!result.ok) {
@@ -625,7 +565,7 @@ Alpine.data('canvasComponent', () => ({
     this.triggerTitleDialog();
   },
   
-  handleSaveClick(): void {
+  handleSaveClick(this: MergedThis): void {
     if (this.loadedReadingId) {
       this.saveCurrentReading().then(result => {
         result.ok 
@@ -639,7 +579,7 @@ Alpine.data('canvasComponent', () => ({
     this.triggerTitleDialog();
   },
 
-  triggerTitleDialog(): void {
+  triggerTitleDialog(this: MergedThis): void {
     Alpine.store('dialog', {
       open: true,
       type: 'inputText',
@@ -670,7 +610,7 @@ Alpine.data('canvasComponent', () => ({
     });
   },
 
-  async discardAndLoad(id: string): Promise<void> {
+  async discardAndLoad(this: MergedThis, id: string): Promise<void> {
     await this.loadReadingById(id);
     this.closeLoadModal();
   },
@@ -699,7 +639,7 @@ Alpine.data('canvasComponent', () => ({
     }
   },
 
-  addCardToCanvas(card: TarotCard): void {
+  addCardToCanvas(this: MergedThis, card: TarotCard): void {
     const draggableCard: DraggableCard = {
       card,
       id: this.generateCardId(),
@@ -739,7 +679,7 @@ Alpine.data('canvasComponent', () => ({
     return `text-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   },
 
-  addTextAt(screenX: number, screenY: number): void {
+  addTextAt(this: MergedThis, screenX: number, screenY: number): void {
     const { x, y } = this.screenToContent(screenX, screenY);
     const label: TextLabel = {
       id: this.generateTextId(),
@@ -832,7 +772,7 @@ Alpine.data('canvasComponent', () => ({
     };
   },
 
-  drawCardAt(x: number, y: number) {
+  drawCardAt(this: MergedThis, x: number, y: number) {
     // Convert the given screen coordinates (x, y) to the content (canvas) coordinates
     const { x: contentX, y: contentY } = this.screenToContent(x, y);
     this.addCardToCanvas((Alpine.store('shuffledCards') as TarotCard[])[this.cryptoRandomInt((Alpine.store('shuffledCards') as TarotCard[]).length)]);
@@ -840,7 +780,7 @@ Alpine.data('canvasComponent', () => ({
     this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, { x: contentX, y: contentY });
   },
 
-  onMouseDown(event: MouseLikeEvent) {
+  onMouseDown(this: MergedThis, event: MouseLikeEvent) {
     if (event.button === 1) {
       this.onMouseWheelClick(event);
       return;
@@ -918,7 +858,7 @@ Alpine.data('canvasComponent', () => ({
     this.updateItem(this.draggingCard.id, { zIndex: this.maxZIndex, cursor: 'grabbing' });
   },
 
-  onMouseMove(e: MouseLikeEvent) {
+  onMouseMove(this: MergedThis, e: MouseLikeEvent) {
     if (this.selectionBox) {
       const { x, y } = this.screenToContent(e.clientX, e.clientY);
       this.selectionBox = { ...this.selectionBox!, currentX: x, currentY: y };
@@ -960,7 +900,7 @@ Alpine.data('canvasComponent', () => ({
     }
   },
 
-  onMouseUp(event: MouseLikeEvent) {
+  onMouseUp(this: MergedThis, event: MouseLikeEvent) {
     if (event.preventDefault) event.preventDefault();
 
     if (this.isPanning) this.dirty = true;
@@ -1040,7 +980,7 @@ Alpine.data('canvasComponent', () => ({
     this.draggingCard = null;
   },
 
-  clearCanvas() {
+  clearCanvas(this: MergedThis) {
     this.draggableCards = [];
     this.maxZIndex = 0;
     this.draggingCard = null;
@@ -1181,9 +1121,5 @@ Alpine.data('canvasComponent', () => ({
     this.contextMenu.open = false;
     this.contextMenu.cardId = null;
     this.contextMenu.textId = null;
-  },
-
-  clamp(v: number, min: number, max: number) {
-    return Math.max(min, Math.min(max, v));
   },
 }))

@@ -1,3 +1,4 @@
+<div x-data="scaleComponent">
     <div 
       x-cloak
       x-data="canvasComponent"
@@ -10,12 +11,12 @@
           @mousemove.window="onMouseMove($event)"
           @mouseup.window="onMouseUp($event)"
           @mouseleave="onMouseUp($event)"
-          @wheel.prevent="onWheel($event)"
+          @wheel.prevent="$data.onWheel($event)"
           class="absolute inset-0 overflow-hidden cursor-grab">
         <div
           x-ref="content"
           class="relative w-[2000px] h-[2000px] bg-slate-800"
-          :style="contentStyle">
+          :style="$data.getContentStyle()">
           <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
             <div 
               class="absolute cursor-grab select-none will-change-transform origin-center hover:border-5 hover:border-purple-600"
@@ -289,3 +290,4 @@
         </div>
       </div>
     </div>
+</div>
