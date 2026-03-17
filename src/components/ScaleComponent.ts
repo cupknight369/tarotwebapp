@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs'
+import { MergedThis } from '../types/canvas.js';
 
 Alpine.data('scaleComponent', () => ({
   scale: 1,
@@ -20,7 +21,7 @@ Alpine.data('scaleComponent', () => ({
     `;
   },
 
-  onWheel(e: WheelEvent) {
+  onWheel(this: MergedThis, e: WheelEvent) {
     e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -29,7 +30,7 @@ Alpine.data('scaleComponent', () => ({
     this.zoomAt(mouseX, mouseY, factor);
   },
 
-  zoomAt(screenX: number, screenY: number, factor: number) {
+  zoomAt(this: MergedThis, screenX: number, screenY: number, factor: number) {
     const newScale = this.clamp(this.scale * factor, this.minScale, this.maxScale);
     const actual = newScale / this.scale;
     if (actual === 1) return;
@@ -38,10 +39,10 @@ Alpine.data('scaleComponent', () => ({
     this.offsetY = screenY - (screenY - this.offsetY) * actual;
 
     this.scale = newScale;
-    if ('dirty' in this) (this as { dirty: boolean }).dirty = true;
+    this.dirty = true;
   },
 
-  zoomAtCenter(factor: number) {
+  zoomAtCenter(this: MergedThis, factor: number) {
     const viewport = 'viewport' in this ? (this as { viewport: HTMLDivElement }).viewport : null;
     if (!viewport) return;
     const rect = viewport.getBoundingClientRect();

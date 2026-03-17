@@ -1,7 +1,8 @@
 <div x-data="scaleComponent">
   <div x-data="cardComponent">
     <div x-data="textLabelComponent">
-      <div x-data="canvasComponent"
+      <div x-data="stateComponent">
+        <div x-data="canvasComponent"
         x-cloak
         id="draggable-container"
         class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden">
@@ -205,23 +206,24 @@
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
             aria-label="Load reading"
             title="New reading"
-            @click="createNewReading()">✨</button>
-          <button 
-            type="button"
-            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-            aria-label="Clear canvas"
-            title="Clear canvas"
-            @click="Alpine.store('dialog', { open: true, type: 'confirm', title: 'Are you sure you want to clear the canvas?', onConfirm: () => clearCanvas(), onCancel: () => {} })">
-            🧹</button>
-          <button 
-            type="button"
-            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-            aria-label="Settings"
-            title="Settings"
-            @click="$store.settings.open = true">⚙</button>
+          @click="createNewReading()">✨</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Clear canvas"
+          title="Clear canvas"
+          @click="Alpine.store('dialog', { open: true, type: 'confirm', title: 'Are you sure you want to clear the canvas?', onConfirm: () => clearCanvas(), onCancel: () => {} })">
+          🧹</button>
+        <button 
+          type="button"
+          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+          aria-label="Settings"
+          title="Settings"
+          @click="$store.settings.open = true">⚙</button>
         </div>
+      </div>
 
-        <!-- Load readings modal -->
+      <!-- Load readings modal -->
         <div
           x-show="loadModalOpen"
           x-transition
@@ -289,6 +291,7 @@
             </div>
           </div>
         </div>
+      </div>
     </div>
   </div>
 </div>
