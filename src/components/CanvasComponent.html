@@ -1,295 +1,294 @@
 <div x-data="scaleComponent">
   <div x-data="cardComponent">
-    <div 
-      x-cloak
-      x-data="canvasComponent"
-      id="draggable-container"
-      class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden">
+    <div x-data="textLabelComponent">
+      <div x-data="canvasComponent"
+        x-cloak
+        id="draggable-container"
+        class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden">
       
-      <div 
-          x-ref="viewport"
-          @mousedown="onMouseDown($event)"
-          @mousemove.window="onMouseMove($event)"
-          @mouseup.window="onMouseUp($event)"
-          @mouseleave="onMouseUp($event)"
-          @wheel.prevent="$data.onWheel($event)"
-          class="absolute inset-0 overflow-hidden cursor-grab">
-        <div
-          x-ref="content"
-          class="relative w-[2000px] h-[2000px] bg-slate-800"
-          :style="$data.getContentStyle()">
-          <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
-            <div 
-              class="absolute cursor-grab select-none will-change-transform origin-center hover:border-5 hover:border-purple-600"
-              :id="draggableCard.id"
-              :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
-              @contextmenu.prevent="onContextMenu($event)">
-              <img 
-                :src="getCardImg(draggableCard.card, $store.settings.censored)" 
-                :alt="draggableCard.card.title"
-                class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
-                style="max-width: 150px; width: 150px;"/>
+        <div x-ref="viewport"
+            @mousedown="onMouseDown($event)"
+            @mousemove.window="onMouseMove($event)"
+            @mouseup.window="onMouseUp($event)"
+            @mouseleave="onMouseUp($event)"
+            @wheel.prevent="$data.onWheel($event)"
+            class="absolute inset-0 overflow-hidden cursor-grab">
+          <div x-ref="content"
+            class="relative w-[2000px] h-[2000px] bg-slate-800"
+            :style="$data.getContentStyle()">
+            <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
+              <div 
+                class="absolute cursor-grab select-none will-change-transform origin-center hover:border-5 hover:border-purple-600"
+                :id="draggableCard.id"
+                :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
+                @contextmenu.prevent="onContextMenu($event)">
+                <img 
+                  :src="getCardImg(draggableCard.card, $store.settings.censored)" 
+                  :alt="draggableCard.card.title"
+                  class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
+                  style="max-width: 150px; width: 150px;"/>
+                <div
+                  x-show="selectedCardIds.includes(draggableCard.id)"
+                  class="absolute inset-0 bg-purple-600/30 pointer-events-none rounded"
+                ></div>
+              </div>
+            </template>
+            <template x-for="label in textLabels" :key="label.id">
               <div
-                x-show="selectedCardIds.includes(draggableCard.id)"
-                class="absolute inset-0 bg-purple-600/30 pointer-events-none rounded"
-              ></div>
-            </div>
-          </template>
-          <template x-for="label in textLabels" :key="label.id">
-            <div
-              :data-text-id="label.id"
-              class="absolute select-none will-change-transform origin-top-left cursor-grab hover:border-5 hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em]"
-              :style="getTextLabelStyle(label)"
-              @dblclick.stop="editingTextId = label.id"
-              @contextmenu.prevent="onContextMenu($event)">
-              <template x-if="editingTextId !== label.id">
-                <span x-text="label.text"></span>
-              </template>
-              <template x-if="editingTextId === label.id">
-                <div 
-                    @click.outside="commitEditTextLabel()"
-                    @keydown.enter="commitEditTextLabel()"
-                    class="flex flex-col gap-1 bg-gray-800 border border-gray-600 rounded-lg p-2 shadow-lg">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <input type="number" :value="label.fontSize" @input="updateTextLabel(label.id, { fontSize: parseInt($event.target.value) || 16 })" min="8" max="72" class="w-14 px-2 py-1 rounded bg-gray-700 text-gray-200 border border-gray-600 text-sm">
-                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer" @click="updateTextLabel(label.id, { fontWeight: label.fontWeight === 700 ? 400 : 700 })" title="Bold">B</button>
-                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer italic" @click="updateTextLabel(label.id, { fontStyle: label.fontStyle === 'italic' ? 'normal' : 'italic' })" title="Italic">I</button>
-                    <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer underline" @click="updateTextLabel(label.id, { textDecoration: label.textDecoration === 'underline' ? 'none' : 'underline' })" title="Underline">U</button>
-                    <input type="color" :value="label.color" @input="updateTextLabel(label.id, { color: $event.target.value })" class="w-8 h-8 rounded border border-gray-600 cursor-pointer bg-gray-700">
+                :data-text-id="label.id"
+                class="absolute select-none will-change-transform origin-top-left cursor-grab hover:border-5 hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em]"
+                :style="getTextLabelStyle(label)"
+                @dblclick.stop="editingTextId = label.id"
+                @contextmenu.prevent="onContextMenu($event)">
+                <template x-if="editingTextId !== label.id">
+                  <span x-text="label.text"></span>
+                </template>
+                <template x-if="editingTextId === label.id">
+                  <div 
+                      @click.outside="commitEditTextLabel()"
+                      @keydown.enter="commitEditTextLabel()"
+                      class="flex flex-col gap-1 bg-gray-800 border border-gray-600 rounded-lg p-2 shadow-lg">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <input type="number" :value="label.fontSize" @input="updateTextLabel(label.id, { fontSize: parseInt($event.target.value) || 16 })" min="8" max="72" class="w-14 px-2 py-1 rounded bg-gray-700 text-gray-200 border border-gray-600 text-sm">
+                      <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer" @click="updateTextLabel(label.id, { fontWeight: label.fontWeight === 700 ? 400 : 700 })" title="Bold">B</button>
+                      <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer italic" @click="updateTextLabel(label.id, { fontStyle: label.fontStyle === 'italic' ? 'normal' : 'italic' })" title="Italic">I</button>
+                      <button type="button" class="px-2 py-1 rounded bg-gray-600 text-gray-200 hover:bg-gray-500 text-sm cursor-pointer underline" @click="updateTextLabel(label.id, { textDecoration: label.textDecoration === 'underline' ? 'none' : 'underline' })" title="Underline">U</button>
+                      <input type="color" :value="label.color" @input="updateTextLabel(label.id, { color: $event.target.value })" class="w-8 h-8 rounded border border-gray-600 cursor-pointer bg-gray-700">
+                    </div>
+                    <input
+                      type="text"
+                      :value="label.text"
+                      @input="updateTextLabel(label.id, { text: $event.target.value })"
+                      class="px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full min-w-[200px]"
+                      :style="`font-size: ${label.fontSize}px; font-weight: ${label.fontWeight}; font-style: ${label.fontStyle}; text-decoration: ${label.textDecoration}; color: ${label.color};`">
                   </div>
-                  <input
-                    type="text"
-                    :value="label.text"
-                    @input="updateTextLabel(label.id, { text: $event.target.value })"
-                    class="px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full min-w-[200px]"
-                    :style="`font-size: ${label.fontSize}px; font-weight: ${label.fontWeight}; font-style: ${label.fontStyle}; text-decoration: ${label.textDecoration}; color: ${label.color};`">
-                </div>
-              </template>
+                </template>
+              </div>
+            </template>
+            <div
+              x-show="selectionBox"
+              x-transition
+              class="absolute pointer-events-none border-2 border-dashed border-purple-600 z-[99999]"
+              :style="selectionBoxStyle"></div>
+            
+            <div 
+              x-show="draggableCards.length === 0"
+              x-ref="emptyCanvasMessage"
+              class="absolute inset-0 flex items-center justify-center text-gray-500">
+              <p>No cards on canvas.</p>
             </div>
-          </template>
-          <div
-            x-show="selectionBox"
-            x-transition
-            class="absolute pointer-events-none border-2 border-dashed border-purple-600 z-[99999]"
-            :style="selectionBoxStyle"></div>
-          
-          <div 
-            x-show="draggableCards.length === 0"
-            x-ref="emptyCanvasMessage"
-            class="absolute inset-0 flex items-center justify-center text-gray-500">
-            <p>No cards on canvas.</p>
           </div>
         </div>
-      </div>
 
-      <div
-        x-show="contextMenu.open"
-        x-transition
-        @click.outside="closeContextMenu()"
-        class="fixed z-[10000] min-w-[180px] py-1 bg-gray-800 border border-gray-600 rounded shadow-lg"
-        :style="`left: ${contextMenu.x}px; top: ${contextMenu.y}px;`">
-        <div x-show="contextMenu.cardId">
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-            @click="rotateCard(contextMenu.cardId, '180'); closeContextMenu()">
-            Rotate 180 
-          </button>
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-            @click="rotateCard(contextMenu.cardId, 'clockwise'); closeContextMenu()">
-            Rotate 90 clockwise
-          </button>
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-            @click="rotateCard(contextMenu.cardId, 'counter-clockwise'); closeContextMenu()">
-            Rotate 90 counter-clockwise
-          </button>
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-            @click="deleteCard(contextMenu.cardId); closeContextMenu()">
-            Delete card
-          </button>
-        </div>
-        <div x-show="contextMenu.cardId && selectedCardIds.length > 0">
-          <hr class="my-1 border-gray-600" />
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-            @click="deleteSelectedCards(); closeContextMenu()">
-            Delete selected cards
-          </button>
-        </div>
-        <div x-show="contextMenu.textId">
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-            @click="deleteTextLabel(contextMenu.textId); closeContextMenu()">
-            Delete
-          </button>
-        </div>
-        <div x-show="!contextMenu.cardId && !contextMenu.textId">
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-            @click="drawCardAt($event.clientX, $event.clientY); closeContextMenu()">
-            Draw card here
-          </button>
-          <button
-            type="button"
-            class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-            @click="addTextAt(contextMenu.x, contextMenu.y); closeContextMenu()">
-            Add text
-          </button>
-        </div>
-      </div>
-
-      <div
-        x-show="pendingAnchor"
-        x-transition
-        @click.outside="cancelPendingAnchor()"
-        class="fixed z-[10001] min-w-[160px] py-1 bg-gray-800 border border-gray-600 rounded shadow-lg"
-        :style="pendingAnchor ? `left: ${pendingAnchor.screenX}px; top: ${pendingAnchor.screenY}px;` : `display: none;`">
-        <p class="px-4 py-2 text-xs text-gray-400 border-b border-gray-600">Anchor text to card</p>
-        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'above'); cancelPendingAnchor()">Above</button>
-        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'below'); cancelPendingAnchor()">Below</button>
-        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'left'); cancelPendingAnchor()">Left</button>
-        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'right'); cancelPendingAnchor()">Right</button>
-        <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-400 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="cancelPendingAnchor()">Don't anchor</button>
-      </div>
-      
-      <div class="absolute top-1 right-2 z-[9999] flex items-center gap-1">
-        <span 
-          x-show="showShuffledConfirmation"
+        <div
+          x-show="contextMenu.open"
           x-transition
-          class="ml-1 text-sm text-gray-300">Shuffled!</span>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Single draw"
-          title="Single draw"
-          @click="addCardToCanvas(Alpine.store('shuffledCards')[cryptoRandomInt(Alpine.store('shuffledCards').length)])">1</button>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Multiple draw (1-10)"
-          title="Multiple draw (1-10)"
-          @click="Alpine.store('dialog', { open: true, type: 'input', title: 'Number of cards (1-10)?', inputMin: 1, inputMax: 10, inputDefault: '1', onSubmit: (n) => { const draws = drawMultipleCards(n); if (draws) { const s = Alpine.store('shuffledCards'); draws.forEach(i => addCardToCanvas(s[i])); } }, onCancel: () => {} })">N</button>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Draw at index (0-77)"
-          title="Draw at index (0-77)"
-          @click="Alpine.store('dialog', { open: true, type: 'input', title: 'Card index (0-77)?', inputMin: 0, inputMax: 77, inputDefault: '0', onSubmit: (i) => { if (i >= 0 && i <= 77) { addCardToCanvas(Alpine.store('shuffledCards')[i]); } }, onCancel: () => {} })">#</button>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Shuffle deck"
-          title="Shuffle deck"
-          @click="shuffleDeck()">⇅</button>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Save reading"
-          title="Save reading"
-          @click="handleSaveClick()">💾</button>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Load reading"
-          title="Load reading"
-          @click="openLoadModal()">📂</button>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Load reading"
-          title="New reading"
-          @click="createNewReading()">✨</button>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Clear canvas"
-          title="Clear canvas"
-          @click="Alpine.store('dialog', { open: true, type: 'confirm', title: 'Are you sure you want to clear the canvas?', onConfirm: () => clearCanvas(), onCancel: () => {} })">
-          🧹</button>
-        <button 
-          type="button"
-          class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          aria-label="Settings"
-          title="Settings"
-          @click="$store.settings.open = true">⚙</button>
-      </div>
+          @click.outside="closeContextMenu()"
+          class="fixed z-[10000] min-w-[180px] py-1 bg-gray-800 border border-gray-600 rounded shadow-lg"
+          :style="`left: ${contextMenu.x}px; top: ${contextMenu.y}px;`">
+          <div x-show="contextMenu.cardId">
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+              @click="rotateCard(contextMenu.cardId, '180'); closeContextMenu()">
+              Rotate 180 
+            </button>
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+              @click="rotateCard(contextMenu.cardId, 'clockwise'); closeContextMenu()">
+              Rotate 90 clockwise
+            </button>
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+              @click="rotateCard(contextMenu.cardId, 'counter-clockwise'); closeContextMenu()">
+              Rotate 90 counter-clockwise
+            </button>
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+              @click="deleteCard(contextMenu.cardId); closeContextMenu()">
+              Delete card
+            </button>
+          </div>
+          <div x-show="contextMenu.cardId && selectedCardIds.length > 0">
+            <hr class="my-1 border-gray-600" />
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+              @click="deleteSelectedCards(); closeContextMenu()">
+              Delete selected cards
+            </button>
+          </div>
+          <div x-show="contextMenu.textId">
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+              @click="deleteTextLabel(contextMenu.textId); closeContextMenu()">
+              Delete
+            </button>
+          </div>
+          <div x-show="!contextMenu.cardId && !contextMenu.textId">
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+              @click="drawCardAt($event.clientX, $event.clientY); closeContextMenu()">
+              Draw card here
+            </button>
+            <button
+              type="button"
+              class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+              @click="addTextAt(contextMenu.x, contextMenu.y); closeContextMenu()">
+              Add text
+            </button>
+          </div>
+        </div>
 
-      <!-- Load readings modal -->
-      <div
-        x-show="loadModalOpen"
-        x-transition
-        class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
-        @click.outside="closeLoadModal()">
-        <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col">
+        <div
+          x-show="pendingAnchor"
+          x-transition
+          @click.outside="cancelPendingAnchor()"
+          class="fixed z-[10001] min-w-[160px] py-1 bg-gray-800 border border-gray-600 rounded shadow-lg"
+          :style="pendingAnchor ? `left: ${pendingAnchor.screenX}px; top: ${pendingAnchor.screenY}px;` : `display: none;`">
+          <p class="px-4 py-2 text-xs text-gray-400 border-b border-gray-600">Anchor text to card</p>
+          <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'above'); cancelPendingAnchor()">Above</button>
+          <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'below'); cancelPendingAnchor()">Below</button>
+          <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'left'); cancelPendingAnchor()">Left</button>
+          <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="setTextLabelAnchor(pendingAnchor.textId, pendingAnchor.cardId, 'right'); cancelPendingAnchor()">Right</button>
+          <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-400 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="cancelPendingAnchor()">Don't anchor</button>
+        </div>
+        
+        <div class="absolute top-1 right-2 z-[9999] flex items-center gap-1">
+          <span 
+            x-show="showShuffledConfirmation"
+            x-transition
+            class="ml-1 text-sm text-gray-300">Shuffled!</span>
           <button 
             type="button"
-            class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
-            aria-label="Close"
-            @click="closeLoadModal()">
-            <span class="text-xl leading-none">×</span>
-          </button>
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Single draw"
+            title="Single draw"
+            @click="addCardToCanvas(Alpine.store('shuffledCards')[cryptoRandomInt(Alpine.store('shuffledCards').length)])">1</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Multiple draw (1-10)"
+            title="Multiple draw (1-10)"
+            @click="Alpine.store('dialog', { open: true, type: 'input', title: 'Number of cards (1-10)?', inputMin: 1, inputMax: 10, inputDefault: '1', onSubmit: (n) => { const draws = drawMultipleCards(n); if (draws) { const s = Alpine.store('shuffledCards'); draws.forEach(i => addCardToCanvas(s[i])); } }, onCancel: () => {} })">N</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Draw at index (0-77)"
+            title="Draw at index (0-77)"
+            @click="Alpine.store('dialog', { open: true, type: 'input', title: 'Card index (0-77)?', inputMin: 0, inputMax: 77, inputDefault: '0', onSubmit: (i) => { if (i >= 0 && i <= 77) { addCardToCanvas(Alpine.store('shuffledCards')[i]); } }, onCancel: () => {} })">#</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Shuffle deck"
+            title="Shuffle deck"
+            @click="shuffleDeck()">⇅</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Save reading"
+            title="Save reading"
+            @click="handleSaveClick()">💾</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Load reading"
+            title="Load reading"
+            @click="openLoadModal()">📂</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Load reading"
+            title="New reading"
+            @click="createNewReading()">✨</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Clear canvas"
+            title="Clear canvas"
+            @click="Alpine.store('dialog', { open: true, type: 'confirm', title: 'Are you sure you want to clear the canvas?', onConfirm: () => clearCanvas(), onCancel: () => {} })">
+            🧹</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Settings"
+            title="Settings"
+            @click="$store.settings.open = true">⚙</button>
+        </div>
 
-          <template x-if="!loadModalConfirmingForId">
-            <div>
-              <p class="text-xl font-bold text-gray-200 pr-8 mb-4">My Saved Readings</p>
-              <div class="overflow-y-auto flex-1 min-h-0 space-y-2">
-                <template x-for="r in savedReadings" :key="r.id">
-                  <div class="flex items-center justify-between gap-2 py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700">
+        <!-- Load readings modal -->
+        <div
+          x-show="loadModalOpen"
+          x-transition
+          class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+          @click.outside="closeLoadModal()">
+          <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col">
+            <button 
+              type="button"
+              class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
+              aria-label="Close"
+              @click="closeLoadModal()">
+              <span class="text-xl leading-none">×</span>
+            </button>
+
+            <template x-if="!loadModalConfirmingForId">
+              <div>
+                <p class="text-xl font-bold text-gray-200 pr-8 mb-4">My Saved Readings</p>
+                <div class="overflow-y-auto flex-1 min-h-0 space-y-2">
+                  <template x-for="r in savedReadings" :key="r.id">
+                    <div class="flex items-center justify-between gap-2 py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700">
+                      <button
+                        type="button"
+                        class="flex-1 text-left text-gray-200 hover:text-white cursor-pointer"
+                        @click="onSelectReadingToLoad(r.id)">
+                        <span x-text="r.name || 'Untitled Reading'"></span>
+                        <span class="text-sm text-gray-400 ml-2" x-text="new Date(r.updated_at).toLocaleDateString()"></span>
+                      </button>
+                      <button
+                        type="button"
+                        class="px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
+                        @click.stop="deleteReading(r.id)"
+                        title="Delete">×</button>
+                    </div>
+                  </template>
+                  <p x-show="savedReadings.length === 0" class="text-gray-400 py-4">No saved readings yet.</p>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="loadModalConfirmingForId">
+              <div>
+                <p class="text-xl font-bold text-gray-200 pr-8 mb-4">Save current session before loading?</p>
+                  <div class="flex flex-col gap-2">
                     <button
                       type="button"
-                      class="flex-1 text-left text-gray-200 hover:text-white cursor-pointer"
-                      @click="onSelectReadingToLoad(r.id)">
-                      <span x-text="r.name || 'Untitled Reading'"></span>
-                      <span class="text-sm text-gray-400 ml-2" x-text="new Date(r.updated_at).toLocaleDateString()"></span>
+                      class="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 cursor-pointer"
+                      @click="saveAndLoad(loadModalConfirmingForId)">
+                      Save & Load
                     </button>
                     <button
                       type="button"
-                      class="px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
-                      @click.stop="deleteReading(r.id)"
-                      title="Delete">×</button>
+                      class="w-full px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 cursor-pointer"
+                      @click="discardAndLoad(loadModalConfirmingForId)">
+                      Discard & Load
+                    </button>
+                    <button
+                      type="button"
+                      class="w-full px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 cursor-pointer"
+                      @click="cancelLoadConfirm()">
+                      Cancel
+                    </button>
                   </div>
-                </template>
-                <p x-show="savedReadings.length === 0" class="text-gray-400 py-4">No saved readings yet.</p>
-              </div>
+                </div>
+              </template>
             </div>
-          </template>
-
-          <template x-if="loadModalConfirmingForId">
-            <div>
-              <p class="text-xl font-bold text-gray-200 pr-8 mb-4">Save current session before loading?</p>
-              <div class="flex flex-col gap-2">
-                <button
-                  type="button"
-                  class="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 cursor-pointer"
-                  @click="saveAndLoad(loadModalConfirmingForId)">
-                  Save & Load
-                </button>
-                <button
-                  type="button"
-                  class="w-full px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 cursor-pointer"
-                  @click="discardAndLoad(loadModalConfirmingForId)">
-                  Discard & Load
-                </button>
-                <button
-                  type="button"
-                  class="w-full px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 cursor-pointer"
-                  @click="cancelLoadConfirm()">
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </template>
+          </div>
         </div>
-      </div>
     </div>
   </div>
 </div>
