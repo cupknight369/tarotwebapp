@@ -1,0 +1,33 @@
+/** Serialized state for a saved reading (stored in DB). */
+export interface SavedReadingState {
+    viewport: { scale: number; offsetX: number; offsetY: number };
+    cards: Array<{
+        id: string;
+        cardNum: number;
+        x: number;
+        y: number;
+        rotation: number;
+        zIndex: number;
+        opacity: number;
+    }>;
+    textLabels: Array<{
+        id: string;
+        text: string;
+        x: number;
+        y: number;
+        fontSize: number;
+        fontWeight: number;
+        fontStyle: 'normal' | 'italic';
+        textDecoration: 'none' | 'underline';
+        color: string;
+        zIndex: number;
+        anchorCardId: string | null;
+        anchorPosition: 'above' | 'below' | 'left' | 'right' | null;
+    }>;
+}
+
+export interface ReadingSummary {
+    id: string
+    name: string
+    updated_at: string
+}

@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs'
+import type { SettingsStoreState } from '../types/settings.js'
 
 const STORAGE_KEY = 'app-settings'
 

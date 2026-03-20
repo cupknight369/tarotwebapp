@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs'
 import type { MergedThis } from '../types/canvas.js'
+import type { SavedReadingState } from '../types/readingState.js';
 import * as readingsLib from '../lib/readings.js'
 
 Alpine.data('stateComponent', () => ({

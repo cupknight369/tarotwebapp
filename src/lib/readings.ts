@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import type { SavedReadingState, ReadingSummary } from '../types/readingState.js'
 
 export async function getSavedStateLimit(): Promise<number> {
   const { data, error } = await supabase

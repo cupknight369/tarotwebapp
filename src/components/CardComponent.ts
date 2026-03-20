@@ -1,5 +1,5 @@
 import Alpine from 'alpinejs'
-import type { MergedThis } from '../types/canvas.js'
+import type { MergedThis, DraggableCard, TarotCard, TextLabel } from '../types/canvas.js'
 
 Alpine.data('cardComponent', () => ({
   draggableCards: [] as DraggableCard[],

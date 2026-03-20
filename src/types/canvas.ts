@@ -1,3 +1,5 @@
+import type { SavedReadingState } from "./readingState.js";
+
 export interface MouseLikeEvent {
     clientX: number;
     clientY: number;
@@ -131,3 +133,40 @@ export type MergedThis = {
     zoomAtCenter(factor: number): void;
 }
 
+export interface TarotCard {
+    title: string;
+    num: number;
+    img: string;
+    censoredImg?: string | null;
+}
+
+export interface DraggableCard {
+    card: TarotCard;
+    id: string;
+    x: number;
+    y: number;
+    rotation: number;
+    zIndex: number;
+    opacity: number;
+    cursor: string;
+    display: string;
+}
+
+export type TextLabelAnchorPosition = 'above' | 'below' | 'left' | 'right';
+
+export interface TextLabel {
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+    fontSize: number;
+    fontWeight: number;
+    fontStyle: 'normal' | 'italic';
+    textDecoration: 'none' | 'underline';
+    color: string;
+    zIndex: number;
+    cursor: string;
+    display: string;
+    anchorCardId: string | null;
+    anchorPosition: TextLabelAnchorPosition | null;
+}
