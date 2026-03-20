@@ -1,5 +1,5 @@
 import Alpine from 'alpinejs'
-import type { MergedThis } from '../types/canvas.js'
+import type { MergedThis, TextLabel, TextLabelAnchorPosition } from '../types/canvas.js'
 
 Alpine.data('textLabelComponent', () => ({
   textLabels: [] as TextLabel[],

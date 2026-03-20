@@ -1,7 +1,7 @@
 import Alpine from 'alpinejs'
 import './input.css'
 
-import { initAuthStore } from './stores/authStore'
+import { initAuthStore } from './stores/authStore.js'
 import './components/LoginPageComponent'
 
 declare global {
