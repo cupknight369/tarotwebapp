@@ -3,6 +3,7 @@ import './input.css'
 
 import { initAuthStore } from './stores/authStore.js'
 import { initSettingsStore } from './stores/settingsStore.js'
+import { startCardImagePrefetch } from './lib/cardImageUrls.js'
 import './components/CanvasScaleComponent'
 import './components/CanvasCardComponent'
 import './components/CanvasTextLabelComponent'
@@ -20,6 +21,7 @@ window.Alpine = Alpine
 
 ;(async () => {
   await initAuthStore()
+  startCardImagePrefetch()
   initSettingsStore()
   Alpine.start()
 })()

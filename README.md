@@ -15,6 +15,14 @@ npm install
    - **Site URL**: `http://localhost:8001`
    - **Redirect URLs**: `http://localhost:8001/auth/callback`
 
+## Card images (Storage)
+
+- **Source files** live in **`cards/`** at the repository root (WebP, 350×600 px). This folder is **not** under `public/`, so Vite does **not** copy it into `dist/` — production builds load images only from Supabase Storage.
+- **Bucket:** `card-images` (public read). Created by migration [`supabase/migrations/20260320120000_card_images_bucket.sql`](supabase/migrations/20260320120000_card_images_bucket.sql).
+- **Local Supabase:** After `supabase db reset` / `supabase start`, [`supabase/config.toml`](supabase/config.toml) seeds the bucket from `../cards` (`objects_path`).
+- **Hosted Supabase:** Apply migrations (e.g. `supabase db push` or Dashboard SQL), then upload the same `cards/*.webp` files into bucket `card-images` (Dashboard, CLI, or S3-compatible tools). For lower repeat egress, set long **Cache-Control** on objects (e.g. `max-age=31536000`).
+- **App behavior:** URLs are built with `supabase.storage.from('card-images').getPublicUrl('m00.webp', …)` in [`src/lib/cardImageUrls.ts`](src/lib/cardImageUrls.ts). Optional **Pro** [image transformations](https://supabase.com/docs/guides/storage/serving/image-transformations) can be passed as the second argument. On startup, [`startCardImagePrefetch()`](src/main.ts) begins loading images in the background (does not block first paint).
+
 ## Development
 
 ```bash
