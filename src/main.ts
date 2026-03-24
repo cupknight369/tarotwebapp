@@ -27,7 +27,8 @@ declare global {
 window.Alpine = Alpine
 
 Alpine.store('shuffledCards', [])
-Alpine.store('activeDeckId', null as string | null)
+/** Alpine stores must not use `null` — internal recursion expects an object. Use '' until bootstrap. */
+Alpine.store('activeDeckId', '')
 
 async function bootstrapDeck(): Promise<void> {
   let deckId = localStorage.getItem(LAST_DECK_STORAGE_KEY)
@@ -45,6 +46,10 @@ async function bootstrapDeck(): Promise<void> {
   await initAuthStore()
   startCardImagePrefetch()
   initSettingsStore()
-  await bootstrapDeck()
   Alpine.start()
+  try {
+    await bootstrapDeck()
+  } catch (e) {
+    console.error('bootstrapDeck failed', e)
+  }
 })()

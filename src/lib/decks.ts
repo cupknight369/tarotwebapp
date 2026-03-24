@@ -25,7 +25,11 @@ export async function listDecks(): Promise<DeckRow[]> {
     .select('id, title, description, created_at, modified_at')
     .order('title', { ascending: true })
 
-  if (error || !data) return []
+  if (error) {
+    console.error('listDecks failed', error.message, error)
+    return []
+  }
+  if (!data) return []
   return data as DeckRow[]
 }
 
@@ -36,7 +40,11 @@ export async function getCardsByDeckId(deckId: string): Promise<TarotCard[]> {
     .eq('deck_id', deckId)
     .order('number', { ascending: true })
 
-  if (error || !data) return []
+  if (error) {
+    console.error('getCardsByDeckId failed', deckId, error.message, error)
+    return []
+  }
+  if (!data) return []
   return (data as CardRow[]).map(rowToTarotCard)
 }
 
@@ -50,7 +58,11 @@ export async function getCardsByIds(ids: string[]): Promise<Map<string, TarotCar
     .select('id, title, number, image, censor_image, deck_id')
     .in('id', unique)
 
-  if (error || !data) return map
+  if (error) {
+    console.error('getCardsByIds failed', error.message, error)
+    return map
+  }
+  if (!data) return map
   for (const row of data as CardRow[]) {
     const card = rowToTarotCard(row)
     map.set(card.id, card)
