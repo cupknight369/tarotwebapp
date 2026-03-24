@@ -1,4 +1,3 @@
-<div x-data="deckComponent">
 <div x-data="scaleComponent">
   <div x-data="cardComponent">
     <div x-data="textLabelComponent">
@@ -161,7 +160,8 @@
           <button type="button" class="w-full px-4 py-2 text-left text-sm text-gray-400 hover:bg-gray-600 focus:outline-none cursor-pointer" @click="cancelPendingAnchor()">Don't anchor</button>
         </div>
         
-        <div class="absolute top-1 right-2 z-[9999] flex items-center gap-1">
+        <div x-data="deckComponent" class="absolute top-1 right-2 z-[9999]">
+          <div class="flex items-center gap-1">
           <span 
             x-show="showShuffledConfirmation"
             x-transition
@@ -227,6 +227,38 @@
           aria-label="Settings"
           title="Settings"
           @click="$store.settings.open = true">⚙</button>
+          </div>
+
+      <!-- Deck picker modal (deckComponent scope: toolbar + modal share openDeckModal / deckList) -->
+      <div
+        x-cloak
+        x-show="deckModalOpen"
+        x-transition
+        class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+        @click.outside="closeDeckModal()">
+        <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col">
+          <button
+            type="button"
+            class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
+            aria-label="Close"
+            @click="closeDeckModal()">
+            <span class="text-xl leading-none">×</span>
+          </button>
+          <p class="text-xl font-bold text-gray-200 pr-8 mb-4">Choose a deck</p>
+          <div class="overflow-y-auto flex-1 min-h-0 space-y-2">
+            <template x-for="d in deckList" :key="d.id">
+              <button
+                type="button"
+                class="w-full text-left py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700 text-gray-200 hover:text-white cursor-pointer"
+                @click="switchToDeck(d.id)">
+                <span x-text="d.title"></span>
+                <span class="block text-sm text-gray-400 mt-0.5" x-show="d.description" x-text="d.description"></span>
+              </button>
+            </template>
+            <p x-show="deckList.length === 0" class="text-gray-400 py-4">No decks available.</p>
+          </div>
+        </div>
+      </div>
         </div>
       </div>
 
@@ -298,37 +330,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-  <div
-    x-cloak
-    x-show="deckModalOpen"
-    x-transition
-    class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
-    @click.outside="closeDeckModal()">
-    <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col">
-      <button
-        type="button"
-        class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
-        aria-label="Close"
-        @click="closeDeckModal()">
-        <span class="text-xl leading-none">×</span>
-      </button>
-      <p class="text-xl font-bold text-gray-200 pr-8 mb-4">Choose a deck</p>
-      <div class="overflow-y-auto flex-1 min-h-0 space-y-2">
-        <template x-for="d in deckList" :key="d.id">
-          <button
-            type="button"
-            class="w-full text-left py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700 text-gray-200 hover:text-white cursor-pointer"
-            @click="switchToDeck(d.id)">
-            <span x-text="d.title"></span>
-            <span class="block text-sm text-gray-400 mt-0.5" x-show="d.description" x-text="d.description"></span>
-          </button>
-        </template>
-        <p x-show="deckList.length === 0" class="text-gray-400 py-4">No decks available.</p>
       </div>
     </div>
   </div>
