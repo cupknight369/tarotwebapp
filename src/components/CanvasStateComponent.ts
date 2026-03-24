@@ -2,6 +2,7 @@ import Alpine from 'alpinejs'
 import type { MergedThis } from '../types/canvas.js'
 import type { SavedReadingState } from '../types/readingState.js';
 import * as readingsLib from '../lib/readings.js'
+import { getCardsByIds } from '../lib/decks.js'
 
 Alpine.data('stateComponent', () => ({
   dirty: false,
@@ -16,7 +17,8 @@ Alpine.data('stateComponent', () => ({
       viewport: { scale: this.scale, offsetX: this.offsetX, offsetY: this.offsetY },
       cards: this.draggableCards.map(c => ({
         id: c.id,
-        cardNum: c.card.num,
+        deck_id: c.card.deckId,
+        card_id: c.card.id,
         x: c.x,
         y: c.y,
         rotation: c.rotation,
@@ -40,19 +42,26 @@ Alpine.data('stateComponent', () => ({
     };
   },
 
-  deserializeState(this: MergedThis, state: SavedReadingState): void {
-    const cardByNum = new Map(this.cards.map(c => [c.num, c]));
-    this.draggableCards = state.cards.map(c => ({
-      card: cardByNum.get(c.cardNum) ?? this.cards[0],
-      id: c.id,
-      x: c.x,
-      y: c.y,
-      rotation: c.rotation,
-      zIndex: c.zIndex,
-      opacity: c.opacity,
-      cursor: 'grab',
-      display: 'block',
-    }));
+  async deserializeState(this: MergedThis, state: SavedReadingState): Promise<void> {
+    const ids = state.cards.map((c) => c.card_id)
+    const cardMap = await getCardsByIds(ids)
+    this.draggableCards = state.cards.map((c) => {
+      const card = cardMap.get(c.card_id)
+      if (!card) {
+        throw new Error(`Saved reading references unknown card: ${c.card_id}`)
+      }
+      return {
+        card,
+        id: c.id,
+        x: c.x,
+        y: c.y,
+        rotation: c.rotation,
+        zIndex: c.zIndex,
+        opacity: c.opacity,
+        cursor: 'grab',
+        display: 'block',
+      }
+    })
     this.textLabels = state.textLabels.map(l => ({
       id: l.id,
       text: l.text,
@@ -169,7 +178,7 @@ Alpine.data('stateComponent', () => ({
   async loadReadingById(this: MergedThis, id: string): Promise<void> {
     const data = await readingsLib.loadReading(id);
     if (!data) return;
-    this.deserializeState(data.state);
+    await this.deserializeState(data.state);
     this.loadedReadingId = id;
   },
 

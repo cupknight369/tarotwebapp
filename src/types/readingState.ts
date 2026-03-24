@@ -3,7 +3,8 @@ export interface SavedReadingState {
     viewport: { scale: number; offsetX: number; offsetY: number };
     cards: Array<{
         id: string;
-        cardNum: number;
+        deck_id: string;
+        card_id: string;
         x: number;
         y: number;
         rotation: number;

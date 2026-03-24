@@ -1,3 +1,4 @@
+<div x-data="deckComponent">
 <div x-data="scaleComponent">
   <div x-data="cardComponent">
     <div x-data="textLabelComponent">
@@ -170,7 +171,7 @@
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
             aria-label="Single draw"
             title="Single draw"
-            @click="addCardToCanvas(Alpine.store('shuffledCards')[cryptoRandomInt(Alpine.store('shuffledCards').length)])">1</button>
+            @click="Alpine.store('shuffledCards').length && addCardToCanvas(Alpine.store('shuffledCards')[cryptoRandomInt(Alpine.store('shuffledCards').length)])">1</button>
           <button 
             type="button"
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
@@ -180,15 +181,21 @@
           <button 
             type="button"
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-            aria-label="Draw at index (0-77)"
-            title="Draw at index (0-77)"
-            @click="Alpine.store('dialog', { open: true, type: 'input', title: 'Card index (0-77)?', inputMin: 0, inputMax: 77, inputDefault: '0', onSubmit: (i) => { if (i >= 0 && i <= 77) { addCardToCanvas(Alpine.store('shuffledCards')[i]); } }, onCancel: () => {} })">#</button>
+            aria-label="Draw at index"
+            title="Draw at index"
+            @click="openDrawByIndexDialog()">#</button>
           <button 
             type="button"
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
             aria-label="Shuffle deck"
             title="Shuffle deck"
             @click="shuffleDeck()">⇅</button>
+          <button 
+            type="button"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Switch deck"
+            title="Switch deck"
+            @click="openDeckModal()">🎴</button>
           <button 
             type="button"
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
@@ -291,6 +298,36 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div
+    x-show="deckModalOpen"
+    x-transition
+    class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+    @click.outside="closeDeckModal()">
+    <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col">
+      <button
+        type="button"
+        class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
+        aria-label="Close"
+        @click="closeDeckModal()">
+        <span class="text-xl leading-none">×</span>
+      </button>
+      <p class="text-xl font-bold text-gray-200 pr-8 mb-4">Choose a deck</p>
+      <div class="overflow-y-auto flex-1 min-h-0 space-y-2">
+        <template x-for="d in deckList" :key="d.id">
+          <button
+            type="button"
+            class="w-full text-left py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700 text-gray-200 hover:text-white cursor-pointer"
+            @click="switchToDeck(d.id)">
+            <span x-text="d.title"></span>
+            <span class="block text-sm text-gray-400 mt-0.5" x-show="d.description" x-text="d.description"></span>
+          </button>
+        </template>
+        <p x-show="deckList.length === 0" class="text-gray-400 py-4">No decks available.</p>
       </div>
     </div>
   </div>

@@ -58,8 +58,6 @@ export type MergedThis = {
     TEXT_ANCHOR_GAP: number;
     TEXT_LABEL_DEFAULT_HEIGHT: number;
 
-    cards: TarotCard[];
-
     // CanvasComponent methods
     getCardImg(card: TarotCard, censored: boolean): string;
     screenToContent(screenX: number, screenY: number): { x: number; y: number };
@@ -79,8 +77,15 @@ export type MergedThis = {
     $nextTick(cb?: () => void): void;
     init(): void;
     shuffleDeck(): void;
+    openDrawByIndexDialog(): void;
     serializeState(): SavedReadingState;
-    deserializeState(state: SavedReadingState): void;
+    deserializeState(state: SavedReadingState): Promise<void>;
+
+    deckModalOpen: boolean;
+    deckList: DeckListEntry[];
+    openDeckModal(): Promise<void>;
+    closeDeckModal(): void;
+    switchToDeck(deckId: string): Promise<void>;
     createNewReading(): Promise<void>;
     saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }>;
     loadReadingById(id: string): Promise<void>;
@@ -134,10 +139,18 @@ export type MergedThis = {
 }
 
 export interface TarotCard {
+    id: string;
+    deckId: string;
     title: string;
     num: number;
     img: string;
     censoredImg?: string | null;
+}
+
+export interface DeckListEntry {
+    id: string;
+    title: string;
+    description: string | null;
 }
 
 export interface DraggableCard {

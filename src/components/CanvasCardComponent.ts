@@ -1,8 +1,5 @@
 import Alpine from 'alpinejs'
 import type { MergedThis, DraggableCard, TarotCard, TextLabel } from '../types/canvas.js'
-import { publicCardImageUrl } from '../lib/cardImageUrls.js'
-
-const u = (f: string) => publicCardImageUrl(f)
 
 Alpine.data('cardComponent', () => ({
   draggableCards: [] as DraggableCard[],
@@ -15,87 +12,6 @@ Alpine.data('cardComponent', () => ({
 
   CARD_WIDTH: 150,
   CARD_HEIGHT: 231,
-
-  cards: [
-    { title: 'The Fool', num: 0, img: u('m00.webp') },
-    { title: 'The Magician', num: 1, img: u('m01.webp') },
-    { title: 'The High Priestess', num: 2, img: u('m02.webp') },
-    { title: 'The Empress', num: 3, img: u('m03.webp') },
-    { title: 'The Emperor', num: 4, img: u('m04.webp') },
-    { title: 'The Hierophant', num: 5, img: u('m05.webp') },
-    { title: 'The Lovers', num: 6, img: u('m06.webp'), censoredImg: u('m06c.webp') },
-    { title: 'The Chariot', num: 7, img: u('m07.webp'), censoredImg: u('m07c.webp') },
-    { title: 'The Strength', num: 8, img: u('m08.webp') },
-    { title: 'The Hermit', num: 9, img: u('m09.webp') },
-    { title: 'The Wheel Of Fortune', num: 10, img: u('m10.webp'), censoredImg: u('m10c.webp') },
-    { title: 'Justice', num: 11, img: u('m11.webp') },
-    { title: 'The Hangman', num: 12, img: u('m12.webp') },
-    { title: 'Death', num: 13, img: u('m13.webp') },
-    { title: 'Temperance', num: 14, img: u('m14.webp') },
-    { title: 'The Devil', num: 15, img: u('m15.webp'), censoredImg: u('m15c.webp') },
-    { title: 'The Tower', num: 16, img: u('m16.webp') },
-    { title: 'The Star', num: 17, img: u('m17.webp'), censoredImg: u('m17c.webp') },
-    { title: 'The Moon', num: 18, img: u('m18.webp') },
-    { title: 'The Sun', num: 19, img: u('m19.webp'), censoredImg: u('m19c.webp') },
-    { title: 'Judgement', num: 20, img: u('m20.webp'), censoredImg: u('m20c.webp') },
-    { title: 'The World', num: 21, img: u('m21.webp'), censoredImg: u('m21c.webp') },
-    { title: 'Ace Of Wands', num: 22, img: u('w01.webp') },
-    { title: 'Two Of Wands', num: 23, img: u('w02.webp') },
-    { title: 'Three Of Wands', num: 24, img: u('w03.webp') },
-    { title: 'Four Of Wands', num: 25, img: u('w04.webp') },
-    { title: 'Five Of Wands', num: 26, img: u('w05.webp') },
-    { title: 'Six Of Wands', num: 27, img: u('w06.webp') },
-    { title: 'Seven Of Wands', num: 28, img: u('w07.webp') },
-    { title: 'Eight Of Wands', num: 29, img: u('w08.webp') },
-    { title: 'Nine Of Wands', num: 30, img: u('w09.webp') },
-    { title: 'Ten Of Wands', num: 31, img: u('w10.webp') },
-    { title: 'Page Of Wands', num: 32, img: u('w11.webp') },
-    { title: 'Knight Of Wands', num: 33, img: u('w12.webp') },
-    { title: 'Queen Of Wands', num: 34, img: u('w13.webp') },
-    { title: 'King Of Wands', num: 35, img: u('w14.webp') },
-    { title: 'Ace Of Cups', num: 36, img: u('c01.webp') },
-    { title: 'Two Of Cups', num: 37, img: u('c02.webp') },
-    { title: 'Three Of Cups', num: 38, img: u('c03.webp') },
-    { title: 'Four Of Cups', num: 39, img: u('c04.webp') },
-    { title: 'Five Of Cups', num: 40, img: u('c05.webp') },
-    { title: 'Six Of Cups', num: 41, img: u('c06.webp') },
-    { title: 'Seven Of Cups', num: 42, img: u('c07.webp') },
-    { title: 'Eight Of Cups', num: 43, img: u('c08.webp') },
-    { title: 'Nine Of Cups', num: 44, img: u('c09.webp') },
-    { title: 'Ten Of Cups', num: 45, img: u('c10.webp') },
-    { title: 'Page Of Cups', num: 46, img: u('c11.webp') },
-    { title: 'Knight Of Cups', num: 47, img: u('c12.webp') },
-    { title: 'Queen Of Cups', num: 48, img: u('c13.webp') },
-    { title: 'King Of Cups', num: 49, img: u('c14.webp') },
-    { title: 'Ace Of Swords', num: 50, img: u('s01.webp') },
-    { title: 'Two Of Swords', num: 51, img: u('s02.webp') },
-    { title: 'Three Of Swords', num: 52, img: u('s03.webp') },
-    { title: 'Four Of Swords', num: 53, img: u('s04.webp') },
-    { title: 'Five Of Swords', num: 54, img: u('s05.webp') },
-    { title: 'Six Of Swords', num: 55, img: u('s06.webp') },
-    { title: 'Seven Of Swords', num: 56, img: u('s07.webp') },
-    { title: 'Eight Of Swords', num: 57, img: u('s08.webp') },
-    { title: 'Nine Of Swords', num: 58, img: u('s09.webp') },
-    { title: 'Ten Of Swords', num: 59, img: u('s10.webp') },
-    { title: 'Page Of Swords', num: 60, img: u('s11.webp') },
-    { title: 'Knight Of Swords', num: 61, img: u('s12.webp') },
-    { title: 'Queen Of Swords', num: 62, img: u('s13.webp') },
-    { title: 'King Of Swords', num: 63, img: u('s14.webp') },
-    { title: 'Ace Of Pentacles', num: 64, img: u('p01.webp') },
-    { title: 'Two Of Pentacles', num: 65, img: u('p02.webp') },
-    { title: 'Three Of Pentacles', num: 66, img: u('p03.webp') },
-    { title: 'Four Of Pentacles', num: 67, img: u('p04.webp') },
-    { title: 'Five Of Pentacles', num: 68, img: u('p05.webp') },
-    { title: 'Six Of Pentacles', num: 69, img: u('p06.webp') },
-    { title: 'Seven Of Pentacles', num: 70, img: u('p07.webp') },
-    { title: 'Eight Of Pentacles', num: 71, img: u('p08.webp') },
-    { title: 'Nine Of Pentacles', num: 72, img: u('p09.webp') },
-    { title: 'Ten Of Pentacles', num: 73, img: u('p10.webp') },
-    { title: 'Page Of Pentacles', num: 74, img: u('p11.webp') },
-    { title: 'Knight Of Pentacles', num: 75, img: u('p12.webp') },
-    { title: 'Queen Of Pentacles', num: 76, img: u('p13.webp') },
-    { title: 'King Of Pentacles', num: 77, img: u('p14.webp') },
-  ] as TarotCard[],
 
   getCardImg(card: TarotCard, censored: boolean): string {
     if (censored && card.censoredImg) return card.censoredImg;
@@ -114,6 +30,25 @@ Alpine.data('cardComponent', () => ({
 
     this.showShuffledConfirmation = true;
     setTimeout(() => { this.showShuffledConfirmation = false; }, 3000);
+  },
+
+  openDrawByIndexDialog(this: MergedThis) {
+    const s = Alpine.store('shuffledCards') as TarotCard[]
+    const max = Math.max(0, s.length - 1)
+    Alpine.store('dialog', {
+      open: true,
+      type: 'input',
+      title: `Card index (0-${max})?`,
+      inputMin: 0,
+      inputMax: max,
+      inputDefault: '0',
+      onSubmit: (i: number) => {
+        if (i >= 0 && i <= max && s.length > 0) {
+          this.addCardToCanvas(s[i])
+        }
+      },
+      onCancel: () => {},
+    })
   },
 
   addCardToCanvas(this: MergedThis, card: TarotCard): void {
@@ -163,8 +98,10 @@ Alpine.data('cardComponent', () => ({
   drawMultipleCards(num: number): Set<number> | undefined {
     if (num > 10 || num < 1) { return; }
 
-    const draws = new Set<number>();
     const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
+    if (shuffledCards.length === 0) return;
+
+    const draws = new Set<number>();
 
     while (draws.size < num) {
       const randomNum = this.cryptoRandomInt(shuffledCards.length);
@@ -175,8 +112,10 @@ Alpine.data('cardComponent', () => ({
   },
 
   drawCardAt(this: MergedThis, x: number, y: number) {
+    const shuffledCards = Alpine.store('shuffledCards') as TarotCard[]
+    if (shuffledCards.length === 0) return
     const { x: contentX, y: contentY } = this.screenToContent(x, y);
-    this.addCardToCanvas((Alpine.store('shuffledCards') as TarotCard[])[this.cryptoRandomInt((Alpine.store('shuffledCards') as TarotCard[]).length)]);
+    this.addCardToCanvas(shuffledCards[this.cryptoRandomInt(shuffledCards.length)]);
     this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, { x: contentX, y: contentY });
   },
 

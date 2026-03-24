@@ -221,7 +221,6 @@ Alpine.data('canvasComponent', () => ({
   },
 
   init(this: MergedThis) {
-    Alpine.store('shuffledCards', this.cards);
     this.shuffleDeck();
 
     (window as any).draggableZoneComponent = this;
