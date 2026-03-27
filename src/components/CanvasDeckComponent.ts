@@ -1,7 +1,12 @@
 import Alpine from 'alpinejs'
 import type { DeckListEntry, MergedThis } from '../types/canvas.js'
-import { getCardsByDeckId, LAST_DECK_STORAGE_KEY, listDecks } from '../lib/decks.js'
-import { createLocalDeck, addCardToLocalDeck } from '../lib/localDecks.js'
+import {
+  DEFAULT_DECK_ID,
+  getCardsByDeckId,
+  LAST_DECK_STORAGE_KEY,
+  listDecks,
+} from '../lib/decks.js'
+import { addCardToLocalDeck, createLocalDeck, deleteLocalDeck } from '../lib/localDecks.js'
 
 Alpine.data('deckComponent', () => ({
   deckModalOpen: false,
@@ -93,5 +98,43 @@ Alpine.data('deckComponent', () => ({
       description: r.description,
       source: r.source,
     }))
+  },
+
+  async deleteLocalDeckAction(this: MergedThis, deckId: string): Promise<void> {
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'confirm',
+        title: 'Delete this local deck and all of its cards?',
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      })
+    })
+    if (!confirmed) return
+
+    if (this.addCardDeckId === deckId) {
+      this.addCardDeckId = null
+    }
+
+    const wasActive = (Alpine.store('activeDeckId') as string) === deckId
+    await deleteLocalDeck(deckId)
+
+    const rows = await listDecks()
+    this.deckList = rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      source: r.source,
+    }))
+
+    if (wasActive) {
+      const nextId =
+        rows.find((d) => d.source === 'cloud')?.id ??
+        rows[0]?.id ??
+        DEFAULT_DECK_ID
+      await this.switchToDeck(nextId)
+    }
   },
 }))

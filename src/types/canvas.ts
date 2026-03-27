@@ -98,6 +98,7 @@ export type MergedThis = {
     startAddCard(deckId: string): void;
     cancelAddCard(): void;
     submitAddCard(): Promise<void>;
+    deleteLocalDeckAction(deckId: string): Promise<void>;
     createNewReading(): Promise<void>;
     saveCurrentReading(name?: string, target?: 'local' | 'cloud'): Promise<{ ok: boolean; error?: string }>;
     loadReadingById(scope: 'local' | 'cloud', id: string): Promise<void>;
