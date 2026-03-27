@@ -23,11 +23,20 @@
                 :id="draggableCard.id"
                 :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
                 @contextmenu.prevent="onContextMenu($event)">
-                <img 
-                  :src="getCardImg(draggableCard.card, $store.settings.censored)" 
-                  :alt="draggableCard.card.title"
-                  class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
-                  style="max-width: 150px; width: 150px;"/>
+                <template x-if="draggableCard.card.invalidReference">
+                  <div
+                    class="w-[150px] min-h-[210px] flex flex-col items-center justify-center gap-2 p-2 rounded border-2 border-dashed border-amber-600/80 bg-gray-900/95 shadow-lg pointer-events-none text-center">
+                    <span class="text-amber-400/90 text-xs font-medium leading-tight">Invalid card reference</span>
+                    <span class="text-gray-500 text-[10px] leading-tight break-all" x-text="draggableCard.card.id"></span>
+                  </div>
+                </template>
+                <template x-if="!draggableCard.card.invalidReference">
+                  <img
+                    :src="getCardImg(draggableCard.card, $store.settings.censored)"
+                    :alt="draggableCard.card.title"
+                    class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
+                    style="max-width: 150px; width: 150px;"/>
+                </template>
                 <div
                   x-show="selectedCardIds.includes(draggableCard.id)"
                   class="absolute inset-0 bg-purple-600/30 pointer-events-none rounded"

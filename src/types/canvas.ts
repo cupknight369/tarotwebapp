@@ -159,6 +159,8 @@ export interface TarotCard {
     num: number;
     img: string;
     censoredImg?: string | null;
+    /** True when the card data is missing (e.g. deck deleted); canvas shows a placeholder instead of art. */
+    invalidReference?: boolean;
 }
 
 export interface DeckListEntry {

@@ -14,6 +14,7 @@ Alpine.data('cardComponent', () => ({
   CARD_HEIGHT: 231,
 
   getCardImg(card: TarotCard, censored: boolean): string {
+    if (card.invalidReference) return '';
     if (censored && card.censoredImg) return card.censoredImg;
     return card.img;
   },

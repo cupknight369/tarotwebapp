@@ -1,5 +1,5 @@
 import Alpine from 'alpinejs'
-import type { MergedThis } from '../types/canvas.js'
+import type { MergedThis, TarotCard } from '../types/canvas.js'
 import type { SavedReadingState } from '../types/readingState.js'
 import * as readingsLib from '../lib/readings.js'
 import * as localReadingsLib from '../lib/localReadings.js'
@@ -51,10 +51,18 @@ Alpine.data('stateComponent', () => ({
     const ids = state.cards.map((c) => c.card_id)
     const cardMap = await getCardsByIds(ids)
     this.draggableCards = state.cards.map((c) => {
-      const card = cardMap.get(c.card_id)
-      if (!card) {
-        throw new Error(`Saved reading references unknown card: ${c.card_id}`)
-      }
+      const resolved = cardMap.get(c.card_id)
+      const card: TarotCard = resolved
+        ? resolved
+        : {
+            id: c.card_id,
+            deckId: c.deck_id,
+            title: 'Invalid card reference',
+            num: 0,
+            img: '',
+            censoredImg: null,
+            invalidReference: true,
+          }
       return {
         card,
         id: c.id,
