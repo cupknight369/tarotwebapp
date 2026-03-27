@@ -37,14 +37,26 @@ export async function saveLocalReading(
     const db = await openTarotDb()
     const now = new Date().toISOString()
     const id = readingId ?? crypto.randomUUID()
+
+    let resolvedName = name ?? 'Untitled Reading'
+    if (readingId !== undefined && name === undefined) {
+      const tx = db.transaction(STORE_READINGS, 'readonly')
+      const existing = (await idbRequest(
+        tx.objectStore(STORE_READINGS).get(readingId)
+      )) as LocalReadingRow | undefined
+      if (existing?.name) {
+        resolvedName = existing.name
+      }
+    }
+
     const row: LocalReadingRow = {
       id,
-      name: name ?? 'Untitled Reading',
+      name: resolvedName,
       state,
       updated_at: now,
     }
-    const tx = db.transaction(STORE_READINGS, 'readwrite')
-    await idbRequest(tx.objectStore(STORE_READINGS).put(row))
+    const wtx = db.transaction(STORE_READINGS, 'readwrite')
+    await idbRequest(wtx.objectStore(STORE_READINGS).put(row))
     return { id }
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Failed to save locally' }
