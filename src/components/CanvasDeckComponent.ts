@@ -34,8 +34,10 @@ Alpine.data('deckComponent', () => ({
 
   async switchToDeck(this: MergedThis, deckId: string) {
     const cards = await getCardsByDeckId(deckId)
+    const rows = await listDecks()
     Alpine.store('shuffledCards', cards)
     Alpine.store('activeDeckId', deckId)
+    Alpine.store('activeDeckTitle', rows.find((d) => d.id === deckId)?.title ?? '')
     localStorage.setItem(LAST_DECK_STORAGE_KEY, deckId)
     this.shuffleDeck()
     this.deckModalOpen = false

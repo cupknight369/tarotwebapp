@@ -2,9 +2,9 @@ import { supabase } from './supabase.js'
 import { publicCardImageUrl } from './cardImageUrls.js'
 import type { TarotCard } from '../types/canvas.js'
 import type { DeckRow, CardRow } from '../types/decks.js'
-import type { LocalCardRow } from '../types/localDb.js'
+import type { LocalCardImageRow, LocalCardRow } from '../types/localDb.js'
 import {
-  getCardImageBlob,
+  getCardImageRow,
   getCachedObjectUrlForBlobId,
   getLocalCardsByIds,
   listLocalCardsByDeckId,
@@ -19,7 +19,7 @@ export const DEFAULT_DECK_ID = 'a0000000-0000-4000-8000-000000000001'
 
 export type DeckWithSource = DeckRow & { source: 'cloud' | 'local' }
 
-function rowToTarotCard(row: CardRow): TarotCard {
+function rowToTarotCard(row: CardRow, deckTitle?: string): TarotCard {
   return {
     id: row.id,
     deckId: row.deck_id,
@@ -27,26 +27,38 @@ function rowToTarotCard(row: CardRow): TarotCard {
     num: row.number,
     img: publicCardImageUrl(row.image),
     censoredImg: row.censor_image ? publicCardImageUrl(row.censor_image) : null,
+    deckTitle,
+    imageSourceLabel: row.image,
+    censorImageSourceLabel: row.censor_image ?? null,
   }
 }
 
-async function localRowToTarotCard(row: LocalCardRow): Promise<TarotCard> {
-  const mainBlob = await getCardImageBlob(row.imageBlobId)
-  if (!mainBlob) {
+function localImageSourceLabel(meta: LocalCardImageRow | null): string {
+  if (!meta) return 'Local image (missing)'
+  const t = meta.title?.trim()
+  if (t) return t
+  return 'Local image (no title stored)'
+}
+
+async function localRowToTarotCard(row: LocalCardRow, deckTitle?: string): Promise<TarotCard> {
+  const mainMeta = await getCardImageRow(row.imageBlobId)
+  if (!mainMeta?.blob) {
     throw new Error(`Missing image blob for card ${row.id}`)
   }
   let img = getCachedObjectUrlForBlobId(row.imageBlobId)
   if (!img) {
-    img = URL.createObjectURL(mainBlob)
+    img = URL.createObjectURL(mainMeta.blob)
     setCachedObjectUrl(row.imageBlobId, img)
   }
   let censoredImg: string | null = null
+  let censorImageSourceLabel: string | null = null
   if (row.censorImageBlobId) {
-    const cBlob = await getCardImageBlob(row.censorImageBlobId)
-    if (cBlob) {
+    const cMeta = await getCardImageRow(row.censorImageBlobId)
+    censorImageSourceLabel = localImageSourceLabel(cMeta)
+    if (cMeta?.blob) {
       let u = getCachedObjectUrlForBlobId(row.censorImageBlobId)
       if (!u) {
-        u = URL.createObjectURL(cBlob)
+        u = URL.createObjectURL(cMeta.blob)
         setCachedObjectUrl(row.censorImageBlobId, u)
       }
       censoredImg = u
@@ -59,6 +71,9 @@ async function localRowToTarotCard(row: LocalCardRow): Promise<TarotCard> {
     num: row.number,
     img,
     censoredImg,
+    deckTitle,
+    imageSourceLabel: localImageSourceLabel(mainMeta),
+    censorImageSourceLabel,
   }
 }
 
@@ -87,6 +102,9 @@ export async function listDecks(): Promise<DeckWithSource[]> {
 }
 
 export async function getCardsByDeckId(deckId: string): Promise<TarotCard[]> {
+  const decks = await listDecks()
+  const deckTitle = decks.find((d) => d.id === deckId)?.title
+
   const { data, error } = await supabase
     .from('card')
     .select('id, title, number, image, censor_image, deck_id')
@@ -97,13 +115,13 @@ export async function getCardsByDeckId(deckId: string): Promise<TarotCard[]> {
     console.error('getCardsByDeckId failed', deckId, error.message, error)
   }
   if (data && data.length > 0) {
-    return (data as CardRow[]).map(rowToTarotCard)
+    return (data as CardRow[]).map((row) => rowToTarotCard(row, deckTitle))
   }
 
   const localRows = await listLocalCardsByDeckId(deckId)
   const out: TarotCard[] = []
   for (const row of localRows) {
-    out.push(await localRowToTarotCard(row))
+    out.push(await localRowToTarotCard(row, deckTitle))
   }
   return out
 }
@@ -112,6 +130,9 @@ export async function getCardsByIds(ids: string[]): Promise<Map<string, TarotCar
   const unique = [...new Set(ids)].filter(Boolean)
   const map = new Map<string, TarotCard>()
   if (unique.length === 0) return map
+
+  const decks = await listDecks()
+  const deckTitleById = new Map(decks.map((d) => [d.id, d.title]))
 
   const { data, error } = await supabase
     .from('card')
@@ -124,7 +145,8 @@ export async function getCardsByIds(ids: string[]): Promise<Map<string, TarotCar
   const found = new Set<string>()
   if (data) {
     for (const row of data as CardRow[]) {
-      const card = rowToTarotCard(row)
+      const deckTitle = deckTitleById.get(row.deck_id)
+      const card = rowToTarotCard(row, deckTitle)
       map.set(card.id, card)
       found.add(card.id)
     }
@@ -135,7 +157,8 @@ export async function getCardsByIds(ids: string[]): Promise<Map<string, TarotCar
 
   const localMap = await getLocalCardsByIds(missing)
   for (const row of localMap.values()) {
-    const card = await localRowToTarotCard(row)
+    const deckTitle = deckTitleById.get(row.deck_id)
+    const card = await localRowToTarotCard(row, deckTitle)
     map.set(card.id, card)
   }
   return map

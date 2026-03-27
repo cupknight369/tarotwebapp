@@ -53,7 +53,11 @@ export async function createLocalDeck(title: string, description: string | null 
   return row
 }
 
-export async function putCardImage(blob: Blob, mimeType?: string): Promise<string> {
+export async function putCardImage(
+  blob: Blob,
+  mimeType?: string,
+  title?: string
+): Promise<string> {
   const db = await openTarotDb()
   const id = crypto.randomUUID()
   const row: LocalCardImageRow = {
@@ -61,18 +65,24 @@ export async function putCardImage(blob: Blob, mimeType?: string): Promise<strin
     blob,
     mimeType: mimeType ?? blob.type,
     created_at: new Date().toISOString(),
+    ...(title?.trim() ? { title: title.trim() } : {}),
   }
   const tx = db.transaction(STORE_CARD_IMAGES, 'readwrite')
   await idbRequest(tx.objectStore(STORE_CARD_IMAGES).put(row))
   return id
 }
 
-export async function getCardImageBlob(id: string): Promise<Blob | null> {
+export async function getCardImageRow(id: string): Promise<LocalCardImageRow | null> {
   const db = await openTarotDb()
   const tx = db.transaction(STORE_CARD_IMAGES, 'readonly')
   const row = (await idbRequest(
     tx.objectStore(STORE_CARD_IMAGES).get(id)
   )) as LocalCardImageRow | undefined
+  return row ?? null
+}
+
+export async function getCardImageBlob(id: string): Promise<Blob | null> {
+  const row = await getCardImageRow(id)
   return row?.blob ?? null
 }
 
@@ -168,10 +178,10 @@ export async function addCardToLocalDeck(opts: {
   imageFile: File
   censorFile?: File | null
 }): Promise<LocalCardRow> {
-  const mainBlobId = await putCardImage(opts.imageFile, opts.imageFile.type)
+  const mainBlobId = await putCardImage(opts.imageFile, opts.imageFile.type, opts.imageFile.name)
   let censorBlobId: string | null = null
   if (opts.censorFile && opts.censorFile.size > 0) {
-    censorBlobId = await putCardImage(opts.censorFile, opts.censorFile.type)
+    censorBlobId = await putCardImage(opts.censorFile, opts.censorFile.type, opts.censorFile.name)
   }
   const row: LocalCardRow = {
     id: crypto.randomUUID(),

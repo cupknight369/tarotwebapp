@@ -5,6 +5,12 @@ export interface SavedReadingState {
         id: string;
         deck_id: string;
         card_id: string;
+        /** Snapshot names to help restore after local deck/card deletion. */
+        deck_title?: string;
+        card_title?: string;
+        /** Cloud: storage object key; local IndexedDB: image blob id. */
+        image_source?: string;
+        censor_image_source?: string | null;
         x: number;
         y: number;
         rotation: number;

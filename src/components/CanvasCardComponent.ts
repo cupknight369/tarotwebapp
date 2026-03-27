@@ -53,8 +53,13 @@ Alpine.data('cardComponent', () => ({
   },
 
   addCardToCanvas(this: MergedThis, card: TarotCard): void {
+    const activeDeckTitle = Alpine.store('activeDeckTitle') as string
+    const cardWithMeta: TarotCard = {
+      ...card,
+      deckTitle: card.deckTitle ?? (activeDeckTitle || undefined),
+    }
     const draggableCard: DraggableCard = {
-      card,
+      card: cardWithMeta,
       id: this.generateCardId(),
       x: (() => {
         const cardWidth = 150;

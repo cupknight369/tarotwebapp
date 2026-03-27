@@ -33,4 +33,6 @@ export interface LocalCardImageRow {
   blob: Blob
   mimeType?: string
   created_at: string
+  /** Human-readable source (e.g. original filename) for saves / invalid-card UI — not the blob id. */
+  title?: string
 }

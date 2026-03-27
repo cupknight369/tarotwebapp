@@ -1,5 +1,6 @@
 const DB_NAME = 'tarot'
-const DB_VERSION = 1
+/** v2: optional `title` on cardImages rows (migration is schemaless; old rows omit title). */
+const DB_VERSION = 2
 
 export const STORE_READINGS = 'readings'
 export const STORE_DECKS = 'decks'
@@ -14,22 +15,26 @@ export function openTarotDb(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
     req.onerror = () => reject(req.error ?? new Error('indexedDB.open failed'))
     req.onsuccess = () => resolve(req.result)
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (ev) => {
       const db = req.result
-      if (!db.objectStoreNames.contains(STORE_READINGS)) {
-        const readings = db.createObjectStore(STORE_READINGS, { keyPath: 'id' })
-        readings.createIndex('by_updated_at', 'updated_at')
+      const old = ev.oldVersion
+      if (old < 1) {
+        if (!db.objectStoreNames.contains(STORE_READINGS)) {
+          const readings = db.createObjectStore(STORE_READINGS, { keyPath: 'id' })
+          readings.createIndex('by_updated_at', 'updated_at')
+        }
+        if (!db.objectStoreNames.contains(STORE_DECKS)) {
+          db.createObjectStore(STORE_DECKS, { keyPath: 'id' })
+        }
+        if (!db.objectStoreNames.contains(STORE_CARD_IMAGES)) {
+          db.createObjectStore(STORE_CARD_IMAGES, { keyPath: 'id' })
+        }
+        if (!db.objectStoreNames.contains(STORE_CARDS)) {
+          const cards = db.createObjectStore(STORE_CARDS, { keyPath: 'id' })
+          cards.createIndex('by_deck_id', 'deck_id')
+        }
       }
-      if (!db.objectStoreNames.contains(STORE_DECKS)) {
-        db.createObjectStore(STORE_DECKS, { keyPath: 'id' })
-      }
-      if (!db.objectStoreNames.contains(STORE_CARD_IMAGES)) {
-        db.createObjectStore(STORE_CARD_IMAGES, { keyPath: 'id' })
-      }
-      if (!db.objectStoreNames.contains(STORE_CARDS)) {
-        const cards = db.createObjectStore(STORE_CARDS, { keyPath: 'id' })
-        cards.createIndex('by_deck_id', 'deck_id')
-      }
+      // v2: cardImages may include `title`; no store migration required.
     }
   })
   return dbPromise

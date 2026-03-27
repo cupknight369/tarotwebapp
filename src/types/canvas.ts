@@ -159,6 +159,11 @@ export interface TarotCard {
     num: number;
     img: string;
     censoredImg?: string | null;
+    /** Deck display name when known (for persistence / invalid placeholder). */
+    deckTitle?: string;
+    /** Cloud: storage key; local: image title (e.g. filename) — persisted in reading JSON as image_source. */
+    imageSourceLabel?: string;
+    censorImageSourceLabel?: string | null;
     /** True when the card data is missing (e.g. deck deleted); canvas shows a placeholder instead of art. */
     invalidReference?: boolean;
 }

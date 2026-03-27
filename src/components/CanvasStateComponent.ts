@@ -24,6 +24,10 @@ Alpine.data('stateComponent', () => ({
         id: c.id,
         deck_id: c.card.deckId,
         card_id: c.card.id,
+        deck_title: c.card.deckTitle,
+        card_title: c.card.title,
+        image_source: c.card.imageSourceLabel,
+        censor_image_source: c.card.censorImageSourceLabel ?? null,
         x: c.x,
         y: c.y,
         rotation: c.rotation,
@@ -53,15 +57,27 @@ Alpine.data('stateComponent', () => ({
     this.draggableCards = state.cards.map((c) => {
       const resolved = cardMap.get(c.card_id)
       const card: TarotCard = resolved
-        ? resolved
+        ? {
+            ...resolved,
+            deckTitle: c.deck_title ?? resolved.deckTitle,
+            title: c.card_title ?? resolved.title,
+            imageSourceLabel: c.image_source ?? resolved.imageSourceLabel,
+            censorImageSourceLabel:
+              c.censor_image_source !== undefined
+                ? c.censor_image_source
+                : resolved.censorImageSourceLabel ?? null,
+          }
         : {
             id: c.card_id,
             deckId: c.deck_id,
-            title: 'Invalid card reference',
+            title: c.card_title ?? 'Invalid card reference',
             num: 0,
             img: '',
             censoredImg: null,
             invalidReference: true,
+            deckTitle: c.deck_title,
+            imageSourceLabel: c.image_source,
+            censorImageSourceLabel: c.censor_image_source ?? null,
           }
       return {
         card,

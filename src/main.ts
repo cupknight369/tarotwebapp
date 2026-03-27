@@ -29,6 +29,7 @@ window.Alpine = Alpine
 Alpine.store('shuffledCards', [])
 /** Alpine stores must not use `null` — internal recursion expects an object. Use '' until bootstrap. */
 Alpine.store('activeDeckId', '')
+Alpine.store('activeDeckTitle', '')
 
 async function bootstrapDeck(): Promise<void> {
   let deckId = localStorage.getItem(LAST_DECK_STORAGE_KEY)
@@ -40,6 +41,7 @@ async function bootstrapDeck(): Promise<void> {
   const cards = await getCardsByDeckId(deckId)
   Alpine.store('shuffledCards', cards)
   Alpine.store('activeDeckId', deckId)
+  Alpine.store('activeDeckTitle', decks.find((d) => d.id === deckId)?.title ?? '')
   localStorage.setItem(LAST_DECK_STORAGE_KEY, deckId)
 }
 
