@@ -16,13 +16,23 @@
         @click="toggleAccountMenu()">
         <span class="text-xl leading-none">×</span>
       </button>
-      <p class="text-xl font-bold text-gray-200 pr-8 mb-6">Account Settings</p>
+      <p class="text-xl font-bold text-gray-200 pr-8 mb-6">Account</p>
 
       <span class="text-sm text-green-300" x-text="pwResetSuccessMessage"></span>
       <span class="text-sm text-red-500" x-text="auth.error"></span>
 
-      <div x-show="!isPassResetOpen"class="flex flex-col gap-3 justify-end">
+      <div x-show="!$store.auth.loading && !$store.auth.isAuthenticated" class="flex flex-col gap-3">
+        <p class="text-sm text-gray-400">You are not signed in. Readings can be saved on this device; cloud sync needs an account with a verified email.</p>
+        <a
+          href="/auth"
+          class="w-fit px-3 py-1.5 rounded bg-purple-600 text-white text-sm hover:bg-purple-700">
+          Sign in
+        </a>
+      </div>
+
+      <div x-show="$store.auth.isAuthenticated && !isPassResetOpen" class="flex flex-col gap-3 justify-end">
         <span class="text-sm text-gray-300" x-text="userEmail"></span>
+        <p class="text-xs text-gray-500" x-show="!$store.auth.isEmailConfirmed">Email not verified — cloud save is unavailable until you verify.</p>
         <div>
           <button
             type="button"
@@ -30,8 +40,8 @@
             @click="logout()">
             Log out
           </button>
-          | 
-          <a 
+          |
+          <a
             href="#"
             class="text-sm text-gray-300 hover:text-white"
             @click="togglePassResetForm()">
@@ -40,7 +50,7 @@
         </div>
       </div>
 
-      <div x-show="isPassResetOpen"class="flex flex-col gap-3 justify-end">
+      <div x-show="$store.auth.isAuthenticated && isPassResetOpen" class="flex flex-col gap-3 justify-end">
         <input type="password" :value="newPassword" @input="newPassword = $event.target.value" class="w-full px-3 py-2 rounded bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="New password">
         <input type="password" :value="confirmNewPassword" @input="confirmNewPassword = $event.target.value" class="w-full px-3 py-2 rounded bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Confirm new password">
         <span class="text-sm text-red-500" x-text="newPassword !== confirmNewPassword ? 'Passwords do not match' : ''"></span>

@@ -34,7 +34,8 @@ async function bootstrapDeck(): Promise<void> {
   let deckId = localStorage.getItem(LAST_DECK_STORAGE_KEY)
   const decks = await listDecks()
   if (!deckId || !decks.some((d) => d.id === deckId)) {
-    deckId = decks[0]?.id ?? DEFAULT_DECK_ID
+    deckId =
+      decks.find((d) => d.source === 'cloud')?.id ?? decks[0]?.id ?? DEFAULT_DECK_ID
   }
   const cards = await getCardsByDeckId(deckId)
   Alpine.store('shuffledCards', cards)

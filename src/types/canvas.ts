@@ -13,11 +13,15 @@ export type MergedThis = {
     draggableCards: DraggableCard[];
     maxZIndex: number;
     loadedReadingId: string | null;
+    loadedReadingScope: 'local' | 'cloud' | null;
     dirty: boolean;
     loadModalOpen: boolean;
     loadModalConfirmingForId: string | null;
-    savedReadings: { id: string; name: string; updated_at: string }[];
+    loadModalConfirmingScope: 'local' | 'cloud' | null;
+    localSavedReadings: { id: string; name: string; updated_at: string }[];
+    cloudSavedReadings: { id: string; name: string; updated_at: string }[];
     saveAndLoadTargetId: string | null;
+    saveAndLoadTargetScope: 'local' | 'cloud' | null;
     dragStart: { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null;
     dragContainer: HTMLElement | null;
     draggingCard: HTMLElement | null;
@@ -83,21 +87,30 @@ export type MergedThis = {
 
     deckModalOpen: boolean;
     deckList: DeckListEntry[];
+    newLocalDeckTitle: string;
+    addCardDeckId: string | null;
+    addCardTitle: string;
+    addCardNumber: number;
     openDeckModal(): Promise<void>;
     closeDeckModal(): void;
     switchToDeck(deckId: string): Promise<void>;
+    createLocalDeckAction(): Promise<void>;
+    startAddCard(deckId: string): void;
+    cancelAddCard(): void;
+    submitAddCard(): Promise<void>;
     createNewReading(): Promise<void>;
-    saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }>;
-    loadReadingById(id: string): Promise<void>;
+    saveCurrentReading(name?: string, target?: 'local' | 'cloud'): Promise<{ ok: boolean; error?: string }>;
+    loadReadingById(scope: 'local' | 'cloud', id: string): Promise<void>;
     openLoadModal(): Promise<void>;
     closeLoadModal(): void;
-    onSelectReadingToLoad(id: string): Promise<void>;
-    saveAndLoad(id: string): Promise<void>;
+    onSelectReadingToLoad(scope: 'local' | 'cloud', id: string): Promise<void>;
+    saveAndLoad(scope: 'local' | 'cloud', id: string): Promise<void>;
     handleSaveClick(): void;
+    handleSaveToCloudClick(): void;
     triggerTitleDialog(): void;
-    discardAndLoad(id: string): Promise<void>;
+    discardAndLoad(scope: 'local' | 'cloud', id: string): Promise<void>;
     cancelLoadConfirm(): void;
-    deleteReading(id: string): Promise<void>;
+    deleteReading(scope: 'local' | 'cloud', id: string): Promise<void>;
     addCardToCanvas(card: TarotCard): void;
     generateCardId(): string;
     generateTextId(): string;
@@ -151,6 +164,8 @@ export interface DeckListEntry {
     id: string;
     title: string;
     description: string | null;
+    /** Cloud = Supabase catalog; local = IndexedDB custom deck. */
+    source: 'cloud' | 'local';
 }
 
 export interface DraggableCard {

@@ -199,9 +199,16 @@
           <button 
             type="button"
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-            aria-label="Save reading"
-            title="Save reading"
+            aria-label="Save reading (this device)"
+            title="Save reading (this device)"
             @click="handleSaveClick()">💾</button>
+          <button
+            type="button"
+            x-show="$store.auth.isEmailConfirmed"
+            class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+            aria-label="Save to cloud"
+            title="Save to cloud"
+            @click="handleSaveToCloudClick()">☁</button>
           <button 
             type="button"
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
@@ -245,17 +252,48 @@
             <span class="text-xl leading-none">×</span>
           </button>
           <p class="text-xl font-bold text-gray-200 pr-8 mb-4">Choose a deck</p>
-          <div class="overflow-y-auto flex-1 min-h-0 space-y-2">
+          <div class="overflow-y-auto flex-1 min-h-0 space-y-3">
             <template x-for="d in deckList" :key="d.id">
-              <button
-                type="button"
-                class="w-full text-left py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700 text-gray-200 hover:text-white cursor-pointer"
-                @click="switchToDeck(d.id)">
-                <span x-text="d.title"></span>
-                <span class="block text-sm text-gray-400 mt-0.5" x-show="d.description" x-text="d.description"></span>
-              </button>
+              <div class="rounded bg-gray-700/50 p-2">
+                <button
+                  type="button"
+                  class="w-full text-left py-2 px-3 rounded hover:bg-gray-700 text-gray-200 hover:text-white cursor-pointer"
+                  @click="switchToDeck(d.id)">
+                  <span x-text="d.title"></span>
+                  <span class="text-xs text-gray-500 ml-1" x-text="d.source === 'local' ? '(Local)' : '(Cloud)'"></span>
+                  <span class="block text-sm text-gray-400 mt-0.5" x-show="d.description" x-text="d.description"></span>
+                </button>
+                <template x-if="d.source === 'local'">
+                  <div class="mt-2 pl-2 space-y-2">
+                    <button
+                      type="button"
+                      class="text-xs text-purple-300 hover:text-white cursor-pointer"
+                      x-show="addCardDeckId !== d.id"
+                      @click.stop="startAddCard(d.id)">Add card…</button>
+                    <div x-show="addCardDeckId === d.id" class="space-y-2 text-sm">
+                      <input type="text" x-model="addCardTitle" placeholder="Card title" class="w-full px-2 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200">
+                      <input type="number" x-model="addCardNumber" min="0" class="w-24 px-2 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200" title="Number">
+                      <label class="block text-gray-400 text-xs">Image</label>
+                      <input type="file" accept="image/*" x-ref="addCardMainFile" class="text-xs text-gray-300 w-full">
+                      <label class="block text-gray-400 text-xs">Censor image (optional)</label>
+                      <input type="file" accept="image/*" x-ref="addCardCensorFile" class="text-xs text-gray-300 w-full">
+                      <div class="flex gap-2">
+                        <button type="button" class="px-2 py-1 rounded bg-purple-600 text-white text-xs" @click="submitAddCard()">Add</button>
+                        <button type="button" class="px-2 py-1 rounded bg-gray-600 text-white text-xs" @click="cancelAddCard()">Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
             </template>
             <p x-show="deckList.length === 0" class="text-gray-400 py-4">No decks available.</p>
+            <div class="border-t border-gray-600 pt-3 mt-2 space-y-2">
+              <p class="text-sm text-gray-400">New local deck</p>
+              <div class="flex gap-2 flex-wrap">
+                <input type="text" x-model="newLocalDeckTitle" placeholder="Title" class="flex-1 min-w-[120px] px-2 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200 text-sm">
+                <button type="button" class="px-3 py-1 rounded bg-gray-600 text-white text-sm hover:bg-gray-500" @click="createLocalDeckAction()">Create</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -279,55 +317,79 @@
 
             <template x-if="!loadModalConfirmingForId">
               <div>
-                <p class="text-xl font-bold text-gray-200 pr-8 mb-4">My Saved Readings</p>
-                <div class="overflow-y-auto flex-1 min-h-0 space-y-2">
-                  <template x-for="r in savedReadings" :key="r.id">
+                <p class="text-sm font-semibold text-gray-400 mb-2">This device</p>
+                <div class="overflow-y-auto max-h-[28vh] min-h-0 space-y-2 mb-4">
+                  <template x-for="r in localSavedReadings" :key="r.id">
                     <div class="flex items-center justify-between gap-2 py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700">
                       <button
                         type="button"
                         class="flex-1 text-left text-gray-200 hover:text-white cursor-pointer"
-                        @click="onSelectReadingToLoad(r.id)">
+                        @click="onSelectReadingToLoad('local', r.id)">
                         <span x-text="r.name || 'Untitled Reading'"></span>
                         <span class="text-sm text-gray-400 ml-2" x-text="new Date(r.updated_at).toLocaleDateString()"></span>
                       </button>
                       <button
                         type="button"
                         class="px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
-                        @click.stop="deleteReading(r.id)"
+                        @click.stop="deleteReading('local', r.id)"
                         title="Delete">×</button>
                     </div>
                   </template>
-                  <p x-show="savedReadings.length === 0" class="text-gray-400 py-4">No saved readings yet.</p>
+                  <p x-show="localSavedReadings.length === 0" class="text-gray-400 py-2 text-sm">No local readings yet.</p>
                 </div>
+
+                <template x-if="$store.auth.isEmailConfirmed">
+                  <div>
+                    <p class="text-sm font-semibold text-gray-400 mb-2">Cloud</p>
+                    <div class="overflow-y-auto max-h-[28vh] min-h-0 space-y-2">
+                      <template x-for="r in cloudSavedReadings" :key="r.id">
+                        <div class="flex items-center justify-between gap-2 py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700">
+                          <button
+                            type="button"
+                            class="flex-1 text-left text-gray-200 hover:text-white cursor-pointer"
+                            @click="onSelectReadingToLoad('cloud', r.id)">
+                            <span x-text="r.name || 'Untitled Reading'"></span>
+                            <span class="text-sm text-gray-400 ml-2" x-text="new Date(r.updated_at).toLocaleDateString()"></span>
+                          </button>
+                          <button
+                            type="button"
+                            class="px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
+                            @click.stop="deleteReading('cloud', r.id)"
+                            title="Delete">×</button>
+                        </div>
+                      </template>
+                      <p x-show="cloudSavedReadings.length === 0" class="text-gray-400 py-2 text-sm">No cloud readings yet.</p>
+                    </div>
+                  </div>
+                </template>
               </div>
             </template>
 
             <template x-if="loadModalConfirmingForId">
               <div>
                 <p class="text-xl font-bold text-gray-200 pr-8 mb-4">Save current session before loading?</p>
-                  <div class="flex flex-col gap-2">
-                    <button
-                      type="button"
-                      class="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 cursor-pointer"
-                      @click="saveAndLoad(loadModalConfirmingForId)">
-                      Save & Load
-                    </button>
-                    <button
-                      type="button"
-                      class="w-full px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 cursor-pointer"
-                      @click="discardAndLoad(loadModalConfirmingForId)">
-                      Discard & Load
-                    </button>
-                    <button
-                      type="button"
-                      class="w-full px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 cursor-pointer"
-                      @click="cancelLoadConfirm()">
-                      Cancel
-                    </button>
-                  </div>
+                <div class="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    class="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 cursor-pointer"
+                    @click="saveAndLoad(loadModalConfirmingScope, loadModalConfirmingForId)">
+                    Save & Load
+                  </button>
+                  <button
+                    type="button"
+                    class="w-full px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 cursor-pointer"
+                    @click="discardAndLoad(loadModalConfirmingScope, loadModalConfirmingForId)">
+                    Discard & Load
+                  </button>
+                  <button
+                    type="button"
+                    class="w-full px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 cursor-pointer"
+                    @click="cancelLoadConfirm()">
+                    Cancel
+                  </button>
                 </div>
-              </template>
-            </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>
