@@ -72,6 +72,14 @@ export async function putCardImage(
   return id
 }
 
+/** Write a card image row with a fixed id (e.g. backup restore). */
+export async function putLocalCardImageRow(row: LocalCardImageRow): Promise<void> {
+  revokeBlobObjectUrl(row.id)
+  const db = await openTarotDb()
+  const tx = db.transaction(STORE_CARD_IMAGES, 'readwrite')
+  await idbRequest(tx.objectStore(STORE_CARD_IMAGES).put(row))
+}
+
 export async function getCardImageRow(id: string): Promise<LocalCardImageRow | null> {
   const db = await openTarotDb()
   const tx = db.transaction(STORE_CARD_IMAGES, 'readonly')

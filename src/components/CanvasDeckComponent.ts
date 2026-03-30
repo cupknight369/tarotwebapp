@@ -72,10 +72,10 @@ Alpine.data('deckComponent', () => ({
     if (!deckId) return
     const title = this.addCardTitle.trim()
     if (!title) return
-    const mainInput = this.$refs.addCardMainFile as HTMLInputElement | undefined
+    const mainInput = document.getElementById(`add-card-main-${deckId}`) as HTMLInputElement | null
     const file = mainInput?.files?.[0]
     if (!file) return
-    const censorInput = this.$refs.addCardCensorFile as HTMLInputElement | undefined
+    const censorInput = document.getElementById(`add-card-censor-${deckId}`) as HTMLInputElement | null
     const censorFile = censorInput?.files?.[0]
     await addCardToLocalDeck({
       deckId,
