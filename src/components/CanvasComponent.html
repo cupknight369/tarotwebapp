@@ -7,6 +7,14 @@
         id="draggable-container"
         class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden">
       
+        <div
+          x-show="$store.settings.showDeckTitleOnCanvas && ($store.activeDeckTitle || '').length > 0"
+          x-cloak
+          class="pointer-events-none absolute bottom-3 left-3 z-[9998] max-w-[min(85vw,22rem)] rounded-lg border border-gray-700/80 bg-gray-900/90 px-3 py-2 shadow-lg backdrop-blur-sm">
+          <p class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Active deck</p>
+          <p class="text-sm font-semibold text-gray-200 leading-snug break-words" x-text="$store.activeDeckTitle"></p>
+        </div>
+
         <div x-ref="viewport"
             @mousedown="onMouseDown($event)"
             @mousemove.window="onMouseMove($event)"
@@ -256,7 +264,11 @@
             @click="closeDeckModal()">
             <span class="text-xl leading-none">×</span>
           </button>
-          <p class="text-xl font-bold text-gray-200 pr-8 mb-3">Decks</p>
+          <div class="pr-8 mb-4">
+            <p class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Active deck</p>
+            <p class="text-xl font-bold text-gray-100 leading-tight break-words mt-1" x-text="$store.activeDeckTitle || '—'"></p>
+          </div>
+          <p class="text-sm font-medium text-gray-400 mb-3">Decks</p>
           <div class="flex border-b border-gray-600 mb-3 -mx-1">
             <button
               type="button"

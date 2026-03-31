@@ -2364,15 +2364,15 @@ export const cktarot = $root.cktarot = (() => {
             if (message.number != null && Object.hasOwnProperty.call(message, "number"))
                 writer.uint32(/* id 4, wireType 0 =*/32).int32(message.number);
             if (message.createdAt != null && Object.hasOwnProperty.call(message, "createdAt"))
-                writer.uint32(/* id 7, wireType 2 =*/58).string(message.createdAt);
+                writer.uint32(/* id 5, wireType 2 =*/42).string(message.createdAt);
             if (message.mimeType != null && Object.hasOwnProperty.call(message, "mimeType"))
-                writer.uint32(/* id 8, wireType 2 =*/66).string(message.mimeType);
+                writer.uint32(/* id 6, wireType 2 =*/50).string(message.mimeType);
             if (message.data != null && Object.hasOwnProperty.call(message, "data"))
-                writer.uint32(/* id 9, wireType 2 =*/74).bytes(message.data);
+                writer.uint32(/* id 7, wireType 2 =*/58).bytes(message.data);
             if (message.censoredData != null && Object.hasOwnProperty.call(message, "censoredData"))
-                writer.uint32(/* id 10, wireType 2 =*/82).bytes(message.censoredData);
+                writer.uint32(/* id 8, wireType 2 =*/66).bytes(message.censoredData);
             if (message.censoredMimeType != null && Object.hasOwnProperty.call(message, "censoredMimeType"))
-                writer.uint32(/* id 11, wireType 2 =*/90).string(message.censoredMimeType);
+                writer.uint32(/* id 9, wireType 2 =*/74).string(message.censoredMimeType);
             return writer;
         };
 
@@ -2425,23 +2425,23 @@ export const cktarot = $root.cktarot = (() => {
                         message.number = reader.int32();
                         break;
                     }
-                case 7: {
+                case 5: {
                         message.createdAt = reader.string();
                         break;
                     }
-                case 8: {
+                case 6: {
                         message.mimeType = reader.string();
                         break;
                     }
-                case 9: {
+                case 7: {
                         message.data = reader.bytes();
                         break;
                     }
-                case 10: {
+                case 8: {
                         message.censoredData = reader.bytes();
                         break;
                     }
-                case 11: {
+                case 9: {
                         message.censoredMimeType = reader.string();
                         break;
                     }
@@ -3044,7 +3044,7 @@ export const cktarot = $root.cktarot = (() => {
                     $root.cktarot.CardRow.encode(message.cards[i], writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
             if (message.readings != null && message.readings.length)
                 for (let i = 0; i < message.readings.length; ++i)
-                    $root.cktarot.ReadingRow.encode(message.readings[i], writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
+                    $root.cktarot.ReadingRow.encode(message.readings[i], writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
             return writer;
         };
 
@@ -3101,7 +3101,7 @@ export const cktarot = $root.cktarot = (() => {
                         message.cards.push($root.cktarot.CardRow.decode(reader, reader.uint32()));
                         break;
                     }
-                case 6: {
+                case 5: {
                         if (!(message.readings && message.readings.length))
                             message.readings = [];
                         message.readings.push($root.cktarot.ReadingRow.decode(reader, reader.uint32()));

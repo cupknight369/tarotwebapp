@@ -2,6 +2,8 @@
 export interface SettingsStoreState {
     open: boolean;
     censored: boolean;
+    /** When false, the active deck name is hidden in the bottom-left of the canvas. */
+    showDeckTitleOnCanvas: boolean;
 }
 
 /** Protobuf `CktarotBackup.version` field — must match generated backup files. */
