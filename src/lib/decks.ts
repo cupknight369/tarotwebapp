@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js'
 import { publicCardImageUrl } from './cardImageUrls.js'
-import type { TarotCard } from '../types/canvas.js'
+import type { CatalogDeckOffer, OnDeviceDeckEntry, TarotCard } from '../types/canvas.js'
 import type { DeckRow, CardRow } from '../types/decks.js'
 import type { LocalCardImageRow, LocalCardRow } from '../types/localDb.js'
 import {
@@ -17,7 +17,62 @@ export const LAST_DECK_STORAGE_KEY = 'last_deck_id'
 /** Seeded default deck id (matches migration). */
 export const DEFAULT_DECK_ID = 'a0000000-0000-4000-8000-000000000001'
 
-export type DeckWithSource = DeckRow & { source: 'cloud' | 'local' }
+async function listCloudDecks(): Promise<DeckRow[]> {
+  const { data, error } = await supabase
+    .from('deck')
+    .select('id, title, description, created_at, modified_at')
+    .order('title', { ascending: true })
+
+  if (error) {
+    console.error('listCloudDecks failed', error.message, error)
+    return []
+  }
+  if (!data) return []
+  return data as DeckRow[]
+}
+
+/** Supabase catalog rows with `installed` when the same deck id exists in IDB. */
+export async function listCatalogDeckOffers(): Promise<CatalogDeckOffer[]> {
+  const [catalog, localRows] = await Promise.all([listCloudDecks(), listLocalDecks()])
+  const localIds = new Set(localRows.map((l) => l.id))
+  return catalog.map((d) => ({
+    id: d.id,
+    title: d.title,
+    description: d.description,
+    installed: localIds.has(d.id),
+  }))
+}
+
+/** All IndexedDB decks with `fromCatalog` when the id exists in the Supabase catalog. */
+export async function listOnDeviceDeckEntries(): Promise<OnDeviceDeckEntry[]> {
+  const [catalog, localRows] = await Promise.all([listCloudDecks(), listLocalDecks()])
+  const catalogIds = new Set(catalog.map((c) => c.id))
+  return localRows
+    .map((d) => ({
+      id: d.id,
+      title: d.title,
+      description: d.description,
+      created_at: d.created_at,
+      modified_at: d.modified_at,
+      fromCatalog: catalogIds.has(d.id),
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title))
+}
+
+/** Valid deck ids = catalog ∪ on-device (for `last_deck_id` validation). */
+export async function getKnownDeckIds(): Promise<Set<string>> {
+  const [catalog, localRows] = await Promise.all([listCloudDecks(), listLocalDecks()])
+  const ids = new Set<string>()
+  for (const d of catalog) ids.add(d.id)
+  for (const d of localRows) ids.add(d.id)
+  return ids
+}
+
+/** Title for a deck id from local row or catalog (local wins if both). */
+async function getDeckTitle(deckId: string): Promise<string | undefined> {
+  const [localDecks, catalog] = await Promise.all([listLocalDecks(), listCloudDecks()])
+  return localDecks.find((d) => d.id === deckId)?.title ?? catalog.find((d) => d.id === deckId)?.title
+}
 
 function rowToTarotCard(row: CardRow, deckTitle?: string): TarotCard {
   return {
@@ -77,33 +132,17 @@ async function localRowToTarotCard(row: LocalCardRow, deckTitle?: string): Promi
   }
 }
 
-async function listCloudDecks(): Promise<DeckRow[]> {
-  const { data, error } = await supabase
-    .from('deck')
-    .select('id, title, description, created_at, modified_at')
-    .order('title', { ascending: true })
-
-  if (error) {
-    console.error('listDecks failed', error.message, error)
-    return []
-  }
-  if (!data) return []
-  return data as DeckRow[]
-}
-
-export async function listDecks(): Promise<DeckWithSource[]> {
-  const [cloud, local] = await Promise.all([listCloudDecks(), listLocalDecks()])
-  const merged: DeckWithSource[] = [
-    ...cloud.map((d) => ({ ...d, source: 'cloud' as const })),
-    ...local.map((d) => ({ ...d, source: 'local' as const })),
-  ]
-  merged.sort((a, b) => a.title.localeCompare(b.title))
-  return merged
-}
-
 export async function getCardsByDeckId(deckId: string): Promise<TarotCard[]> {
-  const decks = await listDecks()
-  const deckTitle = decks.find((d) => d.id === deckId)?.title
+  const localCardRows = await listLocalCardsByDeckId(deckId)
+  const deckTitle = await getDeckTitle(deckId)
+
+  if (localCardRows.length > 0) {
+    const out: TarotCard[] = []
+    for (const row of localCardRows) {
+      out.push(await localRowToTarotCard(row, deckTitle))
+    }
+    return out
+  }
 
   const { data, error } = await supabase
     .from('card')
@@ -118,12 +157,7 @@ export async function getCardsByDeckId(deckId: string): Promise<TarotCard[]> {
     return (data as CardRow[]).map((row) => rowToTarotCard(row, deckTitle))
   }
 
-  const localRows = await listLocalCardsByDeckId(deckId)
-  const out: TarotCard[] = []
-  for (const row of localRows) {
-    out.push(await localRowToTarotCard(row, deckTitle))
-  }
-  return out
+  return []
 }
 
 export async function getCardsByIds(ids: string[]): Promise<Map<string, TarotCard>> {
@@ -131,35 +165,41 @@ export async function getCardsByIds(ids: string[]): Promise<Map<string, TarotCar
   const map = new Map<string, TarotCard>()
   if (unique.length === 0) return map
 
-  const decks = await listDecks()
-  const deckTitleById = new Map(decks.map((d) => [d.id, d.title]))
+  const [localDecks, catalog] = await Promise.all([listLocalDecks(), listCloudDecks()])
+  const deckTitleById = new Map<string, string>()
+  for (const d of localDecks) deckTitleById.set(d.id, d.title)
+  for (const d of catalog) {
+    if (!deckTitleById.has(d.id)) deckTitleById.set(d.id, d.title)
+  }
+
+  const localMap = await getLocalCardsByIds(unique)
+  const needFromCloud: string[] = []
+  for (const id of unique) {
+    const row = localMap.get(id)
+    if (row) {
+      const deckTitle = deckTitleById.get(row.deck_id)
+      map.set(id, await localRowToTarotCard(row, deckTitle))
+    } else {
+      needFromCloud.push(id)
+    }
+  }
+
+  if (needFromCloud.length === 0) return map
 
   const { data, error } = await supabase
     .from('card')
     .select('id, title, number, image, censor_image, deck_id')
-    .in('id', unique)
+    .in('id', needFromCloud)
 
   if (error) {
     console.error('getCardsByIds failed', error.message, error)
   }
-  const found = new Set<string>()
   if (data) {
     for (const row of data as CardRow[]) {
       const deckTitle = deckTitleById.get(row.deck_id)
       const card = rowToTarotCard(row, deckTitle)
       map.set(card.id, card)
-      found.add(card.id)
     }
-  }
-
-  const missing = unique.filter((id) => !found.has(id))
-  if (missing.length === 0) return map
-
-  const localMap = await getLocalCardsByIds(missing)
-  for (const row of localMap.values()) {
-    const deckTitle = deckTitleById.get(row.deck_id)
-    const card = await localRowToTarotCard(row, deckTitle)
-    map.set(card.id, card)
   }
   return map
 }

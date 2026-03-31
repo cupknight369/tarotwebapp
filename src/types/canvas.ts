@@ -9,19 +9,34 @@ export interface MouseLikeEvent {
     preventDefault?: () => void;
 }
 
+export type DeckModalTab = 'onDevice' | 'store';
+
+export interface CatalogDeckOffer {
+    id: string;
+    title: string;
+    description: string | null;
+    installed: boolean;
+}
+
+export interface OnDeviceDeckEntry {
+    id: string;
+    title: string;
+    description: string | null;
+    created_at: string;
+    modified_at: string;
+    /** True when this deck id exists in the Supabase catalog (installed from store). */
+    fromCatalog: boolean;
+}
+
 export type MergedThis = {
     draggableCards: DraggableCard[];
     maxZIndex: number;
     loadedReadingId: string | null;
-    loadedReadingScope: 'local' | 'cloud' | null;
     dirty: boolean;
     loadModalOpen: boolean;
     loadModalConfirmingForId: string | null;
-    loadModalConfirmingScope: 'local' | 'cloud' | null;
     localSavedReadings: { id: string; name: string; updated_at: string }[];
-    cloudSavedReadings: { id: string; name: string; updated_at: string }[];
     saveAndLoadTargetId: string | null;
-    saveAndLoadTargetScope: 'local' | 'cloud' | null;
     dragStart: { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null;
     dragContainer: HTMLElement | null;
     draggingCard: HTMLElement | null;
@@ -86,32 +101,37 @@ export type MergedThis = {
     deserializeState(state: SavedReadingState): Promise<void>;
 
     deckModalOpen: boolean;
-    deckList: DeckListEntry[];
+    deckModalTab: DeckModalTab;
+    catalogOffers: CatalogDeckOffer[];
+    onDeviceDecks: OnDeviceDeckEntry[];
     newLocalDeckTitle: string;
     addCardDeckId: string | null;
     addCardTitle: string;
     addCardNumber: number;
+    setDeckModalTab(tab: DeckModalTab): void;
+    refreshDeckLists(): Promise<void>;
     openDeckModal(): Promise<void>;
     closeDeckModal(): void;
     switchToDeck(deckId: string): Promise<void>;
     createLocalDeckAction(): Promise<void>;
+    downloadCatalogDeckAction(deckId: string): Promise<void>;
+    removeCatalogInstallAction(deckId: string): Promise<void>;
     startAddCard(deckId: string): void;
     cancelAddCard(): void;
     submitAddCard(): Promise<void>;
     deleteLocalDeckAction(deckId: string): Promise<void>;
     createNewReading(): Promise<void>;
-    saveCurrentReading(name?: string, target?: 'local' | 'cloud'): Promise<{ ok: boolean; error?: string }>;
-    loadReadingById(scope: 'local' | 'cloud', id: string): Promise<void>;
+    saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }>;
+    loadReadingById(id: string): Promise<void>;
     openLoadModal(): Promise<void>;
     closeLoadModal(): void;
-    onSelectReadingToLoad(scope: 'local' | 'cloud', id: string): Promise<void>;
-    saveAndLoad(scope: 'local' | 'cloud', id: string): Promise<void>;
+    onSelectReadingToLoad(id: string): Promise<void>;
+    saveAndLoad(id: string): Promise<void>;
     handleSaveClick(): void;
-    handleSaveToCloudClick(): void;
     triggerTitleDialog(): void;
-    discardAndLoad(scope: 'local' | 'cloud', id: string): Promise<void>;
+    discardAndLoad(id: string): Promise<void>;
     cancelLoadConfirm(): void;
-    deleteReading(scope: 'local' | 'cloud', id: string): Promise<void>;
+    deleteReading(id: string): Promise<void>;
     addCardToCanvas(card: TarotCard): void;
     generateCardId(): string;
     generateTextId(): string;
@@ -166,14 +186,6 @@ export interface TarotCard {
     censorImageSourceLabel?: string | null;
     /** True when the card data is missing (e.g. deck deleted); canvas shows a placeholder instead of art. */
     invalidReference?: boolean;
-}
-
-export interface DeckListEntry {
-    id: string;
-    title: string;
-    description: string | null;
-    /** Cloud = Supabase catalog; local = IndexedDB custom deck. */
-    source: 'cloud' | 'local';
 }
 
 export interface DraggableCard {

@@ -22,7 +22,7 @@
       <span class="text-sm text-red-500" x-text="auth.error"></span>
 
       <div x-show="!$store.auth.loading && !$store.auth.isAuthenticated" class="flex flex-col gap-3">
-        <p class="text-sm text-gray-400">You are not signed in. Readings can be saved on this device; cloud sync needs an account with a verified email.</p>
+        <p class="text-sm text-gray-400">You are not signed in. Readings are stored on this device when you use the app.</p>
         <a
           href="/auth"
           class="w-fit px-3 py-1.5 rounded bg-purple-600 text-white text-sm hover:bg-purple-700">
@@ -32,7 +32,7 @@
 
       <div x-show="$store.auth.isAuthenticated && !isPassResetOpen" class="flex flex-col gap-3 justify-end">
         <span class="text-sm text-gray-300" x-text="userEmail"></span>
-        <p class="text-xs text-gray-500" x-show="!$store.auth.isEmailConfirmed">Email not verified — cloud save is unavailable until you verify.</p>
+        <p class="text-xs text-gray-500" x-show="!$store.auth.isEmailConfirmed">Email not verified — some account features may be limited until you verify.</p>
         <div>
           <button
             type="button"

@@ -7,8 +7,10 @@ import { startCardImagePrefetch } from './lib/cardImageUrls.js'
 import {
   DEFAULT_DECK_ID,
   getCardsByDeckId,
+  getKnownDeckIds,
   LAST_DECK_STORAGE_KEY,
-  listDecks,
+  listCatalogDeckOffers,
+  listOnDeviceDeckEntries,
 } from './lib/decks.js'
 import './components/CanvasScaleComponent'
 import './components/CanvasCardComponent'
@@ -33,15 +35,23 @@ Alpine.store('activeDeckTitle', '')
 
 async function bootstrapDeck(): Promise<void> {
   let deckId = localStorage.getItem(LAST_DECK_STORAGE_KEY)
-  const decks = await listDecks()
-  if (!deckId || !decks.some((d) => d.id === deckId)) {
-    deckId =
-      decks.find((d) => d.source === 'cloud')?.id ?? decks[0]?.id ?? DEFAULT_DECK_ID
+  const [knownIds, catalogOffers, onDevice] = await Promise.all([
+    getKnownDeckIds(),
+    listCatalogDeckOffers(),
+    listOnDeviceDeckEntries(),
+  ])
+  if (!deckId || !knownIds.has(deckId)) {
+    const sorted = [...catalogOffers].sort((a, b) => a.title.localeCompare(b.title))
+    deckId = sorted[0]?.id ?? onDevice[0]?.id ?? DEFAULT_DECK_ID
   }
   const cards = await getCardsByDeckId(deckId)
+  const title =
+    onDevice.find((d) => d.id === deckId)?.title ??
+    catalogOffers.find((c) => c.id === deckId)?.title ??
+    ''
   Alpine.store('shuffledCards', cards)
   Alpine.store('activeDeckId', deckId)
-  Alpine.store('activeDeckTitle', decks.find((d) => d.id === deckId)?.title ?? '')
+  Alpine.store('activeDeckTitle', title)
   localStorage.setItem(LAST_DECK_STORAGE_KEY, deckId)
 }
 
