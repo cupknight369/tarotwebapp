@@ -286,6 +286,12 @@ export const cktarot = $root.cktarot = (() => {
          * @property {number|null} [rotation] PlacedCard rotation
          * @property {number|null} [zIndex] PlacedCard zIndex
          * @property {number|null} [opacity] PlacedCard opacity
+         * @property {string|null} [createdAt] PlacedCard createdAt
+         * @property {string|null} [mimeType] PlacedCard mimeType
+         * @property {Uint8Array|null} [data] PlacedCard data
+         * @property {Uint8Array|null} [censoredData] PlacedCard censoredData
+         * @property {number|null} [cardNumber] PlacedCard cardNumber
+         * @property {string|null} [censoredMimeType] PlacedCard censoredMimeType
          */
 
         /**
@@ -399,6 +405,54 @@ export const cktarot = $root.cktarot = (() => {
          */
         PlacedCard.prototype.opacity = 0;
 
+        /**
+         * PlacedCard createdAt.
+         * @member {string|null|undefined} createdAt
+         * @memberof cktarot.PlacedCard
+         * @instance
+         */
+        PlacedCard.prototype.createdAt = null;
+
+        /**
+         * PlacedCard mimeType.
+         * @member {string|null|undefined} mimeType
+         * @memberof cktarot.PlacedCard
+         * @instance
+         */
+        PlacedCard.prototype.mimeType = null;
+
+        /**
+         * PlacedCard data.
+         * @member {Uint8Array|null|undefined} data
+         * @memberof cktarot.PlacedCard
+         * @instance
+         */
+        PlacedCard.prototype.data = null;
+
+        /**
+         * PlacedCard censoredData.
+         * @member {Uint8Array|null|undefined} censoredData
+         * @memberof cktarot.PlacedCard
+         * @instance
+         */
+        PlacedCard.prototype.censoredData = null;
+
+        /**
+         * PlacedCard cardNumber.
+         * @member {number|null|undefined} cardNumber
+         * @memberof cktarot.PlacedCard
+         * @instance
+         */
+        PlacedCard.prototype.cardNumber = null;
+
+        /**
+         * PlacedCard censoredMimeType.
+         * @member {string|null|undefined} censoredMimeType
+         * @memberof cktarot.PlacedCard
+         * @instance
+         */
+        PlacedCard.prototype.censoredMimeType = null;
+
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
 
@@ -423,6 +477,42 @@ export const cktarot = $root.cktarot = (() => {
         // Virtual OneOf for proto3 optional field
         Object.defineProperty(PlacedCard.prototype, "_censorImageSource", {
             get: $util.oneOfGetter($oneOfFields = ["censorImageSource"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(PlacedCard.prototype, "_createdAt", {
+            get: $util.oneOfGetter($oneOfFields = ["createdAt"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(PlacedCard.prototype, "_mimeType", {
+            get: $util.oneOfGetter($oneOfFields = ["mimeType"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(PlacedCard.prototype, "_data", {
+            get: $util.oneOfGetter($oneOfFields = ["data"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(PlacedCard.prototype, "_censoredData", {
+            get: $util.oneOfGetter($oneOfFields = ["censoredData"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(PlacedCard.prototype, "_cardNumber", {
+            get: $util.oneOfGetter($oneOfFields = ["cardNumber"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(PlacedCard.prototype, "_censoredMimeType", {
+            get: $util.oneOfGetter($oneOfFields = ["censoredMimeType"]),
             set: $util.oneOfSetter($oneOfFields)
         });
 
@@ -474,6 +564,18 @@ export const cktarot = $root.cktarot = (() => {
                 writer.uint32(/* id 11, wireType 0 =*/88).sint32(message.zIndex);
             if (message.opacity != null && Object.hasOwnProperty.call(message, "opacity"))
                 writer.uint32(/* id 12, wireType 1 =*/97).double(message.opacity);
+            if (message.createdAt != null && Object.hasOwnProperty.call(message, "createdAt"))
+                writer.uint32(/* id 13, wireType 2 =*/106).string(message.createdAt);
+            if (message.mimeType != null && Object.hasOwnProperty.call(message, "mimeType"))
+                writer.uint32(/* id 14, wireType 2 =*/114).string(message.mimeType);
+            if (message.data != null && Object.hasOwnProperty.call(message, "data"))
+                writer.uint32(/* id 15, wireType 2 =*/122).bytes(message.data);
+            if (message.censoredData != null && Object.hasOwnProperty.call(message, "censoredData"))
+                writer.uint32(/* id 16, wireType 2 =*/130).bytes(message.censoredData);
+            if (message.cardNumber != null && Object.hasOwnProperty.call(message, "cardNumber"))
+                writer.uint32(/* id 17, wireType 0 =*/136).int32(message.cardNumber);
+            if (message.censoredMimeType != null && Object.hasOwnProperty.call(message, "censoredMimeType"))
+                writer.uint32(/* id 18, wireType 2 =*/146).string(message.censoredMimeType);
             return writer;
         };
 
@@ -558,6 +660,30 @@ export const cktarot = $root.cktarot = (() => {
                         message.opacity = reader.double();
                         break;
                     }
+                case 13: {
+                        message.createdAt = reader.string();
+                        break;
+                    }
+                case 14: {
+                        message.mimeType = reader.string();
+                        break;
+                    }
+                case 15: {
+                        message.data = reader.bytes();
+                        break;
+                    }
+                case 16: {
+                        message.censoredData = reader.bytes();
+                        break;
+                    }
+                case 17: {
+                        message.cardNumber = reader.int32();
+                        break;
+                    }
+                case 18: {
+                        message.censoredMimeType = reader.string();
+                        break;
+                    }
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -638,6 +764,36 @@ export const cktarot = $root.cktarot = (() => {
             if (message.opacity != null && message.hasOwnProperty("opacity"))
                 if (typeof message.opacity !== "number")
                     return "opacity: number expected";
+            if (message.createdAt != null && message.hasOwnProperty("createdAt")) {
+                properties._createdAt = 1;
+                if (!$util.isString(message.createdAt))
+                    return "createdAt: string expected";
+            }
+            if (message.mimeType != null && message.hasOwnProperty("mimeType")) {
+                properties._mimeType = 1;
+                if (!$util.isString(message.mimeType))
+                    return "mimeType: string expected";
+            }
+            if (message.data != null && message.hasOwnProperty("data")) {
+                properties._data = 1;
+                if (!(message.data && typeof message.data.length === "number" || $util.isString(message.data)))
+                    return "data: buffer expected";
+            }
+            if (message.censoredData != null && message.hasOwnProperty("censoredData")) {
+                properties._censoredData = 1;
+                if (!(message.censoredData && typeof message.censoredData.length === "number" || $util.isString(message.censoredData)))
+                    return "censoredData: buffer expected";
+            }
+            if (message.cardNumber != null && message.hasOwnProperty("cardNumber")) {
+                properties._cardNumber = 1;
+                if (!$util.isInteger(message.cardNumber))
+                    return "cardNumber: integer expected";
+            }
+            if (message.censoredMimeType != null && message.hasOwnProperty("censoredMimeType")) {
+                properties._censoredMimeType = 1;
+                if (!$util.isString(message.censoredMimeType))
+                    return "censoredMimeType: string expected";
+            }
             return null;
         };
 
@@ -677,6 +833,24 @@ export const cktarot = $root.cktarot = (() => {
                 message.zIndex = object.zIndex | 0;
             if (object.opacity != null)
                 message.opacity = Number(object.opacity);
+            if (object.createdAt != null)
+                message.createdAt = String(object.createdAt);
+            if (object.mimeType != null)
+                message.mimeType = String(object.mimeType);
+            if (object.data != null)
+                if (typeof object.data === "string")
+                    $util.base64.decode(object.data, message.data = $util.newBuffer($util.base64.length(object.data)), 0);
+                else if (object.data.length >= 0)
+                    message.data = object.data;
+            if (object.censoredData != null)
+                if (typeof object.censoredData === "string")
+                    $util.base64.decode(object.censoredData, message.censoredData = $util.newBuffer($util.base64.length(object.censoredData)), 0);
+                else if (object.censoredData.length >= 0)
+                    message.censoredData = object.censoredData;
+            if (object.cardNumber != null)
+                message.cardNumber = object.cardNumber | 0;
+            if (object.censoredMimeType != null)
+                message.censoredMimeType = String(object.censoredMimeType);
             return message;
         };
 
@@ -739,6 +913,36 @@ export const cktarot = $root.cktarot = (() => {
                 object.zIndex = message.zIndex;
             if (message.opacity != null && message.hasOwnProperty("opacity"))
                 object.opacity = options.json && !isFinite(message.opacity) ? String(message.opacity) : message.opacity;
+            if (message.createdAt != null && message.hasOwnProperty("createdAt")) {
+                object.createdAt = message.createdAt;
+                if (options.oneofs)
+                    object._createdAt = "createdAt";
+            }
+            if (message.mimeType != null && message.hasOwnProperty("mimeType")) {
+                object.mimeType = message.mimeType;
+                if (options.oneofs)
+                    object._mimeType = "mimeType";
+            }
+            if (message.data != null && message.hasOwnProperty("data")) {
+                object.data = options.bytes === String ? $util.base64.encode(message.data, 0, message.data.length) : options.bytes === Array ? Array.prototype.slice.call(message.data) : message.data;
+                if (options.oneofs)
+                    object._data = "data";
+            }
+            if (message.censoredData != null && message.hasOwnProperty("censoredData")) {
+                object.censoredData = options.bytes === String ? $util.base64.encode(message.censoredData, 0, message.censoredData.length) : options.bytes === Array ? Array.prototype.slice.call(message.censoredData) : message.censoredData;
+                if (options.oneofs)
+                    object._censoredData = "censoredData";
+            }
+            if (message.cardNumber != null && message.hasOwnProperty("cardNumber")) {
+                object.cardNumber = message.cardNumber;
+                if (options.oneofs)
+                    object._cardNumber = "cardNumber";
+            }
+            if (message.censoredMimeType != null && message.hasOwnProperty("censoredMimeType")) {
+                object.censoredMimeType = message.censoredMimeType;
+                if (options.oneofs)
+                    object._censoredMimeType = "censoredMimeType";
+            }
             return object;
         };
 
@@ -2000,8 +2204,11 @@ export const cktarot = $root.cktarot = (() => {
          * @property {string|null} [deckId] CardRow deckId
          * @property {string|null} [title] CardRow title
          * @property {number|null} [number] CardRow number
-         * @property {string|null} [imageBlobId] CardRow imageBlobId
-         * @property {string|null} [censorImageBlobId] CardRow censorImageBlobId
+         * @property {string|null} [createdAt] CardRow createdAt
+         * @property {string|null} [mimeType] CardRow mimeType
+         * @property {Uint8Array|null} [data] CardRow data
+         * @property {Uint8Array|null} [censoredData] CardRow censoredData
+         * @property {string|null} [censoredMimeType] CardRow censoredMimeType
          */
 
         /**
@@ -2052,27 +2259,75 @@ export const cktarot = $root.cktarot = (() => {
         CardRow.prototype.number = 0;
 
         /**
-         * CardRow imageBlobId.
-         * @member {string} imageBlobId
+         * CardRow createdAt.
+         * @member {string|null|undefined} createdAt
          * @memberof cktarot.CardRow
          * @instance
          */
-        CardRow.prototype.imageBlobId = "";
+        CardRow.prototype.createdAt = null;
 
         /**
-         * CardRow censorImageBlobId.
-         * @member {string|null|undefined} censorImageBlobId
+         * CardRow mimeType.
+         * @member {string|null|undefined} mimeType
          * @memberof cktarot.CardRow
          * @instance
          */
-        CardRow.prototype.censorImageBlobId = null;
+        CardRow.prototype.mimeType = null;
+
+        /**
+         * CardRow data.
+         * @member {Uint8Array|null|undefined} data
+         * @memberof cktarot.CardRow
+         * @instance
+         */
+        CardRow.prototype.data = null;
+
+        /**
+         * CardRow censoredData.
+         * @member {Uint8Array|null|undefined} censoredData
+         * @memberof cktarot.CardRow
+         * @instance
+         */
+        CardRow.prototype.censoredData = null;
+
+        /**
+         * CardRow censoredMimeType.
+         * @member {string|null|undefined} censoredMimeType
+         * @memberof cktarot.CardRow
+         * @instance
+         */
+        CardRow.prototype.censoredMimeType = null;
 
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
 
         // Virtual OneOf for proto3 optional field
-        Object.defineProperty(CardRow.prototype, "_censorImageBlobId", {
-            get: $util.oneOfGetter($oneOfFields = ["censorImageBlobId"]),
+        Object.defineProperty(CardRow.prototype, "_createdAt", {
+            get: $util.oneOfGetter($oneOfFields = ["createdAt"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(CardRow.prototype, "_mimeType", {
+            get: $util.oneOfGetter($oneOfFields = ["mimeType"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(CardRow.prototype, "_data", {
+            get: $util.oneOfGetter($oneOfFields = ["data"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(CardRow.prototype, "_censoredData", {
+            get: $util.oneOfGetter($oneOfFields = ["censoredData"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(CardRow.prototype, "_censoredMimeType", {
+            get: $util.oneOfGetter($oneOfFields = ["censoredMimeType"]),
             set: $util.oneOfSetter($oneOfFields)
         });
 
@@ -2108,10 +2363,16 @@ export const cktarot = $root.cktarot = (() => {
                 writer.uint32(/* id 3, wireType 2 =*/26).string(message.title);
             if (message.number != null && Object.hasOwnProperty.call(message, "number"))
                 writer.uint32(/* id 4, wireType 0 =*/32).int32(message.number);
-            if (message.imageBlobId != null && Object.hasOwnProperty.call(message, "imageBlobId"))
-                writer.uint32(/* id 5, wireType 2 =*/42).string(message.imageBlobId);
-            if (message.censorImageBlobId != null && Object.hasOwnProperty.call(message, "censorImageBlobId"))
-                writer.uint32(/* id 6, wireType 2 =*/50).string(message.censorImageBlobId);
+            if (message.createdAt != null && Object.hasOwnProperty.call(message, "createdAt"))
+                writer.uint32(/* id 7, wireType 2 =*/58).string(message.createdAt);
+            if (message.mimeType != null && Object.hasOwnProperty.call(message, "mimeType"))
+                writer.uint32(/* id 8, wireType 2 =*/66).string(message.mimeType);
+            if (message.data != null && Object.hasOwnProperty.call(message, "data"))
+                writer.uint32(/* id 9, wireType 2 =*/74).bytes(message.data);
+            if (message.censoredData != null && Object.hasOwnProperty.call(message, "censoredData"))
+                writer.uint32(/* id 10, wireType 2 =*/82).bytes(message.censoredData);
+            if (message.censoredMimeType != null && Object.hasOwnProperty.call(message, "censoredMimeType"))
+                writer.uint32(/* id 11, wireType 2 =*/90).string(message.censoredMimeType);
             return writer;
         };
 
@@ -2164,12 +2425,24 @@ export const cktarot = $root.cktarot = (() => {
                         message.number = reader.int32();
                         break;
                     }
-                case 5: {
-                        message.imageBlobId = reader.string();
+                case 7: {
+                        message.createdAt = reader.string();
                         break;
                     }
-                case 6: {
-                        message.censorImageBlobId = reader.string();
+                case 8: {
+                        message.mimeType = reader.string();
+                        break;
+                    }
+                case 9: {
+                        message.data = reader.bytes();
+                        break;
+                    }
+                case 10: {
+                        message.censoredData = reader.bytes();
+                        break;
+                    }
+                case 11: {
+                        message.censoredMimeType = reader.string();
                         break;
                     }
                 default:
@@ -2220,13 +2493,30 @@ export const cktarot = $root.cktarot = (() => {
             if (message.number != null && message.hasOwnProperty("number"))
                 if (!$util.isInteger(message.number))
                     return "number: integer expected";
-            if (message.imageBlobId != null && message.hasOwnProperty("imageBlobId"))
-                if (!$util.isString(message.imageBlobId))
-                    return "imageBlobId: string expected";
-            if (message.censorImageBlobId != null && message.hasOwnProperty("censorImageBlobId")) {
-                properties._censorImageBlobId = 1;
-                if (!$util.isString(message.censorImageBlobId))
-                    return "censorImageBlobId: string expected";
+            if (message.createdAt != null && message.hasOwnProperty("createdAt")) {
+                properties._createdAt = 1;
+                if (!$util.isString(message.createdAt))
+                    return "createdAt: string expected";
+            }
+            if (message.mimeType != null && message.hasOwnProperty("mimeType")) {
+                properties._mimeType = 1;
+                if (!$util.isString(message.mimeType))
+                    return "mimeType: string expected";
+            }
+            if (message.data != null && message.hasOwnProperty("data")) {
+                properties._data = 1;
+                if (!(message.data && typeof message.data.length === "number" || $util.isString(message.data)))
+                    return "data: buffer expected";
+            }
+            if (message.censoredData != null && message.hasOwnProperty("censoredData")) {
+                properties._censoredData = 1;
+                if (!(message.censoredData && typeof message.censoredData.length === "number" || $util.isString(message.censoredData)))
+                    return "censoredData: buffer expected";
+            }
+            if (message.censoredMimeType != null && message.hasOwnProperty("censoredMimeType")) {
+                properties._censoredMimeType = 1;
+                if (!$util.isString(message.censoredMimeType))
+                    return "censoredMimeType: string expected";
             }
             return null;
         };
@@ -2251,10 +2541,22 @@ export const cktarot = $root.cktarot = (() => {
                 message.title = String(object.title);
             if (object.number != null)
                 message.number = object.number | 0;
-            if (object.imageBlobId != null)
-                message.imageBlobId = String(object.imageBlobId);
-            if (object.censorImageBlobId != null)
-                message.censorImageBlobId = String(object.censorImageBlobId);
+            if (object.createdAt != null)
+                message.createdAt = String(object.createdAt);
+            if (object.mimeType != null)
+                message.mimeType = String(object.mimeType);
+            if (object.data != null)
+                if (typeof object.data === "string")
+                    $util.base64.decode(object.data, message.data = $util.newBuffer($util.base64.length(object.data)), 0);
+                else if (object.data.length >= 0)
+                    message.data = object.data;
+            if (object.censoredData != null)
+                if (typeof object.censoredData === "string")
+                    $util.base64.decode(object.censoredData, message.censoredData = $util.newBuffer($util.base64.length(object.censoredData)), 0);
+                else if (object.censoredData.length >= 0)
+                    message.censoredData = object.censoredData;
+            if (object.censoredMimeType != null)
+                message.censoredMimeType = String(object.censoredMimeType);
             return message;
         };
 
@@ -2276,7 +2578,6 @@ export const cktarot = $root.cktarot = (() => {
                 object.deckId = "";
                 object.title = "";
                 object.number = 0;
-                object.imageBlobId = "";
             }
             if (message.id != null && message.hasOwnProperty("id"))
                 object.id = message.id;
@@ -2286,12 +2587,30 @@ export const cktarot = $root.cktarot = (() => {
                 object.title = message.title;
             if (message.number != null && message.hasOwnProperty("number"))
                 object.number = message.number;
-            if (message.imageBlobId != null && message.hasOwnProperty("imageBlobId"))
-                object.imageBlobId = message.imageBlobId;
-            if (message.censorImageBlobId != null && message.hasOwnProperty("censorImageBlobId")) {
-                object.censorImageBlobId = message.censorImageBlobId;
+            if (message.createdAt != null && message.hasOwnProperty("createdAt")) {
+                object.createdAt = message.createdAt;
                 if (options.oneofs)
-                    object._censorImageBlobId = "censorImageBlobId";
+                    object._createdAt = "createdAt";
+            }
+            if (message.mimeType != null && message.hasOwnProperty("mimeType")) {
+                object.mimeType = message.mimeType;
+                if (options.oneofs)
+                    object._mimeType = "mimeType";
+            }
+            if (message.data != null && message.hasOwnProperty("data")) {
+                object.data = options.bytes === String ? $util.base64.encode(message.data, 0, message.data.length) : options.bytes === Array ? Array.prototype.slice.call(message.data) : message.data;
+                if (options.oneofs)
+                    object._data = "data";
+            }
+            if (message.censoredData != null && message.hasOwnProperty("censoredData")) {
+                object.censoredData = options.bytes === String ? $util.base64.encode(message.censoredData, 0, message.censoredData.length) : options.bytes === Array ? Array.prototype.slice.call(message.censoredData) : message.censoredData;
+                if (options.oneofs)
+                    object._censoredData = "censoredData";
+            }
+            if (message.censoredMimeType != null && message.hasOwnProperty("censoredMimeType")) {
+                object.censoredMimeType = message.censoredMimeType;
+                if (options.oneofs)
+                    object._censoredMimeType = "censoredMimeType";
             }
             return object;
         };
@@ -2323,337 +2642,6 @@ export const cktarot = $root.cktarot = (() => {
         };
 
         return CardRow;
-    })();
-
-    cktarot.CardImageRow = (function() {
-
-        /**
-         * Properties of a CardImageRow.
-         * @memberof cktarot
-         * @interface ICardImageRow
-         * @property {string|null} [id] CardImageRow id
-         * @property {string|null} [createdAt] CardImageRow createdAt
-         * @property {string|null} [mimeType] CardImageRow mimeType
-         * @property {string|null} [title] CardImageRow title
-         * @property {Uint8Array|null} [data] CardImageRow data
-         */
-
-        /**
-         * Constructs a new CardImageRow.
-         * @memberof cktarot
-         * @classdesc Represents a CardImageRow.
-         * @implements ICardImageRow
-         * @constructor
-         * @param {cktarot.ICardImageRow=} [properties] Properties to set
-         */
-        function CardImageRow(properties) {
-            if (properties)
-                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    if (properties[keys[i]] != null)
-                        this[keys[i]] = properties[keys[i]];
-        }
-
-        /**
-         * CardImageRow id.
-         * @member {string} id
-         * @memberof cktarot.CardImageRow
-         * @instance
-         */
-        CardImageRow.prototype.id = "";
-
-        /**
-         * CardImageRow createdAt.
-         * @member {string} createdAt
-         * @memberof cktarot.CardImageRow
-         * @instance
-         */
-        CardImageRow.prototype.createdAt = "";
-
-        /**
-         * CardImageRow mimeType.
-         * @member {string|null|undefined} mimeType
-         * @memberof cktarot.CardImageRow
-         * @instance
-         */
-        CardImageRow.prototype.mimeType = null;
-
-        /**
-         * CardImageRow title.
-         * @member {string|null|undefined} title
-         * @memberof cktarot.CardImageRow
-         * @instance
-         */
-        CardImageRow.prototype.title = null;
-
-        /**
-         * CardImageRow data.
-         * @member {Uint8Array} data
-         * @memberof cktarot.CardImageRow
-         * @instance
-         */
-        CardImageRow.prototype.data = $util.newBuffer([]);
-
-        // OneOf field names bound to virtual getters and setters
-        let $oneOfFields;
-
-        // Virtual OneOf for proto3 optional field
-        Object.defineProperty(CardImageRow.prototype, "_mimeType", {
-            get: $util.oneOfGetter($oneOfFields = ["mimeType"]),
-            set: $util.oneOfSetter($oneOfFields)
-        });
-
-        // Virtual OneOf for proto3 optional field
-        Object.defineProperty(CardImageRow.prototype, "_title", {
-            get: $util.oneOfGetter($oneOfFields = ["title"]),
-            set: $util.oneOfSetter($oneOfFields)
-        });
-
-        /**
-         * Creates a new CardImageRow instance using the specified properties.
-         * @function create
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {cktarot.ICardImageRow=} [properties] Properties to set
-         * @returns {cktarot.CardImageRow} CardImageRow instance
-         */
-        CardImageRow.create = function create(properties) {
-            return new CardImageRow(properties);
-        };
-
-        /**
-         * Encodes the specified CardImageRow message. Does not implicitly {@link cktarot.CardImageRow.verify|verify} messages.
-         * @function encode
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {cktarot.ICardImageRow} message CardImageRow message or plain object to encode
-         * @param {$protobuf.Writer} [writer] Writer to encode to
-         * @returns {$protobuf.Writer} Writer
-         */
-        CardImageRow.encode = function encode(message, writer) {
-            if (!writer)
-                writer = $Writer.create();
-            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
-                writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
-            if (message.createdAt != null && Object.hasOwnProperty.call(message, "createdAt"))
-                writer.uint32(/* id 2, wireType 2 =*/18).string(message.createdAt);
-            if (message.mimeType != null && Object.hasOwnProperty.call(message, "mimeType"))
-                writer.uint32(/* id 3, wireType 2 =*/26).string(message.mimeType);
-            if (message.title != null && Object.hasOwnProperty.call(message, "title"))
-                writer.uint32(/* id 4, wireType 2 =*/34).string(message.title);
-            if (message.data != null && Object.hasOwnProperty.call(message, "data"))
-                writer.uint32(/* id 5, wireType 2 =*/42).bytes(message.data);
-            return writer;
-        };
-
-        /**
-         * Encodes the specified CardImageRow message, length delimited. Does not implicitly {@link cktarot.CardImageRow.verify|verify} messages.
-         * @function encodeDelimited
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {cktarot.ICardImageRow} message CardImageRow message or plain object to encode
-         * @param {$protobuf.Writer} [writer] Writer to encode to
-         * @returns {$protobuf.Writer} Writer
-         */
-        CardImageRow.encodeDelimited = function encodeDelimited(message, writer) {
-            return this.encode(message, writer).ldelim();
-        };
-
-        /**
-         * Decodes a CardImageRow message from the specified reader or buffer.
-         * @function decode
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-         * @param {number} [length] Message length if known beforehand
-         * @returns {cktarot.CardImageRow} CardImageRow
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        CardImageRow.decode = function decode(reader, length, error) {
-            if (!(reader instanceof $Reader))
-                reader = $Reader.create(reader);
-            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.cktarot.CardImageRow();
-            while (reader.pos < end) {
-                let tag = reader.uint32();
-                if (tag === error)
-                    break;
-                switch (tag >>> 3) {
-                case 1: {
-                        message.id = reader.string();
-                        break;
-                    }
-                case 2: {
-                        message.createdAt = reader.string();
-                        break;
-                    }
-                case 3: {
-                        message.mimeType = reader.string();
-                        break;
-                    }
-                case 4: {
-                        message.title = reader.string();
-                        break;
-                    }
-                case 5: {
-                        message.data = reader.bytes();
-                        break;
-                    }
-                default:
-                    reader.skipType(tag & 7);
-                    break;
-                }
-            }
-            return message;
-        };
-
-        /**
-         * Decodes a CardImageRow message from the specified reader or buffer, length delimited.
-         * @function decodeDelimited
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-         * @returns {cktarot.CardImageRow} CardImageRow
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        CardImageRow.decodeDelimited = function decodeDelimited(reader) {
-            if (!(reader instanceof $Reader))
-                reader = new $Reader(reader);
-            return this.decode(reader, reader.uint32());
-        };
-
-        /**
-         * Verifies a CardImageRow message.
-         * @function verify
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {Object.<string,*>} message Plain object to verify
-         * @returns {string|null} `null` if valid, otherwise the reason why it is not
-         */
-        CardImageRow.verify = function verify(message) {
-            if (typeof message !== "object" || message === null)
-                return "object expected";
-            let properties = {};
-            if (message.id != null && message.hasOwnProperty("id"))
-                if (!$util.isString(message.id))
-                    return "id: string expected";
-            if (message.createdAt != null && message.hasOwnProperty("createdAt"))
-                if (!$util.isString(message.createdAt))
-                    return "createdAt: string expected";
-            if (message.mimeType != null && message.hasOwnProperty("mimeType")) {
-                properties._mimeType = 1;
-                if (!$util.isString(message.mimeType))
-                    return "mimeType: string expected";
-            }
-            if (message.title != null && message.hasOwnProperty("title")) {
-                properties._title = 1;
-                if (!$util.isString(message.title))
-                    return "title: string expected";
-            }
-            if (message.data != null && message.hasOwnProperty("data"))
-                if (!(message.data && typeof message.data.length === "number" || $util.isString(message.data)))
-                    return "data: buffer expected";
-            return null;
-        };
-
-        /**
-         * Creates a CardImageRow message from a plain object. Also converts values to their respective internal types.
-         * @function fromObject
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {Object.<string,*>} object Plain object
-         * @returns {cktarot.CardImageRow} CardImageRow
-         */
-        CardImageRow.fromObject = function fromObject(object) {
-            if (object instanceof $root.cktarot.CardImageRow)
-                return object;
-            let message = new $root.cktarot.CardImageRow();
-            if (object.id != null)
-                message.id = String(object.id);
-            if (object.createdAt != null)
-                message.createdAt = String(object.createdAt);
-            if (object.mimeType != null)
-                message.mimeType = String(object.mimeType);
-            if (object.title != null)
-                message.title = String(object.title);
-            if (object.data != null)
-                if (typeof object.data === "string")
-                    $util.base64.decode(object.data, message.data = $util.newBuffer($util.base64.length(object.data)), 0);
-                else if (object.data.length >= 0)
-                    message.data = object.data;
-            return message;
-        };
-
-        /**
-         * Creates a plain object from a CardImageRow message. Also converts values to other types if specified.
-         * @function toObject
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {cktarot.CardImageRow} message CardImageRow
-         * @param {$protobuf.IConversionOptions} [options] Conversion options
-         * @returns {Object.<string,*>} Plain object
-         */
-        CardImageRow.toObject = function toObject(message, options) {
-            if (!options)
-                options = {};
-            let object = {};
-            if (options.defaults) {
-                object.id = "";
-                object.createdAt = "";
-                if (options.bytes === String)
-                    object.data = "";
-                else {
-                    object.data = [];
-                    if (options.bytes !== Array)
-                        object.data = $util.newBuffer(object.data);
-                }
-            }
-            if (message.id != null && message.hasOwnProperty("id"))
-                object.id = message.id;
-            if (message.createdAt != null && message.hasOwnProperty("createdAt"))
-                object.createdAt = message.createdAt;
-            if (message.mimeType != null && message.hasOwnProperty("mimeType")) {
-                object.mimeType = message.mimeType;
-                if (options.oneofs)
-                    object._mimeType = "mimeType";
-            }
-            if (message.title != null && message.hasOwnProperty("title")) {
-                object.title = message.title;
-                if (options.oneofs)
-                    object._title = "title";
-            }
-            if (message.data != null && message.hasOwnProperty("data"))
-                object.data = options.bytes === String ? $util.base64.encode(message.data, 0, message.data.length) : options.bytes === Array ? Array.prototype.slice.call(message.data) : message.data;
-            return object;
-        };
-
-        /**
-         * Converts this CardImageRow to JSON.
-         * @function toJSON
-         * @memberof cktarot.CardImageRow
-         * @instance
-         * @returns {Object.<string,*>} JSON object
-         */
-        CardImageRow.prototype.toJSON = function toJSON() {
-            return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
-        };
-
-        /**
-         * Gets the default type url for CardImageRow
-         * @function getTypeUrl
-         * @memberof cktarot.CardImageRow
-         * @static
-         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
-         * @returns {string} The default type url
-         */
-        CardImageRow.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
-            if (typeUrlPrefix === undefined) {
-                typeUrlPrefix = "type.googleapis.com";
-            }
-            return typeUrlPrefix + "/cktarot.CardImageRow";
-        };
-
-        return CardImageRow;
     })();
 
     cktarot.ReadingRow = (function() {
@@ -2950,7 +2938,6 @@ export const cktarot = $root.cktarot = (() => {
          * @property {string|null} [exportedAt] CktarotBackup exportedAt
          * @property {Array.<cktarot.IDeckRow>|null} [decks] CktarotBackup decks
          * @property {Array.<cktarot.ICardRow>|null} [cards] CktarotBackup cards
-         * @property {Array.<cktarot.ICardImageRow>|null} [cardImages] CktarotBackup cardImages
          * @property {Array.<cktarot.IReadingRow>|null} [readings] CktarotBackup readings
          */
 
@@ -2965,7 +2952,6 @@ export const cktarot = $root.cktarot = (() => {
         function CktarotBackup(properties) {
             this.decks = [];
             this.cards = [];
-            this.cardImages = [];
             this.readings = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
@@ -3004,14 +2990,6 @@ export const cktarot = $root.cktarot = (() => {
          * @instance
          */
         CktarotBackup.prototype.cards = $util.emptyArray;
-
-        /**
-         * CktarotBackup cardImages.
-         * @member {Array.<cktarot.ICardImageRow>} cardImages
-         * @memberof cktarot.CktarotBackup
-         * @instance
-         */
-        CktarotBackup.prototype.cardImages = $util.emptyArray;
 
         /**
          * CktarotBackup readings.
@@ -3064,9 +3042,6 @@ export const cktarot = $root.cktarot = (() => {
             if (message.cards != null && message.cards.length)
                 for (let i = 0; i < message.cards.length; ++i)
                     $root.cktarot.CardRow.encode(message.cards[i], writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
-            if (message.cardImages != null && message.cardImages.length)
-                for (let i = 0; i < message.cardImages.length; ++i)
-                    $root.cktarot.CardImageRow.encode(message.cardImages[i], writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
             if (message.readings != null && message.readings.length)
                 for (let i = 0; i < message.readings.length; ++i)
                     $root.cktarot.ReadingRow.encode(message.readings[i], writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
@@ -3124,12 +3099,6 @@ export const cktarot = $root.cktarot = (() => {
                         if (!(message.cards && message.cards.length))
                             message.cards = [];
                         message.cards.push($root.cktarot.CardRow.decode(reader, reader.uint32()));
-                        break;
-                    }
-                case 5: {
-                        if (!(message.cardImages && message.cardImages.length))
-                            message.cardImages = [];
-                        message.cardImages.push($root.cktarot.CardImageRow.decode(reader, reader.uint32()));
                         break;
                     }
                 case 6: {
@@ -3200,15 +3169,6 @@ export const cktarot = $root.cktarot = (() => {
                         return "cards." + error;
                 }
             }
-            if (message.cardImages != null && message.hasOwnProperty("cardImages")) {
-                if (!Array.isArray(message.cardImages))
-                    return "cardImages: array expected";
-                for (let i = 0; i < message.cardImages.length; ++i) {
-                    let error = $root.cktarot.CardImageRow.verify(message.cardImages[i]);
-                    if (error)
-                        return "cardImages." + error;
-                }
-            }
             if (message.readings != null && message.hasOwnProperty("readings")) {
                 if (!Array.isArray(message.readings))
                     return "readings: array expected";
@@ -3257,16 +3217,6 @@ export const cktarot = $root.cktarot = (() => {
                     message.cards[i] = $root.cktarot.CardRow.fromObject(object.cards[i]);
                 }
             }
-            if (object.cardImages) {
-                if (!Array.isArray(object.cardImages))
-                    throw TypeError(".cktarot.CktarotBackup.cardImages: array expected");
-                message.cardImages = [];
-                for (let i = 0; i < object.cardImages.length; ++i) {
-                    if (typeof object.cardImages[i] !== "object")
-                        throw TypeError(".cktarot.CktarotBackup.cardImages: object expected");
-                    message.cardImages[i] = $root.cktarot.CardImageRow.fromObject(object.cardImages[i]);
-                }
-            }
             if (object.readings) {
                 if (!Array.isArray(object.readings))
                     throw TypeError(".cktarot.CktarotBackup.readings: array expected");
@@ -3296,7 +3246,6 @@ export const cktarot = $root.cktarot = (() => {
             if (options.arrays || options.defaults) {
                 object.decks = [];
                 object.cards = [];
-                object.cardImages = [];
                 object.readings = [];
             }
             if (options.defaults)
@@ -3317,11 +3266,6 @@ export const cktarot = $root.cktarot = (() => {
                 object.cards = [];
                 for (let j = 0; j < message.cards.length; ++j)
                     object.cards[j] = $root.cktarot.CardRow.toObject(message.cards[j], options);
-            }
-            if (message.cardImages && message.cardImages.length) {
-                object.cardImages = [];
-                for (let j = 0; j < message.cardImages.length; ++j)
-                    object.cardImages[j] = $root.cktarot.CardImageRow.toObject(message.cardImages[j], options);
             }
             if (message.readings && message.readings.length) {
                 object.readings = [];

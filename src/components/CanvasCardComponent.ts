@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs'
 import type { MergedThis, DraggableCard, TarotCard, TextLabel } from '../types/canvas.js'
+import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js'
 
 Alpine.data('cardComponent', () => ({
   draggableCards: [] as DraggableCard[],
@@ -14,9 +15,15 @@ Alpine.data('cardComponent', () => ({
   CARD_HEIGHT: 231,
 
   getCardImg(card: TarotCard, censored: boolean): string {
-    if (card.invalidReference) return '';
-    if (censored && card.censoredImg) return card.censoredImg;
-    return card.img;
+    if (card.invalidReference) return ''
+    if (censored && card.censoredImg) return card.censoredImg
+    return card.img
+  },
+
+  /** True when the dashed placeholder should show (no usable image URL for the img tag). */
+  cardShowsPlaceholder(card: TarotCard, censored: boolean): boolean {
+    if (card.invalidReference) return true
+    return this.getCardImg(card, censored) === ''
   },
 
   shuffleDeck() {
@@ -137,6 +144,8 @@ Alpine.data('cardComponent', () => ({
   },
 
   deleteCard(this: MergedThis, cardId: string) {
+    const found = this.draggableCards.find((c) => c.id === cardId)
+    if (found) revokeTarotCardBlobUrls(found.card)
     this.draggableCards = this.draggableCards.filter(c => c.id !== cardId);
     const textLabels = this.textLabels.filter((l: TextLabel) => l.anchorCardId === cardId);
     for (const textLabel of textLabels) {
@@ -146,6 +155,9 @@ Alpine.data('cardComponent', () => ({
   },
 
   deleteSelectedCards(this: MergedThis) {
+    for (const dc of this.draggableCards) {
+      if (this.selectedCardIds.includes(dc.id)) revokeTarotCardBlobUrls(dc.card)
+    }
     this.draggableCards = this.draggableCards.filter(c => !this.selectedCardIds.includes(c.id));
     const textLabels = this.textLabels.filter((l: TextLabel) => l.anchorCardId !== null && this.selectedCardIds.includes(l.anchorCardId));
     for (const textLabel of textLabels) {

@@ -73,6 +73,16 @@ export function encodeSavedReadingState(state: SavedReadingState): Uint8Array {
     pc.rotation = c.rotation
     pc.zIndex = c.zIndex
     pc.opacity = c.opacity
+    if (c.image_created_at !== undefined) pc.createdAt = c.image_created_at
+    if (c.mime_type !== undefined) pc.mimeType = c.mime_type
+    if (c.data !== undefined && c.data.length > 0) pc.data = c.data
+    if (c.censored_data !== undefined && c.censored_data.length > 0) {
+      pc.censoredData = c.censored_data
+    }
+    if (c.censored_mime_type !== undefined) {
+      pc.censoredMimeType = c.censored_mime_type
+    }
+    if (c.card_number !== undefined) pc.cardNumber = c.card_number
     return pc
   })
 
@@ -139,6 +149,24 @@ export function decodeSavedReadingState(bytes: Uint8Array): SavedReadingState {
       if (deckTitle) row.deck_title = deckTitle
       if (cardTitle) row.card_title = cardTitle
       if (imageSource) row.image_source = imageSource
+      if (c.createdAt) row.image_created_at = c.createdAt
+      if (c.mimeType) row.mime_type = c.mimeType
+      if (c.data && c.data.length > 0) {
+        row.data =
+          c.data instanceof Uint8Array
+            ? c.data
+            : new Uint8Array(c.data as ArrayLike<number>)
+      }
+      if (c.censoredData && c.censoredData.length > 0) {
+        row.censored_data =
+          c.censoredData instanceof Uint8Array
+            ? c.censoredData
+            : new Uint8Array(c.censoredData as ArrayLike<number>)
+      }
+      if (c.censoredMimeType) row.censored_mime_type = c.censoredMimeType
+      if (c.cardNumber !== undefined && c.cardNumber !== null) {
+        row.card_number = c.cardNumber
+      }
       return row
     }),
     textLabels: (msg.textLabels ?? []).map((t): SavedReadingState['textLabels'][number] => ({

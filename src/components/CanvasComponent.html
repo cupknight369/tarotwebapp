@@ -23,20 +23,17 @@
                 :id="draggableCard.id"
                 :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
                 @contextmenu.prevent="onContextMenu($event)">
-                <template x-if="draggableCard.card.invalidReference">
+                <template x-if="cardShowsPlaceholder(draggableCard.card, $store.settings.censored)">
                   <div
                     class="w-[150px] min-h-[210px] flex flex-col items-stretch justify-center gap-1.5 p-2 rounded border-2 border-dashed border-amber-600/80 bg-gray-900/95 shadow-lg pointer-events-none text-left">
-                    <span class="text-amber-400/90 text-xs font-medium text-center leading-tight">Invalid card reference</span>
                     <div class="text-[10px] text-gray-400 space-y-0.5 break-words">
                       <p x-show="draggableCard.card.deckTitle"><span class="text-gray-500">Deck:</span> <span class="text-gray-200" x-text="draggableCard.card.deckTitle"></span></p>
                       <p><span class="text-gray-500">Card:</span> <span class="text-gray-200" x-text="draggableCard.card.title"></span></p>
-                      <p x-show="draggableCard.card.imageSourceLabel"><span class="text-gray-500">Image:</span> <span class="text-gray-200 break-all" x-text="draggableCard.card.imageSourceLabel"></span></p>
-                      <p x-show="draggableCard.card.censorImageSourceLabel"><span class="text-gray-500">Censor:</span> <span class="text-gray-200 break-all" x-text="draggableCard.card.censorImageSourceLabel"></span></p>
-                      <p class="text-gray-500 pt-0.5"><span class="select-all">ID:</span> <span class="text-gray-200 break-all" x-text="draggableCard.card.id"></span></p>
+                      <p><span class="text-gray-500">#</span> <span class="text-gray-200" x-text="draggableCard.card.num"></span></p>
                     </div>
                   </div>
                 </template>
-                <template x-if="!draggableCard.card.invalidReference">
+                <template x-if="!cardShowsPlaceholder(draggableCard.card, $store.settings.censored)">
                   <img
                     :src="getCardImg(draggableCard.card, $store.settings.censored)"
                     :alt="draggableCard.card.title"

@@ -150,6 +150,24 @@ export namespace cktarot {
 
         /** PlacedCard opacity */
         opacity?: (number|null);
+
+        /** PlacedCard createdAt */
+        createdAt?: (string|null);
+
+        /** PlacedCard mimeType */
+        mimeType?: (string|null);
+
+        /** PlacedCard data */
+        data?: (Uint8Array|null);
+
+        /** PlacedCard censoredData */
+        censoredData?: (Uint8Array|null);
+
+        /** PlacedCard cardNumber */
+        cardNumber?: (number|null);
+
+        /** PlacedCard censoredMimeType */
+        censoredMimeType?: (string|null);
     }
 
     /** Represents a PlacedCard. */
@@ -196,6 +214,24 @@ export namespace cktarot {
 
         /** PlacedCard opacity. */
         public opacity: number;
+
+        /** PlacedCard createdAt. */
+        public createdAt?: (string|null);
+
+        /** PlacedCard mimeType. */
+        public mimeType?: (string|null);
+
+        /** PlacedCard data. */
+        public data?: (Uint8Array|null);
+
+        /** PlacedCard censoredData. */
+        public censoredData?: (Uint8Array|null);
+
+        /** PlacedCard cardNumber. */
+        public cardNumber?: (number|null);
+
+        /** PlacedCard censoredMimeType. */
+        public censoredMimeType?: (string|null);
 
         /**
          * Creates a new PlacedCard instance using the specified properties.
@@ -706,11 +742,20 @@ export namespace cktarot {
         /** CardRow number */
         number?: (number|null);
 
-        /** CardRow imageBlobId */
-        imageBlobId?: (string|null);
+        /** CardRow createdAt */
+        createdAt?: (string|null);
 
-        /** CardRow censorImageBlobId */
-        censorImageBlobId?: (string|null);
+        /** CardRow mimeType */
+        mimeType?: (string|null);
+
+        /** CardRow data */
+        data?: (Uint8Array|null);
+
+        /** CardRow censoredData */
+        censoredData?: (Uint8Array|null);
+
+        /** CardRow censoredMimeType */
+        censoredMimeType?: (string|null);
     }
 
     /** Represents a CardRow. */
@@ -734,11 +779,20 @@ export namespace cktarot {
         /** CardRow number. */
         public number: number;
 
-        /** CardRow imageBlobId. */
-        public imageBlobId: string;
+        /** CardRow createdAt. */
+        public createdAt?: (string|null);
 
-        /** CardRow censorImageBlobId. */
-        public censorImageBlobId?: (string|null);
+        /** CardRow mimeType. */
+        public mimeType?: (string|null);
+
+        /** CardRow data. */
+        public data?: (Uint8Array|null);
+
+        /** CardRow censoredData. */
+        public censoredData?: (Uint8Array|null);
+
+        /** CardRow censoredMimeType. */
+        public censoredMimeType?: (string|null);
 
         /**
          * Creates a new CardRow instance using the specified properties.
@@ -812,127 +866,6 @@ export namespace cktarot {
 
         /**
          * Gets the default type url for CardRow
-         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
-         * @returns The default type url
-         */
-        public static getTypeUrl(typeUrlPrefix?: string): string;
-    }
-
-    /** Properties of a CardImageRow. */
-    interface ICardImageRow {
-
-        /** CardImageRow id */
-        id?: (string|null);
-
-        /** CardImageRow createdAt */
-        createdAt?: (string|null);
-
-        /** CardImageRow mimeType */
-        mimeType?: (string|null);
-
-        /** CardImageRow title */
-        title?: (string|null);
-
-        /** CardImageRow data */
-        data?: (Uint8Array|null);
-    }
-
-    /** Represents a CardImageRow. */
-    class CardImageRow implements ICardImageRow {
-
-        /**
-         * Constructs a new CardImageRow.
-         * @param [properties] Properties to set
-         */
-        constructor(properties?: cktarot.ICardImageRow);
-
-        /** CardImageRow id. */
-        public id: string;
-
-        /** CardImageRow createdAt. */
-        public createdAt: string;
-
-        /** CardImageRow mimeType. */
-        public mimeType?: (string|null);
-
-        /** CardImageRow title. */
-        public title?: (string|null);
-
-        /** CardImageRow data. */
-        public data: Uint8Array;
-
-        /**
-         * Creates a new CardImageRow instance using the specified properties.
-         * @param [properties] Properties to set
-         * @returns CardImageRow instance
-         */
-        public static create(properties?: cktarot.ICardImageRow): cktarot.CardImageRow;
-
-        /**
-         * Encodes the specified CardImageRow message. Does not implicitly {@link cktarot.CardImageRow.verify|verify} messages.
-         * @param message CardImageRow message or plain object to encode
-         * @param [writer] Writer to encode to
-         * @returns Writer
-         */
-        public static encode(message: cktarot.ICardImageRow, writer?: $protobuf.Writer): $protobuf.Writer;
-
-        /**
-         * Encodes the specified CardImageRow message, length delimited. Does not implicitly {@link cktarot.CardImageRow.verify|verify} messages.
-         * @param message CardImageRow message or plain object to encode
-         * @param [writer] Writer to encode to
-         * @returns Writer
-         */
-        public static encodeDelimited(message: cktarot.ICardImageRow, writer?: $protobuf.Writer): $protobuf.Writer;
-
-        /**
-         * Decodes a CardImageRow message from the specified reader or buffer.
-         * @param reader Reader or buffer to decode from
-         * @param [length] Message length if known beforehand
-         * @returns CardImageRow
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): cktarot.CardImageRow;
-
-        /**
-         * Decodes a CardImageRow message from the specified reader or buffer, length delimited.
-         * @param reader Reader or buffer to decode from
-         * @returns CardImageRow
-         * @throws {Error} If the payload is not a reader or valid buffer
-         * @throws {$protobuf.util.ProtocolError} If required fields are missing
-         */
-        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): cktarot.CardImageRow;
-
-        /**
-         * Verifies a CardImageRow message.
-         * @param message Plain object to verify
-         * @returns `null` if valid, otherwise the reason why it is not
-         */
-        public static verify(message: { [k: string]: any }): (string|null);
-
-        /**
-         * Creates a CardImageRow message from a plain object. Also converts values to their respective internal types.
-         * @param object Plain object
-         * @returns CardImageRow
-         */
-        public static fromObject(object: { [k: string]: any }): cktarot.CardImageRow;
-
-        /**
-         * Creates a plain object from a CardImageRow message. Also converts values to other types if specified.
-         * @param message CardImageRow
-         * @param [options] Conversion options
-         * @returns Plain object
-         */
-        public static toObject(message: cktarot.CardImageRow, options?: $protobuf.IConversionOptions): { [k: string]: any };
-
-        /**
-         * Converts this CardImageRow to JSON.
-         * @returns JSON object
-         */
-        public toJSON(): { [k: string]: any };
-
-        /**
-         * Gets the default type url for CardImageRow
          * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
          * @returns The default type url
          */
@@ -1069,9 +1002,6 @@ export namespace cktarot {
         /** CktarotBackup cards */
         cards?: (cktarot.ICardRow[]|null);
 
-        /** CktarotBackup cardImages */
-        cardImages?: (cktarot.ICardImageRow[]|null);
-
         /** CktarotBackup readings */
         readings?: (cktarot.IReadingRow[]|null);
     }
@@ -1096,9 +1026,6 @@ export namespace cktarot {
 
         /** CktarotBackup cards. */
         public cards: cktarot.ICardRow[];
-
-        /** CktarotBackup cardImages. */
-        public cardImages: cktarot.ICardImageRow[];
 
         /** CktarotBackup readings. */
         public readings: cktarot.IReadingRow[];

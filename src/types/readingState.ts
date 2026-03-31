@@ -11,6 +11,14 @@ export interface SavedReadingState {
         /** Cloud: storage object key; local IndexedDB: image blob id. */
         image_source?: string;
         censor_image_source?: string | null;
+        /** Embedded main image (from on-device card at save time). */
+        image_created_at?: string;
+        mime_type?: string;
+        data?: Uint8Array;
+        censored_data?: Uint8Array;
+        censored_mime_type?: string;
+        /** Snapshot card number for placeholder when art is missing. */
+        card_number?: number;
         x: number;
         y: number;
         rotation: number;

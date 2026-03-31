@@ -1,6 +1,7 @@
-import type { LocalCardImageRow, LocalCardRow, LocalDeckRow, LocalReadingRow } from '../../types/localDb.js'
+import type { LocalCardRow, LocalDeckRow, LocalReadingRow } from '../../types/localDb.js'
 import { BACKUP_VERSION } from '../../types/settings.js'
 import { cktarot } from '../../proto/generated/bundle.js'
+import { getCardImageRow, putLocalCardImageRow } from '../localDecks.js'
 
 function deckRowToProto(d: LocalDeckRow): cktarot.DeckRow {
   const row = new cktarot.DeckRow()
@@ -24,62 +25,91 @@ function deckRowFromProto(d: cktarot.DeckRow): LocalDeckRow {
   }
 }
 
-function cardRowToProto(c: LocalCardRow): cktarot.CardRow {
+async function cardRowToProto(c: LocalCardRow): Promise<cktarot.CardRow> {
   const row = new cktarot.CardRow()
   row.id = c.id
   row.deckId = c.deck_id
   row.title = c.title
   row.number = c.number
-  row.imageBlobId = c.imageBlobId
-  if (c.censorImageBlobId !== null && c.censorImageBlobId !== undefined) {
-    row.censorImageBlobId = c.censorImageBlobId
+
+  const main = await getCardImageRow(c.imageBlobId)
+  if (main?.blob) {
+    const buf = await main.blob.arrayBuffer()
+    row.data = new Uint8Array(buf)
+    row.createdAt = main.created_at
+    if (main.mimeType) row.mimeType = main.mimeType
   }
+
+  if (c.censorImageBlobId) {
+    const censor = await getCardImageRow(c.censorImageBlobId)
+    if (censor?.blob) {
+      const buf = await censor.blob.arrayBuffer()
+      row.censoredData = new Uint8Array(buf)
+      if (censor.mimeType) row.censoredMimeType = censor.mimeType
+    }
+  }
+
   return row
 }
 
-function cardRowFromProto(c: cktarot.CardRow): LocalCardRow {
-  return {
-    id: c.id,
-    deck_id: c.deckId,
-    title: c.title,
-    number: c.number,
-    imageBlobId: c.imageBlobId,
-    censorImageBlobId:
-      c.censorImageBlobId !== undefined && c.censorImageBlobId !== ''
-        ? c.censorImageBlobId
-        : null,
-  }
-}
-
-async function cardImageToProto(row: LocalCardImageRow): Promise<cktarot.CardImageRow> {
-  const buf = await row.blob.arrayBuffer()
-  const img = new cktarot.CardImageRow()
-  img.id = row.id
-  img.createdAt = row.created_at
-  if (row.mimeType) img.mimeType = row.mimeType
-  if (row.title) img.title = row.title
-  img.data = new Uint8Array(buf)
-  return img
-}
-
-function cardImageFromProto(
-  img: cktarot.CardImageRow,
+/**
+ * Restore a single backup `CardRow` into IndexedDB image rows + a `LocalCardRow`.
+ */
+export async function materializeCardRowFromProto(
+  c: cktarot.CardRow,
   errors: string[]
-): LocalCardImageRow | null {
+): Promise<LocalCardRow | null> {
+  const hasMain = c.data && c.data.length > 0
+  if (!hasMain) {
+    errors.push(`card id=${c.id}: missing main image data`)
+    return null
+  }
   try {
-    if (!img.data || img.data.length === 0) throw new Error('missing image data')
-    const mime = img.mimeType || 'application/octet-stream'
-    const blob = new Blob([new Uint8Array(img.data)], { type: mime })
+    const mainId = crypto.randomUUID()
+    const mime =
+      c.mimeType !== undefined && c.mimeType !== null && c.mimeType !== ''
+        ? c.mimeType
+        : 'application/octet-stream'
+    const mainBlob = new Blob([new Uint8Array(c.data as Uint8Array)], { type: mime })
+    await putLocalCardImageRow({
+      id: mainId,
+      blob: mainBlob,
+      created_at: c.createdAt || new Date().toISOString(),
+      mimeType: mime,
+    })
+
+    let censorId: string | null = null
+    if (c.censoredData && c.censoredData.length > 0) {
+      const id = crypto.randomUUID()
+      const cm =
+        c.censoredMimeType !== undefined &&
+        c.censoredMimeType !== null &&
+        c.censoredMimeType !== ''
+          ? c.censoredMimeType
+          : 'application/octet-stream'
+      const blob = new Blob([new Uint8Array(c.censoredData as Uint8Array)], {
+        type: cm,
+      })
+      await putLocalCardImageRow({
+        id,
+        blob,
+        created_at: c.createdAt || new Date().toISOString(),
+        mimeType: cm,
+      })
+      censorId = id
+    }
+
     return {
-      id: img.id,
-      blob,
-      created_at: img.createdAt,
-      ...(img.mimeType ? { mimeType: img.mimeType } : {}),
-      ...(img.title ? { title: img.title } : {}),
+      id: c.id,
+      deck_id: c.deckId,
+      title: c.title,
+      number: c.number,
+      imageBlobId: mainId,
+      censorImageBlobId: censorId,
     }
   } catch (e) {
     errors.push(
-      `cardImages id=${img.id}: ${e instanceof Error ? e.message : String(e)}`
+      `card id=${c.id}: ${e instanceof Error ? e.message : String(e)}`
     )
     return null
   }
@@ -107,7 +137,6 @@ function readingRowFromProto(r: cktarot.ReadingRow): LocalReadingRow {
 export async function encodeCktarotBackup(payload: {
   decks: LocalDeckRow[]
   cards: LocalCardRow[]
-  cardImages: LocalCardImageRow[]
   readings: LocalReadingRow[]
   exportedAt?: string
 }): Promise<Uint8Array> {
@@ -115,8 +144,7 @@ export async function encodeCktarotBackup(payload: {
   msg.version = BACKUP_VERSION
   if (payload.exportedAt) msg.exportedAt = payload.exportedAt
   msg.decks = payload.decks.map(deckRowToProto)
-  msg.cards = payload.cards.map(cardRowToProto)
-  msg.cardImages = await Promise.all(payload.cardImages.map(cardImageToProto))
+  msg.cards = await Promise.all(payload.cards.map(cardRowToProto))
   msg.readings = payload.readings.map(readingRowToProto)
   return new Uint8Array(cktarot.CktarotBackup.encode(msg).finish())
 }
@@ -139,22 +167,8 @@ export function backupToDecks(backup: cktarot.CktarotBackup): LocalDeckRow[] {
   return (backup.decks ?? []).map((d) => deckRowFromProto(d as cktarot.DeckRow))
 }
 
-export function backupToCards(backup: cktarot.CktarotBackup): LocalCardRow[] {
-  return (backup.cards ?? []).map((c) => cardRowFromProto(c as cktarot.CardRow))
-}
-
-export function backupToCardImages(
-  backup: cktarot.CktarotBackup,
-  errors: string[]
-): LocalCardImageRow[] {
-  const out: LocalCardImageRow[] = []
-  for (const img of backup.cardImages ?? []) {
-    const row = cardImageFromProto(img as cktarot.CardImageRow, errors)
-    if (row) out.push(row)
-  }
-  return out
-}
-
 export function backupToReadings(backup: cktarot.CktarotBackup): LocalReadingRow[] {
-  return (backup.readings ?? []).map((r) => readingRowFromProto(r as cktarot.ReadingRow))
+  return (backup.readings ?? []).map((r) =>
+    readingRowFromProto(r as cktarot.ReadingRow)
+  )
 }

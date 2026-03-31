@@ -1,5 +1,6 @@
 import { MouseLikeEvent, MergedThis } from '../types/canvas.js'
 import Alpine from 'alpinejs'
+import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js'
 
 Alpine.data('canvasComponent', () => ({
   dragContainer: null as HTMLElement | null,
@@ -457,6 +458,9 @@ Alpine.data('canvasComponent', () => ({
   },
 
   clearCanvas(this: MergedThis) {
+    for (const dc of this.draggableCards) {
+      revokeTarotCardBlobUrls(dc.card)
+    }
     this.draggableCards = [];
     this.maxZIndex = 0;
     this.draggingCard = null;

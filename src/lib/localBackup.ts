@@ -1,22 +1,21 @@
-import type { LocalCardImageRow, LocalCardRow, LocalDeckRow, LocalReadingRow } from '../types/localDb.js'
+import type { LocalCardRow, LocalDeckRow, LocalReadingRow } from '../types/localDb.js'
 import type { BackupProgress } from '../types/settings.js'
 import {
   openTarotDb,
-  STORE_CARD_IMAGES,
   STORE_CARDS,
   STORE_DECKS,
   STORE_READINGS,
   idbRequest,
 } from './indexedDb.js'
-import { putLocalCard, putLocalDeck, putLocalCardImageRow } from './localDecks.js'
+import { putLocalCard, putLocalDeck } from './localDecks.js'
 import {
-  backupToCardImages,
-  backupToCards,
   backupToDecks,
   backupToReadings,
   decodeCktarotBackup,
   encodeCktarotBackup,
+  materializeCardRowFromProto,
 } from './proto/backupCodec.js'
+import { cktarot } from '../proto/generated/bundle.js'
 
 function yieldToUi(): Promise<void> {
   return new Promise((resolve) => {
@@ -45,7 +44,6 @@ export async function exportLocalBackup(
   const db = await openTarotDb()
   let decks: LocalDeckRow[] = []
   let cards: LocalCardRow[] = []
-  let imageRows: LocalCardImageRow[] = []
   let readings: LocalReadingRow[] = []
 
   const total = 3
@@ -54,13 +52,9 @@ export async function exportLocalBackup(
   step += 1
 
   try {
-    const tx = db.transaction(
-      [STORE_DECKS, STORE_CARDS, STORE_CARD_IMAGES, STORE_READINGS],
-      'readonly'
-    )
+    const tx = db.transaction([STORE_DECKS, STORE_CARDS, STORE_READINGS], 'readonly')
     decks = (await idbRequest(tx.objectStore(STORE_DECKS).getAll())) as LocalDeckRow[]
     cards = (await idbRequest(tx.objectStore(STORE_CARDS).getAll())) as LocalCardRow[]
-    imageRows = (await idbRequest(tx.objectStore(STORE_CARD_IMAGES).getAll())) as LocalCardImageRow[]
     readings = (await idbRequest(tx.objectStore(STORE_READINGS).getAll())) as LocalReadingRow[]
   } catch (e) {
     pushError(errors, 'Failed to read IndexedDB', e)
@@ -74,7 +68,6 @@ export async function exportLocalBackup(
     bytes = await encodeCktarotBackup({
       decks,
       cards,
-      cardImages: imageRows,
       readings,
       exportedAt: new Date().toISOString(),
     })
@@ -128,28 +121,15 @@ export async function importLocalBackup(
     return { errors }
   }
 
-  const cardImages = backupToCardImages(backup, errors)
   const decks = backupToDecks(backup)
-  const cards = backupToCards(backup)
   const readings = backupToReadings(backup)
+  const cardProtos = (backup.cards ?? []) as cktarot.CardRow[]
 
-  const total = 1 + cardImages.length + decks.length + cards.length + readings.length
+  const total = 1 + decks.length + cardProtos.length + readings.length
 
   let step = 0
   report('Parsing backup', step, total)
   step += 1
-
-  for (let i = 0; i < cardImages.length; i++) {
-    const row = cardImages[i]
-    try {
-      await putLocalCardImageRow(row)
-    } catch (e) {
-      pushError(errors, `cardImages import id=${row.id}`, e)
-    }
-    step += 1
-    report(`Restoring images (${i + 1}/${cardImages.length})`, step, total)
-    await yieldToUi()
-  }
 
   for (let i = 0; i < decks.length; i++) {
     const row = decks[i]
@@ -163,15 +143,16 @@ export async function importLocalBackup(
     await yieldToUi()
   }
 
-  for (let i = 0; i < cards.length; i++) {
-    const row = cards[i]
+  for (let i = 0; i < cardProtos.length; i++) {
+    const proto = cardProtos[i]
     try {
-      await putLocalCard(row)
+      const row = await materializeCardRowFromProto(proto, errors)
+      if (row) await putLocalCard(row)
     } catch (e) {
-      pushError(errors, `cards import id=${row.id}`, e)
+      pushError(errors, `cards import id=${proto.id}`, e)
     }
     step += 1
-    report(`Restoring cards (${i + 1}/${cards.length})`, step, total)
+    report(`Restoring cards (${i + 1}/${cardProtos.length})`, step, total)
     await yieldToUi()
   }
 

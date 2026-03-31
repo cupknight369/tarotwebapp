@@ -79,6 +79,7 @@ export type MergedThis = {
 
     // CanvasComponent methods
     getCardImg(card: TarotCard, censored: boolean): string;
+    cardShowsPlaceholder(card: TarotCard, censored: boolean): boolean;
     screenToContent(screenX: number, screenY: number): { x: number; y: number };
     boxesOverlap(
         box1: { left: number; top: number; width: number; height: number },
@@ -97,7 +98,7 @@ export type MergedThis = {
     init(): void;
     shuffleDeck(): void;
     openDrawByIndexDialog(): void;
-    serializeState(): SavedReadingState;
+    serializeState(): Promise<SavedReadingState>;
     deserializeState(state: SavedReadingState): Promise<void>;
 
     deckModalOpen: boolean;
