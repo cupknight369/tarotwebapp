@@ -6,7 +6,57 @@ function settingsStore(): SettingsStoreState {
   return Alpine.store('settings') as SettingsStoreState
 }
 
+function formatBytes(n: number): string {
+  if (!Number.isFinite(n) || n < 0) return '—'
+  if (n < 1024) return `${Math.round(n)} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
+
 Alpine.data('settingsComponent', () => ({
+  storageEstimate: null as { usage: number; quota: number } | null,
+  storageEstimateError: null as string | null,
+  storageEstimatePending: false,
+
+  init() {
+    Alpine.effect(() => {
+      if ((Alpine.store('settings') as SettingsStoreState).open) {
+        void this.refreshStorageEstimate()
+      }
+    })
+  },
+
+  formatStorageLine(): string {
+    if (this.storageEstimatePending) return 'Getting storage estimate…'
+    if (this.storageEstimateError) return this.storageEstimateError
+    const e = this.storageEstimate
+    if (!e || e.quota <= 0) return 'Storage estimate unavailable.'
+    const available = Math.max(0, e.quota - e.usage)
+    return `~${formatBytes(available)} available of ${formatBytes(e.quota)} total (${formatBytes(e.usage)} in use) for this site.`
+  },
+
+  async refreshStorageEstimate() {
+    this.storageEstimateError = null
+    this.storageEstimatePending = true
+    try {
+      if (typeof navigator === 'undefined' || !navigator.storage?.estimate) {
+        this.storageEstimate = null
+        this.storageEstimateError =
+          'Storage estimate is not supported in this context (try a secure HTTPS connection).'
+        return
+      }
+      const { usage = 0, quota = 0 } = await navigator.storage.estimate()
+      this.storageEstimate = { usage, quota }
+    } catch (e) {
+      this.storageEstimate = null
+      this.storageEstimateError =
+        e instanceof Error ? e.message : 'Could not read storage estimate.'
+    } finally {
+      this.storageEstimatePending = false
+    }
+  },
+
   backupBusy: false,
   backupProgress: { phase: '', current: 0, total: 1 } as BackupProgress,
   backupStartedAt: 0,
