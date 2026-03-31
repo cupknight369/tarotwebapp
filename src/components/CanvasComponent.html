@@ -57,7 +57,7 @@
             <template x-for="label in textLabels" :key="label.id">
               <div
                 :data-text-id="label.id"
-                class="absolute select-none will-change-transform origin-top-left cursor-grab hover:border-5 hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em]"
+                class="absolute select-none will-change-transform origin-top-left cursor-grab hover:border-5 hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em] w-max max-w-none whitespace-nowrap overflow-visible"
                 :style="getTextLabelStyle(label)"
                 @dblclick.stop="editingTextId = label.id">
                 <template x-if="editingTextId !== label.id">
