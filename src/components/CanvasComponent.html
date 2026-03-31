@@ -20,6 +20,7 @@
             @mousemove.window="onMouseMove($event)"
             @mouseup.window="onMouseUp($event)"
             @mouseleave="onMouseUp($event)"
+            @contextmenu="onContextMenu($event)"
             @wheel.prevent="$data.onWheel($event)"
             class="absolute inset-0 overflow-hidden cursor-grab">
           <div x-ref="content"
@@ -29,8 +30,7 @@
               <div 
                 class="absolute cursor-grab select-none will-change-transform origin-center hover:border-5 hover:border-purple-600"
                 :id="draggableCard.id"
-                :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
-                @contextmenu.prevent="onContextMenu($event)">
+                :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`">
                 <template x-if="cardShowsPlaceholder(draggableCard.card, $store.settings.censored)">
                   <div
                     class="w-[150px] min-h-[210px] flex flex-col items-stretch justify-center gap-1.5 p-2 rounded border-2 border-dashed border-amber-600/80 bg-gray-900/95 shadow-lg pointer-events-none text-left">
@@ -59,8 +59,7 @@
                 :data-text-id="label.id"
                 class="absolute select-none will-change-transform origin-top-left cursor-grab hover:border-5 hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em]"
                 :style="getTextLabelStyle(label)"
-                @dblclick.stop="editingTextId = label.id"
-                @contextmenu.prevent="onContextMenu($event)">
+                @dblclick.stop="editingTextId = label.id">
                 <template x-if="editingTextId !== label.id">
                   <span x-text="label.text"></span>
                 </template>

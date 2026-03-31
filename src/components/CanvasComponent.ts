@@ -242,28 +242,27 @@ Alpine.data('canvasComponent', () => ({
     this.viewport!.addEventListener('touchcancel', (ev: TouchEvent) => this.onTouchCancel(ev));
   },
 
-  onMouseWheelClick(event: MouseLikeEvent) {
-    if (event.target !== this.viewport 
-        && event.target !== this.content 
-        && event.target !== this.emptyCanvasMessage) 
-    { return; }
-
-    this.contextMenu = {
-      open: true,
-      x: event.clientX,
-      y: event.clientY,
-      cardId: null,
-      textId: null,
-    };
-  },
-
   onMouseDown(this: MergedThis, event: MouseLikeEvent) {
-    if (event.button === 1) {
-      this.onMouseWheelClick(event);
-      return;
+    const me = event as MouseEvent
+    if (me.button === 1) {
+      if (me.preventDefault) me.preventDefault()
+      const target = me.target
+      if (target instanceof Node) {
+        const synthetic = new MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          clientX: me.clientX,
+          clientY: me.clientY,
+          button: 2,
+          buttons: 2,
+        })
+        target.dispatchEvent(synthetic)
+      }
+      return
     }
 
-    if (event.button !== 0) return;
+    if (me.button !== 0) return
 
     const target = event.target as HTMLElement;
     const textEl = target.closest('[data-text-id]') as HTMLElement | null;
@@ -494,42 +493,62 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onContextMenu(this: MergedThis, event: MouseLikeEvent) {
-    const target = event.target as HTMLElement;
-    const textEl = target.closest('[data-text-id]') as HTMLElement | null;
-    const textId = textEl ? textEl.getAttribute('data-text-id') : null;
-    if (textId && this.textLabels.some(l => l.id === textId)) {
-      if (event.preventDefault) event.preventDefault();
+    if (event instanceof MouseEvent && event.isTrusted === false) {
+      return
+    }
+
+    const target = event.target as HTMLElement
+    const textEl = target.closest('[data-text-id]') as HTMLElement | null
+    const textId = textEl ? textEl.getAttribute('data-text-id') : null
+    if (textId && this.textLabels.some((l) => l.id === textId)) {
+      if (event.preventDefault) event.preventDefault()
       this.contextMenu = {
         open: true,
         x: event.clientX,
         y: event.clientY,
         cardId: null,
         textId,
-      };
-      return;
+      }
+      return
     }
-    const cardId = target.id;
-    if (cardId && this.draggableCards.some(c => c.id === cardId)) {
-      if (event.preventDefault) event.preventDefault();
+
+    let cardId: string | null = null
+    let el: HTMLElement | null = target
+    while (el && el !== this.viewport) {
+      const id = el.id
+      if (id && this.draggableCards.some((c) => c.id === id)) {
+        cardId = id
+        break
+      }
+      el = el.parentElement
+    }
+    if (cardId) {
+      if (event.preventDefault) event.preventDefault()
       this.contextMenu = {
         open: true,
         x: event.clientX,
         y: event.clientY,
         cardId,
         textId: null,
-      };
-      return;
+      }
+      return
     }
-    const isOnCanvas = target === this.viewport || target === this.content || target === this.emptyCanvasMessage;
+
+    const isOnCanvas =
+      target === this.viewport ||
+      target === this.content ||
+      target === this.emptyCanvasMessage ||
+      (this.emptyCanvasMessage !== null &&
+        this.emptyCanvasMessage.contains(target))
     if (isOnCanvas) {
-      if (event.preventDefault) event.preventDefault();
+      if (event.preventDefault) event.preventDefault()
       this.contextMenu = {
         open: true,
         x: event.clientX,
         y: event.clientY,
         cardId: null,
         textId: null,
-      };
+      }
     }
   },
 
