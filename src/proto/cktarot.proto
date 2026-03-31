@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package cktarot;
+
+message Viewport {
+  double scale = 1;
+  double offset_x = 2;
+  double offset_y = 3;
+}
+
+message PlacedCard {
+  string id = 1;
+  string deck_id = 2;
+  string card_id = 3;
+  optional string deck_title = 4;
+  optional string card_title = 5;
+  optional string image_source = 6;
+  optional string censor_image_source = 7;
+  double x = 8;
+  double y = 9;
+  double rotation = 10;
+  sint32 z_index = 11;
+  double opacity = 12;
+}
+
+enum FontStyle {
+  FONT_STYLE_UNSPECIFIED = 0;
+  FONT_STYLE_NORMAL = 1;
+  FONT_STYLE_ITALIC = 2;
+}
+
+enum TextDecoration {
+  TEXT_DECORATION_UNSPECIFIED = 0;
+  TEXT_DECORATION_NONE = 1;
+  TEXT_DECORATION_UNDERLINE = 2;
+}
+
+enum AnchorPosition {
+  ANCHOR_POSITION_UNSPECIFIED = 0;
+  ANCHOR_POSITION_ABOVE = 1;
+  ANCHOR_POSITION_BELOW = 2;
+  ANCHOR_POSITION_LEFT = 3;
+  ANCHOR_POSITION_RIGHT = 4;
+}
+
+message TextLabel {
+  string id = 1;
+  string text = 2;
+  double x = 3;
+  double y = 4;
+  double font_size = 5;
+  double font_weight = 6;
+  FontStyle font_style = 7;
+  TextDecoration text_decoration = 8;
+  string color = 9;
+  sint32 z_index = 10;
+  optional string anchor_card_id = 11;
+  AnchorPosition anchor_position = 12;
+}
+
+message SavedReadingState {
+  Viewport viewport = 1;
+  repeated PlacedCard cards = 2;
+  repeated TextLabel text_labels = 3;
+}
+
+message DeckRow {
+  string id = 1;
+  string title = 2;
+  optional string description = 3;
+  string created_at = 4;
+  string modified_at = 5;
+}
+
+message CardRow {
+  string id = 1;
+  string deck_id = 2;
+  string title = 3;
+  int32 number = 4;
+  string image_blob_id = 5;
+  optional string censor_image_blob_id = 6;
+}
+
+message CardImageRow {
+  string id = 1;
+  string created_at = 2;
+  optional string mime_type = 3;
+  optional string title = 4;
+  bytes data = 5;
+}
+
+message ReadingRow {
+  string id = 1;
+  string name = 2;
+  bytes state = 3;
+  string updated_at = 4;
+}
+
+message CktarotBackup {
+  int32 version = 1;
+  optional string exported_at = 2;
+  repeated DeckRow decks = 3;
+  repeated CardRow cards = 4;
+  repeated CardImageRow card_images = 5;
+  repeated ReadingRow readings = 6;
+}

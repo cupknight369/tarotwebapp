@@ -1,6 +1,8 @@
 import { supabase } from './supabase.js'
 import type { SavedReadingState, ReadingSummary } from '../types/readingState.js'
 import type { User } from '@supabase/supabase-js'
+import { byteaFromDb, bytesToPostgresHex } from './bytea.js'
+import { decodeSavedReadingState, encodeSavedReadingState } from './proto/savedReadingCodec.js'
 
 async function requireVerifiedUser(): Promise<{ user: User } | { error: string }> {
   const { data: { user } } = await supabase.auth.getUser()
@@ -62,7 +64,11 @@ export async function loadReading(id: string): Promise<{ state: SavedReadingStat
     .single()
 
   if (error || !data) return null
-  return { state: data.state as SavedReadingState, name: data.name ?? 'Untitled Reading' }
+  const raw = byteaFromDb((data as { state: unknown }).state)
+  return {
+    state: decodeSavedReadingState(raw),
+    name: data.name ?? 'Untitled Reading',
+  }
 }
 
 export async function saveReading(
@@ -73,10 +79,12 @@ export async function saveReading(
   const gate = await requireVerifiedUser()
   if ('error' in gate) return { error: gate.error }
 
+  const stateBytes = encodeSavedReadingState(state)
+  const stateHex = bytesToPostgresHex(stateBytes)
   const payload = {
     user_id: gate.user.id,
     name: name ?? 'Untitled Reading',
-    state,
+    state: stateHex,
     updated_at: new Date().toISOString(),
   }
 

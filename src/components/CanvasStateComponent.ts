@@ -189,9 +189,13 @@ Alpine.data('stateComponent', () => ({
   async saveCurrentReading(this: MergedThis, name?: string, target?: 'local' | 'cloud'): Promise<{ ok: boolean; error?: string }> {
     const auth = Alpine.store('auth') as { isEmailConfirmed: boolean }
 
-    const effectiveTarget: 'local' | 'cloud' = this.loadedReadingId
-      ? (this.loadedReadingScope ?? 'local')
-      : (target ?? 'local')
+    /** Explicit `target` wins so e.g. "Save to cloud" works while a local reading is loaded. */
+    const effectiveTarget: 'local' | 'cloud' =
+      target !== undefined
+        ? target
+        : this.loadedReadingId
+          ? (this.loadedReadingScope ?? 'local')
+          : 'local'
 
     if (effectiveTarget === 'cloud') {
       if (!auth.isEmailConfirmed) {

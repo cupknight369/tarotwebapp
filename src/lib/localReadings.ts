@@ -5,6 +5,7 @@ import {
   STORE_READINGS,
   idbRequest,
 } from './indexedDb.js'
+import { decodeSavedReadingState, encodeSavedReadingState } from './proto/savedReadingCodec.js'
 
 export async function listLocalReadings(): Promise<ReadingSummary[]> {
   const db = await openTarotDb()
@@ -25,7 +26,11 @@ export async function loadLocalReading(
     tx.objectStore(STORE_READINGS).get(id)
   )) as LocalReadingRow | undefined
   if (!row) return null
-  return { state: row.state, name: row.name ?? 'Untitled Reading' }
+  const raw = row.state instanceof Uint8Array ? row.state : new Uint8Array(row.state as ArrayBuffer)
+  return {
+    state: decodeSavedReadingState(raw),
+    name: row.name ?? 'Untitled Reading',
+  }
 }
 
 export async function saveLocalReading(
@@ -52,7 +57,7 @@ export async function saveLocalReading(
     const row: LocalReadingRow = {
       id,
       name: resolvedName,
-      state,
+      state: encodeSavedReadingState(state),
       updated_at: now,
     }
     const wtx = db.transaction(STORE_READINGS, 'readwrite')

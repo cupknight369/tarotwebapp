@@ -24,7 +24,7 @@ create table public.readings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   name text default 'Untitled Reading',
-  state jsonb not null,
+  state bytea not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

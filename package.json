@@ -4,8 +4,9 @@
   "description": "Tarot card drawing application",
   "type": "module",
   "scripts": {
+    "proto:generate": "pbjs -t static-module -w es6 -o src/proto/generated/bundle.js src/proto/cktarot.proto && pbts -o src/proto/generated/bundle.d.ts src/proto/generated/bundle.js",
     "dev": "tsx server/index.ts",
-    "build": "vite build && node scripts/build-server.mjs",
+    "build": "npm run proto:generate && vite build && node scripts/build-server.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "supabase:restart": "npx supabase stop && npx supabase start",
@@ -25,6 +26,7 @@
     "esbuild": "^0.27.3",
     "posthtml": "^0.16.7",
     "posthtml-include": "^2.0.1",
+    "protobufjs-cli": "^2.0.0",
     "supabase": "^2.76.8",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",
@@ -38,6 +40,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
-    "http-proxy-middleware": "^3.0.5"
+    "http-proxy-middleware": "^3.0.5",
+    "protobufjs": "^7.5.4"
   }
 }

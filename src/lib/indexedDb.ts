@@ -1,6 +1,6 @@
 const DB_NAME = 'tarot'
-/** v2: optional `title` on cardImages rows (migration is schemaless; old rows omit title). */
-const DB_VERSION = 2
+/** v3: `readings.state` is protobuf bytes (prior versions stored structured objects). */
+const DB_VERSION = 3
 
 export const STORE_READINGS = 'readings'
 export const STORE_DECKS = 'decks'
@@ -34,7 +34,13 @@ export function openTarotDb(): Promise<IDBDatabase> {
           cards.createIndex('by_deck_id', 'deck_id')
         }
       }
-      // v2: cardImages may include `title`; no store migration required.
+      if (old < 3 && old >= 1) {
+        if (db.objectStoreNames.contains(STORE_READINGS)) {
+          db.deleteObjectStore(STORE_READINGS)
+        }
+        const readings = db.createObjectStore(STORE_READINGS, { keyPath: 'id' })
+        readings.createIndex('by_updated_at', 'updated_at')
+      }
     }
   })
   return dbPromise

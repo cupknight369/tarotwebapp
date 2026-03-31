@@ -1,10 +1,8 @@
-import type { SavedReadingState } from './readingState.js'
-
-/** Local saved reading row in IndexedDB `readings` store. */
+/** Local saved reading row in IndexedDB `readings` store (`state` is protobuf bytes). */
 export interface LocalReadingRow {
   id: string
   name: string
-  state: SavedReadingState
+  state: Uint8Array
   updated_at: string
 }
 

@@ -133,9 +133,9 @@ Alpine.data('settingsComponent', () => ({
       this.backupElapsedMs = Date.now() - this.backupStartedAt
     }, 250)
 
-    let text: string
+    let buffer: ArrayBuffer
     try {
-      text = await file.text()
+      buffer = await file.arrayBuffer()
     } catch (e) {
       if (this._backupTimer) {
         clearInterval(this._backupTimer)
@@ -148,7 +148,7 @@ Alpine.data('settingsComponent', () => ({
     }
 
     try {
-      const { errors } = await importLocalBackup(text, (p) => {
+      const { errors } = await importLocalBackup(buffer, (p) => {
         this.backupProgress = { ...p }
       })
       this.backupResultErrors = errors
