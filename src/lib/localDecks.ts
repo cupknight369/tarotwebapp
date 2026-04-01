@@ -27,6 +27,14 @@ export function revokeBlobObjectUrl(blobId: string): void {
   }
 }
 
+/** True if this object URL is the live cache entry for a deck card image in IndexedDB. */
+export function isBlobUrlManagedByDeckCache(url: string): boolean {
+  for (const u of blobUrlByBlobId.values()) {
+    if (u === url) return true
+  }
+  return false
+}
+
 export async function listLocalDecks(): Promise<LocalDeckRow[]> {
   const db = await openTarotDb()
   const tx = db.transaction(STORE_DECKS, 'readonly')
