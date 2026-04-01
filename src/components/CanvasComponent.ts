@@ -243,26 +243,6 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onMouseDown(this: MergedThis, event: MouseLikeEvent) {
-    const me = event as MouseEvent
-    if (me.button === 1) {
-      if (me.preventDefault) me.preventDefault()
-      const target = me.target
-      if (target instanceof Node) {
-        const synthetic = new MouseEvent('contextmenu', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX: me.clientX,
-          clientY: me.clientY,
-          button: 2,
-          buttons: 2,
-        })
-        target.dispatchEvent(synthetic)
-      }
-      return
-    }
-
-    if (me.button !== 0) return
 
     const target = event.target as HTMLElement;
     const textEl = target.closest('[data-text-id]') as HTMLElement | null;
@@ -493,10 +473,6 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onContextMenu(this: MergedThis, event: MouseLikeEvent) {
-    if (event instanceof MouseEvent && event.isTrusted === false) {
-      return
-    }
-
     const target = event.target as HTMLElement
     const textEl = target.closest('[data-text-id]') as HTMLElement | null
     const textId = textEl ? textEl.getAttribute('data-text-id') : null
