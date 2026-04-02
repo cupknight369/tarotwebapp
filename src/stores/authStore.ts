@@ -18,15 +18,22 @@ export async function initAuthStore() {
     },
 
     async init() {
-      const { data: { session } } = await supabase.auth.getSession()
-      this.session = session
-      this.user = session?.user ?? null
-      this.loading = false
-
-      supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
         this.session = session
         this.user = session?.user ?? null
-      })
+        supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
+          this.session = session
+          this.user = session?.user ?? null
+        })
+      } catch (e) {
+        console.warn('auth init: session unavailable', e)
+        this.session = null
+        this.user = null
+        this.error = null
+      } finally {
+        this.loading = false
+      }
     },
 
     async signInWithPassword(email: string, password: string) {

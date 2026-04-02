@@ -22,37 +22,21 @@ function authMiddleware(req: express.Request, res: express.Response, next: expre
   // Auth callback: validate code server-side with Supabase before granting access
   if (path === '/auth/callback') {
     if (req.query.error || typeof req.query.code !== 'string') {
-      return res.redirect(302, '/auth');
+      return res.redirect(302, '/');
     }
     const supabase = createSupabaseClient(req, res);
     supabase.auth.exchangeCodeForSession(req.query.code)
-      .then(({ data, error }: { data: unknown; error: unknown }) => {
+      .then(({ error }: { error: unknown }) => {
         if (error) {
-          return res.redirect(302, '/auth');
+          return res.redirect(302, '/');
         }
         res.redirect(302, '/');
       })
-      .catch(() => res.redirect(302, '/auth'));
+      .catch(() => res.redirect(302, '/'));
     return;
   }
 
-  // Only the login page needs a session check (redirect signed-in users home).
-  // Do not call Supabase on `/` or other SPA routes — avoids any SSR cookie edge cases
-  // and keeps anonymous access to the canvas reliable.
-  if (path !== '/auth') {
-    return next();
-  }
-
-  const supabase = createSupabaseClient(req, res);
-  supabase.auth.getUser()
-    .then(({ data: { user }, error }: { data: { user: unknown }; error: unknown }) => {
-      const hasSession = !error && !!user;
-      if (hasSession) {
-        return res.redirect(302, '/');
-      }
-      next();
-    })
-    .catch(next);
+  return next();
 }
 
 app.use(authMiddleware);
@@ -65,9 +49,6 @@ async function setupMiddleware() {
   } else {
     const staticDir = __dirname;
     app.use(express.static(staticDir));
-    app.get(['/auth', '/auth/callback'], (_req, res) => {
-      res.sendFile('auth.html', { root: staticDir });
-    });
     app.get('/{*splat}', (_req, res) => {
       res.sendFile('index.html', { root: staticDir });
     });
