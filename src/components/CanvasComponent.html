@@ -304,11 +304,18 @@
                       @click.stop="deleteLocalDeckAction(d.id)">×</button>
                   </div>
                   <div class="mt-2 pl-2 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       class="text-xs text-purple-300 hover:text-white cursor-pointer"
                       x-show="addCardDeckId !== d.id"
                       @click.stop="startAddCard(d.id)">Add card…</button>
+                    <button
+                      type="button"
+                      class="text-xs text-purple-300 hover:text-white cursor-pointer"
+                      x-show="addCardDeckId !== d.id"
+                      @click.stop="$dispatch('open-deck-edit', { deckId: d.id, deckTitle: d.title }); closeDeckModal()">Edit cards…</button>
+                    </div>
                     <div x-show="addCardDeckId === d.id" class="space-y-2 text-sm">
                       <input type="text" x-model="addCardTitle" placeholder="Card title" class="w-full px-2 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200">
                       <input type="number" x-model="addCardNumber" min="0" class="w-24 px-2 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200" title="Number">

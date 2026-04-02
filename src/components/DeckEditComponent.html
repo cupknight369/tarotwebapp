@@ -1,0 +1,114 @@
+<div x-data="deckEditComponent" @open-deck-edit.window="onOpen($event.detail)">
+  <div
+    x-cloak
+    x-show="open"
+    x-transition
+    class="fixed inset-0 z-[10002] flex items-center justify-center bg-gray-900/80 p-4"
+    @click.self="close()">
+    <div
+      class="relative flex h-[min(90vh,720px)] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-gray-700 bg-gray-800 shadow-xl md:flex-row">
+      <button
+        type="button"
+        class="absolute right-2 top-2 z-10 rounded p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+        aria-label="Close"
+        @click="close()">
+        <span class="text-xl leading-none">×</span>
+      </button>
+
+      <div class="min-h-0 flex-1 border-b border-gray-700 p-4 pt-12 md:border-b-0 md:border-r md:pt-4">
+        <p class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Edit deck cards</p>
+        <p class="mt-1 break-words text-lg font-semibold text-gray-100" x-text="deckTitle || '—'"></p>
+        <p class="mt-3 text-sm text-gray-400" x-show="loading">Loading…</p>
+        <p class="mt-3 text-sm text-amber-400/90" x-show="open && !loading && localEmpty">
+          No cards stored on this device for this deck yet. Add cards from the deck list or download the catalog deck.
+        </p>
+        <div
+          x-show="open && !loading && !localEmpty"
+          class="mt-4 grid max-h-[min(58vh,560px)] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-3">
+          <template x-for="c in cards" :key="c.id">
+            <button
+              type="button"
+              class="flex flex-col items-stretch rounded-lg border-2 p-2 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+              :class="selectedCardId === c.id ? 'border-purple-500 bg-gray-700/80' : 'border-gray-600 bg-gray-700/40 hover:border-gray-500'"
+              @click="selectCard(c.id)">
+              <img
+                :src="c.img"
+                :alt="c.title"
+                class="mx-auto block h-auto max-h-32 w-full max-w-[120px] rounded object-contain shadow" />
+              <div x-show="c.censoredImg" class="mt-1 flex flex-col gap-0.5">
+                <span class="text-[9px] uppercase tracking-wide text-gray-500">Censor</span>
+                <img
+                  :src="c.censoredImg"
+                  alt=""
+                  class="mx-auto block h-auto max-h-20 w-full max-w-[120px] rounded object-contain opacity-90 ring-1 ring-gray-600" />
+              </div>
+              <span class="mt-2 line-clamp-2 text-xs font-medium text-gray-200" x-text="c.title"></span>
+              <span class="text-[10px] text-gray-500">#<span x-text="c.num"></span></span>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <div class="flex w-full shrink-0 flex-col border-gray-700 p-4 pt-12 md:w-[min(100%,22rem)] md:border-l md:pt-4">
+        <p class="text-sm font-medium text-gray-300">Selected card</p>
+        <div x-show="!localEmpty && selectedCardId" class="mt-4 flex flex-col gap-3">
+            <div>
+              <label class="block text-xs text-gray-400">Title</label>
+              <input
+                type="text"
+                x-model="editTitle"
+                class="mt-1 w-full rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200 focus:border-transparent focus:ring-2 focus:ring-purple-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400">Number</label>
+              <input
+                type="number"
+                x-model.number="editNumber"
+                class="mt-1 w-28 rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200 focus:border-transparent focus:ring-2 focus:ring-purple-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400">Main image</label>
+              <input
+                id="deck-edit-main"
+                type="file"
+                accept="image/*"
+                class="mt-1 w-full text-xs text-gray-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400">Censor image (optional)</label>
+              <input
+                id="deck-edit-censor"
+                type="file"
+                accept="image/*"
+                class="mt-1 w-full text-xs text-gray-300"
+                :disabled="clearCensor" />
+            </div>
+            <label class="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                x-model="clearCensor"
+                class="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                @change="onClearCensorChange()" />
+              <span class="text-sm text-gray-300">Remove censor image</span>
+            </label>
+            <p x-show="saveError" class="text-sm text-red-400" x-text="saveError"></p>
+            <div class="flex flex-wrap gap-2 pt-2">
+              <button
+                type="button"
+                class="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                @click="saveCard()">
+                Save
+              </button>
+              <button
+                type="button"
+                class="rounded-lg bg-gray-600 px-4 py-2 text-sm text-gray-200 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                @click="close()">
+                Close
+              </button>
+            </div>
+        </div>
+        <p class="mt-4 text-sm text-gray-500" x-show="!loading && !localEmpty && !selectedCardId">Select a card to edit.</p>
+      </div>
+    </div>
+  </div>
+</div>

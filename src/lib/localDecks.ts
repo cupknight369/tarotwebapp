@@ -210,3 +210,66 @@ export async function addCardToLocalDeck(opts: {
   await putLocalCard(row)
   return row
 }
+
+export async function updateLocalCard(opts: {
+  cardId: string
+  title: string
+  number: number
+  mainImageFile?: File | null
+  censorImageFile?: File | null
+  /** When true, remove the censored image (ignored if `censorImageFile` is provided with size > 0 after clear — prefer explicit clear first in UI). */
+  censorClear?: boolean
+}): Promise<void> {
+  const db = await openTarotDb()
+  const tx = db.transaction(STORE_CARDS, 'readonly')
+  const row = (await idbRequest(tx.objectStore(STORE_CARDS).get(opts.cardId))) as LocalCardRow | undefined
+  if (!row) throw new Error(`Card not found: ${opts.cardId}`)
+
+  const oldMain = row.imageBlobId
+  const oldCensor = row.censorImageBlobId
+
+  let imageBlobId = row.imageBlobId
+  let censorImageBlobId = row.censorImageBlobId
+
+  const mainFile = opts.mainImageFile
+  if (mainFile && mainFile.size > 0) {
+    imageBlobId = await putCardImage(mainFile, mainFile.type, mainFile.name)
+  }
+
+  if (opts.censorClear) {
+    censorImageBlobId = null
+  } else {
+    const censorFile = opts.censorImageFile
+    if (censorFile && censorFile.size > 0) {
+      censorImageBlobId = await putCardImage(censorFile, censorFile.type, censorFile.name)
+    }
+  }
+
+  const updated: LocalCardRow = {
+    ...row,
+    title: opts.title.trim(),
+    number: opts.number,
+    imageBlobId,
+    censorImageBlobId,
+  }
+
+  await putLocalCard(updated)
+
+  const maybeDeleteBlob = async (blobId: string | null) => {
+    if (!blobId) return
+    const n = await countCardsReferencingBlob(blobId)
+    if (n === 0) await deleteCardImageRow(blobId)
+  }
+
+  if (mainFile && mainFile.size > 0 && oldMain !== imageBlobId) {
+    await maybeDeleteBlob(oldMain)
+  }
+  if (opts.censorClear && oldCensor) {
+    await maybeDeleteBlob(oldCensor)
+  } else if (!opts.censorClear) {
+    const censorFile = opts.censorImageFile
+    if (censorFile && censorFile.size > 0 && oldCensor && oldCensor !== censorImageBlobId) {
+      await maybeDeleteBlob(oldCensor)
+    }
+  }
+}

@@ -21,6 +21,7 @@ import './components/CanvasDeckComponent'
 import './components/DialogComponent'
 import './components/SettingsComponent'
 import './components/AuthComponent'
+import './components/DeckEditComponent'
 
 declare global {
   interface Window { Alpine: typeof Alpine }
