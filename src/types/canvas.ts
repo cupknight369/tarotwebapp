@@ -106,9 +106,6 @@ export type MergedThis = {
     catalogOffers: CatalogDeckOffer[];
     onDeviceDecks: OnDeviceDeckEntry[];
     newLocalDeckTitle: string;
-    addCardDeckId: string | null;
-    addCardTitle: string;
-    addCardNumber: number;
     setDeckModalTab(tab: DeckModalTab): void;
     refreshDeckLists(): Promise<void>;
     openDeckModal(): Promise<void>;
@@ -117,9 +114,6 @@ export type MergedThis = {
     createLocalDeckAction(): Promise<void>;
     downloadCatalogDeckAction(deckId: string): Promise<void>;
     removeCatalogInstallAction(deckId: string): Promise<void>;
-    startAddCard(deckId: string): void;
-    cancelAddCard(): void;
-    submitAddCard(): Promise<void>;
     deleteLocalDeckAction(deckId: string): Promise<void>;
     createNewReading(): Promise<void>;
     saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }>;

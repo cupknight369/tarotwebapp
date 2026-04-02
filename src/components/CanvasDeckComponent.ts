@@ -8,7 +8,7 @@ import {
   listOnDeviceDeckEntries,
 } from '../lib/decks.js'
 import { downloadCloudDeckToDevice } from '../lib/cloudDeckDownload.js'
-import { addCardToLocalDeck, createLocalDeck, deleteLocalDeck } from '../lib/localDecks.js'
+import { createLocalDeck, deleteLocalDeck } from '../lib/localDecks.js'
 
 export const DECK_MODAL_TAB_KEY = 'deck_modal_tab'
 
@@ -36,9 +36,6 @@ Alpine.data('deckComponent', () => ({
   catalogOffers: [] as CatalogDeckOffer[],
   onDeviceDecks: [] as OnDeviceDeckEntry[],
   newLocalDeckTitle: '',
-  addCardDeckId: null as string | null,
-  addCardTitle: '',
-  addCardNumber: 1,
 
   setDeckModalTab(this: MergedThis, tab: DeckModalTab) {
     this.deckModalTab = tab
@@ -59,7 +56,6 @@ Alpine.data('deckComponent', () => ({
 
   closeDeckModal(this: MergedThis) {
     this.deckModalOpen = false
-    this.addCardDeckId = null
   },
 
   async switchToDeck(this: MergedThis, deckId: string) {
@@ -134,45 +130,6 @@ Alpine.data('deckComponent', () => ({
     }
   },
 
-  startAddCard(this: MergedThis, deckId: string) {
-    this.addCardDeckId = deckId
-    this.addCardTitle = ''
-    this.addCardNumber = 1
-  },
-
-  cancelAddCard(this: MergedThis) {
-    this.addCardDeckId = null
-  },
-
-  async submitAddCard(this: MergedThis) {
-    const deckId = this.addCardDeckId
-    if (!deckId) return
-    const title = this.addCardTitle.trim()
-    if (!title) return
-    const mainInput = document.getElementById(`add-card-main-${deckId}`) as HTMLInputElement | null
-    const file = mainInput?.files?.[0]
-    if (!file) return
-    const censorInput = document.getElementById(`add-card-censor-${deckId}`) as HTMLInputElement | null
-    const censorFile = censorInput?.files?.[0]
-    await addCardToLocalDeck({
-      deckId,
-      title,
-      number: Number(this.addCardNumber) || 1,
-      imageFile: file,
-      censorFile: censorFile && censorFile.size > 0 ? censorFile : null,
-    })
-    if (mainInput) mainInput.value = ''
-    if (censorInput) censorInput.value = ''
-    this.addCardDeckId = null
-    const activeId = Alpine.store('activeDeckId') as string
-    if (activeId === deckId) {
-      const cards = await getCardsByDeckId(deckId)
-      Alpine.store('shuffledCards', cards)
-      this.shuffleDeck()
-    }
-    await this.refreshDeckLists()
-  },
-
   async deleteLocalDeckAction(this: MergedThis, deckId: string): Promise<void> {
     const confirmed = await new Promise<boolean>((resolve) => {
       Alpine.store('dialog', {
@@ -186,10 +143,6 @@ Alpine.data('deckComponent', () => ({
       })
     })
     if (!confirmed) return
-
-    if (this.addCardDeckId === deckId) {
-      this.addCardDeckId = null
-    }
 
     const wasActive = (Alpine.store('activeDeckId') as string) === deckId
     await deleteLocalDeck(deckId)
