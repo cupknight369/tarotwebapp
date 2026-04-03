@@ -1,13 +1,13 @@
-import * as esbuild from 'esbuild'
-import { mkdirSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
+import * as esbuild from 'esbuild';
+import { mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const root = join(__dirname, '..')
-const outfile = join(root, 'dist', 'index.cjs')
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const root = join(__dirname, '..');
+const outfile = join(root, 'dist', 'index.cjs');
 
-mkdirSync(dirname(outfile), { recursive: true })
+mkdirSync(dirname(outfile), { recursive: true });
 
 await esbuild.build({
   entryPoints: [join(root, 'server', 'index.ts')],
@@ -17,6 +17,6 @@ await esbuild.build({
   outfile,
   external: ['vite'],
   minify: true,
-})
+});
 
-console.log('Server bundled to dist/index.cjs')
+console.log('Server bundled to dist/index.cjs');

@@ -1,47 +1,57 @@
-import 'dotenv/config'
-import express from 'express'
-declare const __dirname: string
-import cookieParser from 'cookie-parser'
-import { createServer } from 'http'
-import { createSupabaseClient } from './lib/supabase.js'
+/**
+ * Express dev/prod server: Supabase auth callback and Vite middleware (dev) or static assets (prod).
+ */
+
+import cookieParser from 'cookie-parser';
+import express, { type RequestHandler } from 'express';
+import { createServer } from 'node:http';
+import { createSupabaseClient } from './lib/supabase.js';
+
+declare const __dirname: string;
 
 const app = express();
 const PORT = process.env.PORT ?? 8001;
 const isDev = process.env.NODE_ENV !== 'production';
 
-// Production specific settings
 if (!isDev) {
   app.set('trust proxy', true);
 }
 
 app.use(cookieParser());
 
-function authMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const path = req.path === '' ? '/' : req.path
+/**
+ * Handles `/auth/callback` by exchanging the OAuth code for a session; otherwise passes through.
+ */
+const authMiddleware: RequestHandler = (req, res, next) => {
+  const path = req.path === '' ? '/' : req.path;
 
-  // Auth callback: validate code server-side with Supabase before granting access
   if (path === '/auth/callback') {
     if (req.query.error || typeof req.query.code !== 'string') {
-      return res.redirect(302, '/');
+      res.redirect(302, '/');
+      return;
     }
     const supabase = createSupabaseClient(req, res);
-    supabase.auth.exchangeCodeForSession(req.query.code)
+    supabase.auth
+      .exchangeCodeForSession(req.query.code)
       .then(({ error }: { error: unknown }) => {
         if (error) {
-          return res.redirect(302, '/');
+          res.redirect(302, '/');
+          return;
         }
         res.redirect(302, '/');
       })
-      .catch(() => res.redirect(302, '/'));
+      .catch(() => {
+        res.redirect(302, '/');
+      });
     return;
   }
 
-  return next();
-}
+  next();
+};
 
 app.use(authMiddleware);
 
-async function setupMiddleware() {
+async function setupMiddleware(): Promise<void> {
   if (isDev) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({ server: { middlewareMode: true } });
@@ -60,4 +70,5 @@ async function setupMiddleware() {
     }
   });
 }
-setupMiddleware();
+
+void setupMiddleware();
