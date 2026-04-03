@@ -1,4 +1,4 @@
-import Alpine from 'alpinejs'
+import Alpine from 'alpinejs';
 import { MergedThis } from '../types/canvas.js';
 
 Alpine.data('scaleComponent', () => ({
@@ -48,4 +48,4 @@ Alpine.data('scaleComponent', () => ({
     const rect = viewport.getBoundingClientRect();
     this.zoomAt(rect.width / 2, rect.height / 2, factor);
   },
-}))
+}));

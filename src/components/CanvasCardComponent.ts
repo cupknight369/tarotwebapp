@@ -1,11 +1,16 @@
-import Alpine from 'alpinejs'
-import type { MergedThis, DraggableCard, TarotCard, TextLabel } from '../types/canvas.js'
-import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js'
+import Alpine from 'alpinejs';
+import type { MergedThis, DraggableCard, TarotCard, TextLabel } from '../types/canvas.js';
+import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
 
 Alpine.data('cardComponent', () => ({
   draggableCards: [] as DraggableCard[],
   maxZIndex: 0,
-  dragStart: null as { startCardX: number; startCardY: number; startDropX: number; startDropY: number } | null,
+  dragStart: null as {
+    startCardX: number;
+    startCardY: number;
+    startDropX: number;
+    startDropY: number;
+  } | null,
   draggingCard: null as HTMLElement | null,
   selectedCardIds: [] as string[],
   groupDragOffsets: null as Record<string, { dx: number; dy: number }> | null,
@@ -15,15 +20,15 @@ Alpine.data('cardComponent', () => ({
   CARD_HEIGHT: 231,
 
   getCardImg(card: TarotCard, censored: boolean): string {
-    if (card.invalidReference) return ''
-    if (censored && card.censoredImg) return card.censoredImg
-    return card.img
+    if (card.invalidReference) return '';
+    if (censored && card.censoredImg) return card.censoredImg;
+    return card.img;
   },
 
   /** True when the dashed placeholder should show (no usable image URL for the img tag). */
   cardShowsPlaceholder(card: TarotCard, censored: boolean): boolean {
-    if (card.invalidReference) return true
-    return this.getCardImg(card, censored) === ''
+    if (card.invalidReference) return true;
+    return this.getCardImg(card, censored) === '';
   },
 
   shuffleDeck() {
@@ -37,12 +42,14 @@ Alpine.data('cardComponent', () => ({
     Alpine.store('shuffledCards', newArray);
 
     this.showShuffledConfirmation = true;
-    setTimeout(() => { this.showShuffledConfirmation = false; }, 3000);
+    setTimeout(() => {
+      this.showShuffledConfirmation = false;
+    }, 3000);
   },
 
   openDrawByIndexDialog(this: MergedThis) {
-    const s = Alpine.store('shuffledCards') as TarotCard[]
-    const max = Math.max(0, s.length - 1)
+    const s = Alpine.store('shuffledCards') as TarotCard[];
+    const max = Math.max(0, s.length - 1);
     Alpine.store('dialog', {
       open: true,
       type: 'input',
@@ -52,19 +59,19 @@ Alpine.data('cardComponent', () => ({
       inputDefault: '0',
       onSubmit: (i: number) => {
         if (i >= 0 && i <= max && s.length > 0) {
-          this.addCardToCanvas(s[i])
+          this.addCardToCanvas(s[i]);
         }
       },
       onCancel: () => {},
-    })
+    });
   },
 
   addCardToCanvas(this: MergedThis, card: TarotCard): void {
-    const activeDeckTitle = Alpine.store('activeDeckTitle') as string
+    const activeDeckTitle = Alpine.store('activeDeckTitle') as string;
     const cardWithMeta: TarotCard = {
       ...card,
       deckTitle: card.deckTitle ?? (activeDeckTitle || undefined),
-    }
+    };
     const draggableCard: DraggableCard = {
       card: cardWithMeta,
       id: this.generateCardId(),
@@ -88,7 +95,7 @@ Alpine.data('cardComponent', () => ({
       zIndex: this.maxZIndex + 1,
       opacity: 1,
       cursor: 'grab',
-      display: 'block'
+      display: 'block',
     };
 
     this.draggableCards = [...this.draggableCards, draggableCard];
@@ -103,13 +110,15 @@ Alpine.data('cardComponent', () => ({
   cryptoRandomInt(len: number): number {
     const buf = new Uint32Array(1);
     crypto.getRandomValues(buf);
-    const fraction = buf[0] / (0xFFFFFFFF + 1);
+    const fraction = buf[0] / (0xffffffff + 1);
     const result = Math.floor(fraction * len);
     return result;
   },
 
   drawMultipleCards(num: number): Set<number> | undefined {
-    if (num > 10 || num < 1) { return; }
+    if (num > 10 || num < 1) {
+      return;
+    }
 
     const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
     if (shuffledCards.length === 0) return;
@@ -118,35 +127,40 @@ Alpine.data('cardComponent', () => ({
 
     while (draws.size < num) {
       const randomNum = this.cryptoRandomInt(shuffledCards.length);
-      if (!draws.has(randomNum)) { draws.add(randomNum); }
+      if (!draws.has(randomNum)) {
+        draws.add(randomNum);
+      }
     }
 
     return draws;
   },
 
   drawCardAt(this: MergedThis, x: number, y: number) {
-    const shuffledCards = Alpine.store('shuffledCards') as TarotCard[]
-    if (shuffledCards.length === 0) return
+    const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
+    if (shuffledCards.length === 0) return;
     const { x: contentX, y: contentY } = this.screenToContent(x, y);
     this.addCardToCanvas(shuffledCards[this.cryptoRandomInt(shuffledCards.length)]);
-    this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, { x: contentX, y: contentY });
+    this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, {
+      x: contentX,
+      y: contentY,
+    });
   },
 
   updateItem(this: MergedThis, id: string, newProps: Partial<DraggableCard>) {
-    const index = this.draggableCards.findIndex(i => i.id === id)
-    if (index === -1) return
+    const index = this.draggableCards.findIndex((i) => i.id === id);
+    if (index === -1) return;
 
     this.draggableCards[index] = {
       ...this.draggableCards[index],
       ...newProps,
-    }
+    };
     this.dirty = true;
   },
 
   deleteCard(this: MergedThis, cardId: string) {
-    const found = this.draggableCards.find((c) => c.id === cardId)
-    if (found) revokeTarotCardBlobUrls(found.card)
-    this.draggableCards = this.draggableCards.filter(c => c.id !== cardId);
+    const found = this.draggableCards.find((c) => c.id === cardId);
+    if (found) revokeTarotCardBlobUrls(found.card);
+    this.draggableCards = this.draggableCards.filter((c) => c.id !== cardId);
     const textLabels = this.textLabels.filter((l: TextLabel) => l.anchorCardId === cardId);
     for (const textLabel of textLabels) {
       this.updateTextLabel(textLabel.id, { anchorCardId: null, anchorPosition: null });
@@ -156,10 +170,12 @@ Alpine.data('cardComponent', () => ({
 
   deleteSelectedCards(this: MergedThis) {
     for (const dc of this.draggableCards) {
-      if (this.selectedCardIds.includes(dc.id)) revokeTarotCardBlobUrls(dc.card)
+      if (this.selectedCardIds.includes(dc.id)) revokeTarotCardBlobUrls(dc.card);
     }
-    this.draggableCards = this.draggableCards.filter(c => !this.selectedCardIds.includes(c.id));
-    const textLabels = this.textLabels.filter((l: TextLabel) => l.anchorCardId !== null && this.selectedCardIds.includes(l.anchorCardId));
+    this.draggableCards = this.draggableCards.filter((c) => !this.selectedCardIds.includes(c.id));
+    const textLabels = this.textLabels.filter(
+      (l: TextLabel) => l.anchorCardId !== null && this.selectedCardIds.includes(l.anchorCardId),
+    );
     for (const textLabel of textLabels) {
       this.updateTextLabel(textLabel.id, { anchorCardId: null, anchorPosition: null });
     }
@@ -167,8 +183,12 @@ Alpine.data('cardComponent', () => ({
     this.dirty = true;
   },
 
-  rotateCard(this: MergedThis, cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180') {
-    const card = this.draggableCards.find(c => c.id === cardId);
+  rotateCard(
+    this: MergedThis,
+    cardId: string,
+    direction: 'clockwise' | 'counter-clockwise' | '180',
+  ) {
+    const card = this.draggableCards.find((c) => c.id === cardId);
     if (!card) return;
     const delta = direction === 'clockwise' ? 90 : direction === 'counter-clockwise' ? -90 : 180;
     this.updateItem(cardId, { rotation: card.rotation + delta });

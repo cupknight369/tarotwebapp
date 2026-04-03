@@ -1,11 +1,16 @@
-import { MouseLikeEvent, MergedThis } from '../types/canvas.js'
-import Alpine from 'alpinejs'
-import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js'
+import { MouseLikeEvent, MergedThis } from '../types/canvas.js';
+import Alpine from 'alpinejs';
+import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
 
 Alpine.data('canvasComponent', () => ({
   dragContainer: null as HTMLElement | null,
 
-  selectionBox: null as { startX: number; startY: number; currentX: number; currentY: number } | null,
+  selectionBox: null as {
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+  } | null,
   selectionBoxStyle: '' as string,
 
   isPanning: false,
@@ -16,7 +21,13 @@ Alpine.data('canvasComponent', () => ({
   content: null as HTMLDivElement | null,
   emptyCanvasMessage: null as HTMLDivElement | null,
 
-  contextMenu: { open: false, x: 0, y: 0, cardId: null as string | null, textId: null as string | null },
+  contextMenu: {
+    open: false,
+    x: 0,
+    y: 0,
+    cardId: null as string | null,
+    textId: null as string | null,
+  },
 
   activeTouchId: null as number | null,
   touchStartPos: null as { clientX: number; clientY: number; target: EventTarget | null } | null,
@@ -38,7 +49,7 @@ Alpine.data('canvasComponent', () => ({
 
   boxesOverlap(
     box1: { left: number; top: number; width: number; height: number },
-    box2: { left: number; top: number; width: number; height: number }
+    box2: { left: number; top: number; width: number; height: number },
   ): boolean {
     return !(
       box1.left + box1.width < box2.left ||
@@ -159,7 +170,11 @@ Alpine.data('canvasComponent', () => ({
 
       if (this.longPressActivated) {
         if (!this.touchMovedAfterLongPress) {
-          const downSyn: MouseLikeEvent = { ...this.touchToMouseLike(touch, pos.target, true), clientX: pos.clientX, clientY: pos.clientY };
+          const downSyn: MouseLikeEvent = {
+            ...this.touchToMouseLike(touch, pos.target, true),
+            clientX: pos.clientX,
+            clientY: pos.clientY,
+          };
           this.onMouseDown(downSyn);
           this.onMouseMove(moveSyn);
           this.touchMovedAfterLongPress = true;
@@ -172,7 +187,11 @@ Alpine.data('canvasComponent', () => ({
       }
 
       if (!this.touchGestureStarted) {
-        const downSyn: MouseLikeEvent = { ...this.touchToMouseLike(touch, pos.target), clientX: pos.clientX, clientY: pos.clientY };
+        const downSyn: MouseLikeEvent = {
+          ...this.touchToMouseLike(touch, pos.target),
+          clientX: pos.clientX,
+          clientY: pos.clientY,
+        };
         this.onMouseDown(downSyn);
         this.onMouseMove(moveSyn);
         this.touchGestureStarted = true;
@@ -190,12 +209,17 @@ Alpine.data('canvasComponent', () => ({
       this.pinchStartDistance = 0;
       this.pinchStartScale = 1;
     }
-    const ended = Array.from(e.changedTouches).find(t => t.identifier === this.activeTouchId);
+    const ended = Array.from(e.changedTouches).find((t) => t.identifier === this.activeTouchId);
     if (ended !== undefined) {
       if (this.longPressActivated && !this.touchMovedAfterLongPress) {
         this.clearDragState();
         const pos = this.touchStartPos!;
-        const syn: MouseLikeEvent = { clientX: pos.clientX, clientY: pos.clientY, target: pos.target, preventDefault: () => {} };
+        const syn: MouseLikeEvent = {
+          clientX: pos.clientX,
+          clientY: pos.clientY,
+          target: pos.target,
+          preventDefault: () => {},
+        };
         this.onContextMenu(syn);
       } else if (this.touchGestureStarted) {
         this.onMouseUp(this.touchToMouseLike(ended));
@@ -212,7 +236,7 @@ Alpine.data('canvasComponent', () => ({
     this.onTouchEnd(e);
   },
 
-  centerViewport(this: MergedThis, ) {
+  centerViewport(this: MergedThis) {
     if (!this.viewport || !this.content) return;
     const viewportRect = this.viewport.getBoundingClientRect();
     const contentW = this.content.offsetWidth;
@@ -224,7 +248,7 @@ Alpine.data('canvasComponent', () => ({
   init(this: MergedThis) {
     this.shuffleDeck();
 
-    (window as any).draggableZoneComponent = this;
+    window.draggableZoneComponent = this;
     this.dragContainer = document.querySelector('#draggable-container') as HTMLElement;
     this.viewport = this.$refs.viewport as HTMLDivElement;
     this.content = this.$refs.content as HTMLDivElement;
@@ -237,19 +261,20 @@ Alpine.data('canvasComponent', () => ({
     });
 
     this.viewport!.addEventListener('touchstart', (ev: TouchEvent) => this.onTouchStart(ev));
-    this.viewport!.addEventListener('touchmove', (ev: TouchEvent) => this.onTouchMove(ev), { passive: false });
+    this.viewport!.addEventListener('touchmove', (ev: TouchEvent) => this.onTouchMove(ev), {
+      passive: false,
+    });
     this.viewport!.addEventListener('touchend', (ev: TouchEvent) => this.onTouchEnd(ev));
     this.viewport!.addEventListener('touchcancel', (ev: TouchEvent) => this.onTouchCancel(ev));
   },
 
   onMouseDown(this: MergedThis, event: MouseLikeEvent) {
-
     const target = event.target as HTMLElement;
     const textEl = target.closest('[data-text-id]') as HTMLElement | null;
     const textId = textEl ? textEl.getAttribute('data-text-id') : null;
-    if (textId && this.textLabels.some(l => l.id === textId)) {
+    if (textId && this.textLabels.some((l) => l.id === textId)) {
       this.draggingTextId = textId;
-      const label = this.textLabels.find(l => l.id === textId)!;
+      const label = this.textLabels.find((l) => l.id === textId)!;
       const pos = this.getTextLabelPosition(label);
       const rect = this.dragContainer!.getBoundingClientRect();
       this.textDragStart = {
@@ -263,8 +288,10 @@ Alpine.data('canvasComponent', () => ({
       return;
     }
 
-    const cardId = target.id && this.draggableCards.some(c => c.id === target.id) ? target.id : null;
-    const isOnEmpty = target === this.viewport || target === this.content || target === this.emptyCanvasMessage;
+    const cardId =
+      target.id && this.draggableCards.some((c) => c.id === target.id) ? target.id : null;
+    const isOnEmpty =
+      target === this.viewport || target === this.content || target === this.emptyCanvasMessage;
 
     if (event.ctrlKey) {
       const { x, y } = this.screenToContent(event.clientX, event.clientY);
@@ -278,14 +305,14 @@ Alpine.data('canvasComponent', () => ({
       this.isPanning = true;
       this.panStartX = event.clientX - this.offsetX;
       this.panStartY = event.clientY - this.offsetY;
-      this.viewport!.style.cursor = "grabbing";
+      this.viewport!.style.cursor = 'grabbing';
       return;
     }
 
     if (!cardId) return;
     this.draggingCard = target;
 
-    const card = this.draggableCards.find(c => c.id === cardId)!;
+    const card = this.draggableCards.find((c) => c.id === cardId)!;
     const rect = this.dragContainer!.getBoundingClientRect();
     const startDropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
     const startDropY = event.clientY - rect.top - this.dragContainer!.clientTop;
@@ -295,7 +322,7 @@ Alpine.data('canvasComponent', () => ({
       const anchorX = card.x;
       const anchorY = card.y;
       for (const id of this.selectedCardIds) {
-        const c = this.draggableCards.find(dc => dc.id === id);
+        const c = this.draggableCards.find((dc) => dc.id === id);
         if (c) this.groupDragOffsets[id] = { dx: c.x - anchorX, dy: c.y - anchorY };
       }
     } else {
@@ -361,7 +388,7 @@ Alpine.data('canvasComponent', () => ({
 
     if (this.isPanning) this.dirty = true;
     this.isPanning = false;
-    if (this.viewport) this.viewport.style.cursor = "grab";
+    if (this.viewport) this.viewport.style.cursor = 'grab';
 
     if (this.selectionBox) {
       const { startX, startY, currentX, currentY } = this.selectionBox;
@@ -390,14 +417,24 @@ Alpine.data('canvasComponent', () => ({
       this.draggingTextId = null;
       this.textDragStart = null;
 
-      const label = this.textLabels.find(l => l.id === textId);
+      const label = this.textLabels.find((l) => l.id === textId);
       if (label && !label.anchorCardId) {
         const pos = this.getTextLabelPosition(label);
         const textBox = { left: pos.x, top: pos.y, width: 100, height: 30 };
         for (const card of this.draggableCards) {
-          const cardRect = { left: card.x, top: card.y, width: this.CARD_WIDTH, height: this.CARD_HEIGHT };
+          const cardRect = {
+            left: card.x,
+            top: card.y,
+            width: this.CARD_WIDTH,
+            height: this.CARD_HEIGHT,
+          };
           if (this.boxesOverlap(textBox, cardRect)) {
-            this.pendingAnchor = { textId, cardId: card.id, screenX: event.clientX, screenY: event.clientY };
+            this.pendingAnchor = {
+              textId,
+              cardId: card.id,
+              screenX: event.clientX,
+              screenY: event.clientY,
+            };
             break;
           }
         }
@@ -413,16 +450,30 @@ Alpine.data('canvasComponent', () => ({
     const newAnchorX = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
     const newAnchorY = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
 
-    const movedCardIds = this.groupDragOffsets ? this.selectedCardIds : (this.draggingCard ? [this.draggingCard.id] : []);
+    const movedCardIds = this.groupDragOffsets
+      ? this.selectedCardIds
+      : this.draggingCard
+        ? [this.draggingCard.id]
+        : [];
 
     if (this.groupDragOffsets) {
       for (const id of Object.keys(this.groupDragOffsets)) {
         const { dx, dy } = this.groupDragOffsets[id];
-        this.updateItem(id, { x: newAnchorX + dx, y: newAnchorY + dy, display: 'block', cursor: 'grab' });
+        this.updateItem(id, {
+          x: newAnchorX + dx,
+          y: newAnchorY + dy,
+          display: 'block',
+          cursor: 'grab',
+        });
       }
       this.groupDragOffsets = null;
     } else {
-      this.updateItem(this.draggingCard.id, { x: newAnchorX, y: newAnchorY, display: 'block', cursor: 'grab' });
+      this.updateItem(this.draggingCard.id, {
+        x: newAnchorX,
+        y: newAnchorY,
+        display: 'block',
+        cursor: 'grab',
+      });
     }
 
     for (const tl of this.textLabels) {
@@ -438,7 +489,7 @@ Alpine.data('canvasComponent', () => ({
 
   clearCanvas(this: MergedThis) {
     for (const dc of this.draggableCards) {
-      revokeTarotCardBlobUrls(dc.card)
+      revokeTarotCardBlobUrls(dc.card);
     }
     this.draggableCards = [];
     this.maxZIndex = 0;
@@ -473,58 +524,57 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onContextMenu(this: MergedThis, event: MouseLikeEvent) {
-    const target = event.target as HTMLElement
-    const textEl = target.closest('[data-text-id]') as HTMLElement | null
-    const textId = textEl ? textEl.getAttribute('data-text-id') : null
+    const target = event.target as HTMLElement;
+    const textEl = target.closest('[data-text-id]') as HTMLElement | null;
+    const textId = textEl ? textEl.getAttribute('data-text-id') : null;
     if (textId && this.textLabels.some((l) => l.id === textId)) {
-      if (event.preventDefault) event.preventDefault()
+      if (event.preventDefault) event.preventDefault();
       this.contextMenu = {
         open: true,
         x: event.clientX,
         y: event.clientY,
         cardId: null,
         textId,
-      }
-      return
+      };
+      return;
     }
 
-    let cardId: string | null = null
-    let el: HTMLElement | null = target
+    let cardId: string | null = null;
+    let el: HTMLElement | null = target;
     while (el && el !== this.viewport) {
-      const id = el.id
+      const id = el.id;
       if (id && this.draggableCards.some((c) => c.id === id)) {
-        cardId = id
-        break
+        cardId = id;
+        break;
       }
-      el = el.parentElement
+      el = el.parentElement;
     }
     if (cardId) {
-      if (event.preventDefault) event.preventDefault()
+      if (event.preventDefault) event.preventDefault();
       this.contextMenu = {
         open: true,
         x: event.clientX,
         y: event.clientY,
         cardId,
         textId: null,
-      }
-      return
+      };
+      return;
     }
 
     const isOnCanvas =
       target === this.viewport ||
       target === this.content ||
       target === this.emptyCanvasMessage ||
-      (this.emptyCanvasMessage !== null &&
-        this.emptyCanvasMessage.contains(target))
+      (this.emptyCanvasMessage !== null && this.emptyCanvasMessage.contains(target));
     if (isOnCanvas) {
-      if (event.preventDefault) event.preventDefault()
+      if (event.preventDefault) event.preventDefault();
       this.contextMenu = {
         open: true,
         x: event.clientX,
         y: event.clientY,
         cardId: null,
         textId: null,
-      }
+      };
     }
   },
 

@@ -1,10 +1,10 @@
-import Alpine from 'alpinejs'
-import type { MergedThis, TarotCard } from '../types/canvas.js'
-import type { SavedReadingState } from '../types/readingState.js'
-import * as localReadingsLib from '../lib/localReadings.js'
-import { getCardsByIds } from '../lib/decks.js'
-import { getCardImageRow, getLocalCardsByIds } from '../lib/localDecks.js'
-import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js'
+import Alpine from 'alpinejs';
+import type { MergedThis, TarotCard } from '../types/canvas.js';
+import type { SavedReadingState } from '../types/readingState.js';
+import * as localReadingsLib from '../lib/localReadings.js';
+import { getCardsByIds } from '../lib/decks.js';
+import { getCardImageRow, getLocalCardsByIds } from '../lib/localDecks.js';
+import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
 
 Alpine.data('stateComponent', () => ({
   dirty: false,
@@ -15,8 +15,8 @@ Alpine.data('stateComponent', () => ({
   saveAndLoadTargetId: null as string | null,
 
   async serializeState(this: MergedThis): Promise<SavedReadingState> {
-    const ids = this.draggableCards.map((c) => c.card.id)
-    const localMap = await getLocalCardsByIds(ids)
+    const ids = this.draggableCards.map((c) => c.card.id);
+    const localMap = await getLocalCardsByIds(ids);
     const cards = await Promise.all(
       this.draggableCards.map(async (dc) => {
         const row: SavedReadingState['cards'][number] = {
@@ -33,29 +33,29 @@ Alpine.data('stateComponent', () => ({
           zIndex: dc.zIndex,
           opacity: dc.opacity,
           card_number: dc.card.num,
-        }
-        const localRow = localMap.get(dc.card.id)
-        if (!localRow) return row
+        };
+        const localRow = localMap.get(dc.card.id);
+        if (!localRow) return row;
 
-        const main = await getCardImageRow(localRow.imageBlobId)
+        const main = await getCardImageRow(localRow.imageBlobId);
         if (main?.blob) {
-          row.image_created_at = main.created_at
-          const mt = main.mimeType ?? main.blob.type
-          if (mt) row.mime_type = mt
-          row.data = new Uint8Array(await main.blob.arrayBuffer())
+          row.image_created_at = main.created_at;
+          const mt = main.mimeType ?? main.blob.type;
+          if (mt) row.mime_type = mt;
+          row.data = new Uint8Array(await main.blob.arrayBuffer());
         }
 
         if (localRow.censorImageBlobId) {
-          const cen = await getCardImageRow(localRow.censorImageBlobId)
+          const cen = await getCardImageRow(localRow.censorImageBlobId);
           if (cen?.blob) {
-            const ct = cen.mimeType ?? cen.blob.type
-            if (ct) row.censored_mime_type = ct
-            row.censored_data = new Uint8Array(await cen.blob.arrayBuffer())
+            const ct = cen.mimeType ?? cen.blob.type;
+            if (ct) row.censored_mime_type = ct;
+            row.censored_data = new Uint8Array(await cen.blob.arrayBuffer());
           }
         }
-        return row
-      })
-    )
+        return row;
+      }),
+    );
 
     return {
       viewport: {
@@ -78,33 +78,33 @@ Alpine.data('stateComponent', () => ({
         anchorCardId: l.anchorCardId,
         anchorPosition: l.anchorPosition,
       })),
-    }
+    };
   },
 
   async deserializeState(this: MergedThis, state: SavedReadingState): Promise<void> {
     for (const dc of this.draggableCards) {
-      revokeTarotCardBlobUrls(dc.card)
+      revokeTarotCardBlobUrls(dc.card);
     }
 
-    const ids = state.cards.map((c) => c.card_id)
-    const cardMap = await getCardsByIds(ids)
+    const ids = state.cards.map((c) => c.card_id);
+    const cardMap = await getCardsByIds(ids);
 
     this.draggableCards = state.cards.map((c) => {
-      const resolved = cardMap.get(c.card_id)
-      const hasEmbeddedMain = c.data !== undefined && c.data.length > 0
+      const resolved = cardMap.get(c.card_id);
+      const hasEmbeddedMain = c.data !== undefined && c.data.length > 0;
 
-      let card: TarotCard
+      let card: TarotCard;
       if (hasEmbeddedMain) {
-        const mime = c.mime_type?.trim() ? c.mime_type : 'application/octet-stream'
-        const mainBytes = new Uint8Array(c.data!)
-        const img = URL.createObjectURL(new Blob([mainBytes], { type: mime }))
-        let censoredImg: string | null = null
+        const mime = c.mime_type?.trim() ? c.mime_type : 'application/octet-stream';
+        const mainBytes = new Uint8Array(c.data!);
+        const img = URL.createObjectURL(new Blob([mainBytes], { type: mime }));
+        let censoredImg: string | null = null;
         if (c.censored_data !== undefined && c.censored_data.length > 0) {
           const cm = c.censored_mime_type?.trim()
             ? c.censored_mime_type
-            : 'application/octet-stream'
-          const censorBytes = new Uint8Array(c.censored_data!)
-          censoredImg = URL.createObjectURL(new Blob([censorBytes], { type: cm }))
+            : 'application/octet-stream';
+          const censorBytes = new Uint8Array(c.censored_data!);
+          censoredImg = URL.createObjectURL(new Blob([censorBytes], { type: cm }));
         }
         if (resolved) {
           card = {
@@ -118,9 +118,9 @@ Alpine.data('stateComponent', () => ({
             censorImageSourceLabel:
               c.censor_image_source !== undefined
                 ? c.censor_image_source
-                : resolved.censorImageSourceLabel ?? null,
+                : (resolved.censorImageSourceLabel ?? null),
             invalidReference: false,
-          }
+          };
         } else {
           card = {
             id: c.card_id,
@@ -133,7 +133,7 @@ Alpine.data('stateComponent', () => ({
             deckTitle: c.deck_title,
             imageSourceLabel: c.image_source,
             censorImageSourceLabel: c.censor_image_source ?? null,
-          }
+          };
         }
       } else if (resolved) {
         card = {
@@ -145,8 +145,8 @@ Alpine.data('stateComponent', () => ({
           censorImageSourceLabel:
             c.censor_image_source !== undefined
               ? c.censor_image_source
-              : resolved.censorImageSourceLabel ?? null,
-        }
+              : (resolved.censorImageSourceLabel ?? null),
+        };
       } else {
         card = {
           id: c.card_id,
@@ -159,7 +159,7 @@ Alpine.data('stateComponent', () => ({
           deckTitle: c.deck_title,
           imageSourceLabel: c.image_source,
           censorImageSourceLabel: c.censor_image_source ?? null,
-        }
+        };
       }
       return {
         card,
@@ -171,8 +171,8 @@ Alpine.data('stateComponent', () => ({
         opacity: c.opacity,
         cursor: 'grab',
         display: 'block',
-      }
-    })
+      };
+    });
     this.textLabels = state.textLabels.map((l) => ({
       id: l.id,
       text: l.text,
@@ -188,17 +188,17 @@ Alpine.data('stateComponent', () => ({
       display: 'block',
       anchorCardId: l.anchorCardId,
       anchorPosition: l.anchorPosition,
-    }))
+    }));
     if (state.viewport) {
-      this.scale = state.viewport.scale
-      this.offsetX = state.viewport.offsetX
-      this.offsetY = state.viewport.offsetY
+      this.scale = state.viewport.scale;
+      this.offsetX = state.viewport.offsetX;
+      this.offsetY = state.viewport.offsetY;
     }
-    this.maxZIndex = Math.max(0, ...this.draggableCards.map((c) => c.zIndex))
-    this.maxTextZIndex = Math.max(0, ...this.textLabels.map((l) => l.zIndex))
-    this.selectedCardIds = []
-    this.editingTextId = null
-    this.dirty = false
+    this.maxZIndex = Math.max(0, ...this.draggableCards.map((c) => c.zIndex));
+    this.maxTextZIndex = Math.max(0, ...this.textLabels.map((l) => l.zIndex));
+    this.selectedCardIds = [];
+    this.editingTextId = null;
+    this.dirty = false;
   },
 
   async createNewReading(this: MergedThis): Promise<void> {
@@ -212,10 +212,10 @@ Alpine.data('stateComponent', () => ({
         cancelLabelVisible: true,
         onConfirm: () => resolve(true),
         onCancel: () => resolve(false),
-      })
-    })
+      });
+    });
 
-    if (!confirmed) return
+    if (!confirmed) return;
 
     if (this.loadedReadingId) {
       const confirmSave = await new Promise<boolean>((resolve) => {
@@ -228,11 +228,11 @@ Alpine.data('stateComponent', () => ({
           cancelLabelVisible: true,
           onConfirm: () => resolve(true),
           onCancel: () => resolve(false),
-        })
-      })
+        });
+      });
 
       if (confirmSave) {
-        const result = await this.saveCurrentReading()
+        const result = await this.saveCurrentReading();
         if (!result.ok) {
           Alpine.store('dialog', {
             open: true,
@@ -240,8 +240,8 @@ Alpine.data('stateComponent', () => ({
             title: result.error ?? 'Failed to save',
             onConfirm: () => {},
             onCancel: () => {},
-          })
-          return
+          });
+          return;
         }
       }
     } else if (this.dirty) {
@@ -264,76 +264,73 @@ Alpine.data('stateComponent', () => ({
                 cancelLabelVisible: false,
                 onConfirm: () => {},
                 onCancel: () => {},
-              })
-              return
+              });
+              return;
             }
-          })
+          });
         },
         onCancel: () => {},
-      })
+      });
     }
 
-    this.shuffleDeck()
-    this.clearCanvas()
-    this.loadedReadingId = null
-    this.dirty = false
+    this.shuffleDeck();
+    this.clearCanvas();
+    this.loadedReadingId = null;
+    this.dirty = false;
   },
 
   async saveCurrentReading(
     this: MergedThis,
-    name?: string
+    name?: string,
   ): Promise<{ ok: boolean; error?: string }> {
-    const state = await this.serializeState()
+    const state = await this.serializeState();
     if (this.loadedReadingId) {
       const result = await localReadingsLib.saveLocalReading(
         state,
         undefined,
-        this.loadedReadingId
-      )
-      if ('error' in result) return { ok: false, error: result.error }
-      this.dirty = false
-      return { ok: true }
+        this.loadedReadingId,
+      );
+      if ('error' in result) return { ok: false, error: result.error };
+      this.dirty = false;
+      return { ok: true };
     }
-    const result = await localReadingsLib.saveLocalReading(
-      state,
-      name ?? 'Untitled Reading'
-    )
-    if ('error' in result) return { ok: false, error: result.error }
-    this.loadedReadingId = result.id
-    this.dirty = false
-    return { ok: true }
+    const result = await localReadingsLib.saveLocalReading(state, name ?? 'Untitled Reading');
+    if ('error' in result) return { ok: false, error: result.error };
+    this.loadedReadingId = result.id;
+    this.dirty = false;
+    return { ok: true };
   },
 
   async loadReadingById(this: MergedThis, id: string): Promise<void> {
-    const data = await localReadingsLib.loadLocalReading(id)
-    if (!data) return
-    await this.deserializeState(data.state)
-    this.loadedReadingId = id
+    const data = await localReadingsLib.loadLocalReading(id);
+    if (!data) return;
+    await this.deserializeState(data.state);
+    this.loadedReadingId = id;
   },
 
   async openLoadModal(): Promise<void> {
-    this.loadModalOpen = true
-    this.loadModalConfirmingForId = null
-    this.localSavedReadings = await localReadingsLib.listLocalReadings()
+    this.loadModalOpen = true;
+    this.loadModalConfirmingForId = null;
+    this.localSavedReadings = await localReadingsLib.listLocalReadings();
   },
 
   closeLoadModal(): void {
-    this.loadModalOpen = false
-    this.loadModalConfirmingForId = null
+    this.loadModalOpen = false;
+    this.loadModalConfirmingForId = null;
   },
 
   async onSelectReadingToLoad(this: MergedThis, id: string): Promise<void> {
     if (this.dirty) {
-      this.loadModalConfirmingForId = id
-      return
+      this.loadModalConfirmingForId = id;
+      return;
     }
-    await this.loadReadingById(id)
-    this.closeLoadModal()
+    await this.loadReadingById(id);
+    this.closeLoadModal();
   },
 
   async saveAndLoad(this: MergedThis, id: string): Promise<void> {
     if (this.loadedReadingId) {
-      const result = await this.saveCurrentReading()
+      const result = await this.saveCurrentReading();
       if (!result.ok) {
         Alpine.store('dialog', {
           open: true,
@@ -341,21 +338,21 @@ Alpine.data('stateComponent', () => ({
           title: result.error ?? 'Failed to save',
           onConfirm: () => {},
           onCancel: () => {},
-        })
-        return
+        });
+        return;
       }
-      await this.loadReadingById(id)
-      this.closeLoadModal()
-      return
+      await this.loadReadingById(id);
+      this.closeLoadModal();
+      return;
     }
-    this.saveAndLoadTargetId = id
-    this.triggerTitleDialog()
+    this.saveAndLoadTargetId = id;
+    this.triggerTitleDialog();
   },
 
   handleSaveClick(this: MergedThis): void {
     if (this.loadedReadingId) {
       this.saveCurrentReading().then((result) => {
-        const okTitle = 'Reading saved (this device)'
+        const okTitle = 'Reading saved (this device)';
         result.ok
           ? Alpine.store('dialog', {
               open: true,
@@ -372,13 +369,13 @@ Alpine.data('stateComponent', () => ({
               confirmLabel: 'Ok',
               cancelLabelVisible: false,
               onConfirm: () => {},
-            })
-      })
+            });
+      });
 
-      return
+      return;
     }
 
-    this.triggerTitleDialog()
+    this.triggerTitleDialog();
   },
 
   triggerTitleDialog(this: MergedThis): void {
@@ -393,8 +390,8 @@ Alpine.data('stateComponent', () => ({
       inputDefault: '',
       onSubmitText: (title: string) => {
         this.saveCurrentReading(title).then(async (result) => {
-          const targetId = this.saveAndLoadTargetId
-          this.saveAndLoadTargetId = null
+          const targetId = this.saveAndLoadTargetId;
+          this.saveAndLoadTargetId = null;
           if (!result.ok) {
             Alpine.store('dialog', {
               open: true,
@@ -403,28 +400,28 @@ Alpine.data('stateComponent', () => ({
               cancelLabelVisible: false,
               onConfirm: () => {},
               onCancel: () => {},
-            })
-            return
+            });
+            return;
           }
           if (targetId) {
-            await this.loadReadingById(targetId)
-            this.closeLoadModal()
+            await this.loadReadingById(targetId);
+            this.closeLoadModal();
           }
-        })
+        });
       },
       onCancel: () => {
-        this.saveAndLoadTargetId = null
+        this.saveAndLoadTargetId = null;
       },
-    })
+    });
   },
 
   async discardAndLoad(this: MergedThis, id: string): Promise<void> {
-    await this.loadReadingById(id)
-    this.closeLoadModal()
+    await this.loadReadingById(id);
+    this.closeLoadModal();
   },
 
   cancelLoadConfirm(): void {
-    this.loadModalConfirmingForId = null
+    this.loadModalConfirmingForId = null;
   },
 
   async deleteReading(this: MergedThis, id: string): Promise<void> {
@@ -437,13 +434,13 @@ Alpine.data('stateComponent', () => ({
         cancelLabel: 'Cancel',
         onConfirm: () => resolve(true),
         onCancel: () => resolve(false),
-      })
-    })
-    if (!confirmed) return
-    await localReadingsLib.deleteLocalReading(id)
-    this.localSavedReadings = this.localSavedReadings.filter((r) => r.id !== id)
+      });
+    });
+    if (!confirmed) return;
+    await localReadingsLib.deleteLocalReading(id);
+    this.localSavedReadings = this.localSavedReadings.filter((r) => r.id !== id);
     if (this.loadedReadingId === id) {
-      this.loadedReadingId = null
+      this.loadedReadingId = null;
     }
   },
-}))
+}));

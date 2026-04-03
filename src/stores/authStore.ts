@@ -1,8 +1,11 @@
-import Alpine from 'alpinejs'
-import { supabase } from '../lib/supabase.js'
-import type { User, Session } from '@supabase/supabase-js'
+import Alpine from 'alpinejs';
+import { supabase } from '../lib/supabase.js';
+import type { User, Session } from '@supabase/supabase-js';
 
-export async function initAuthStore() {
+/**
+ * Registers the `auth` Alpine store and hydrates session state from Supabase.
+ */
+export async function initAuthStore(): Promise<void> {
   const authStore = {
     user: null as User | null,
     session: null as Session | null,
@@ -10,75 +13,80 @@ export async function initAuthStore() {
     error: null as string | null,
 
     get isAuthenticated(): boolean {
-      return this.user !== null
+      return this.user !== null;
     },
 
     get isEmailConfirmed(): boolean {
-      return Boolean(this.user?.email_confirmed_at)
+      return Boolean(this.user?.email_confirmed_at);
     },
 
     async init() {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        this.session = session
-        this.user = session?.user ?? null
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        this.session = session;
+        this.user = session?.user ?? null;
         supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
-          this.session = session
-          this.user = session?.user ?? null
-        })
+          this.session = session;
+          this.user = session?.user ?? null;
+        });
       } catch (e) {
-        console.warn('auth init: session unavailable', e)
-        this.session = null
-        this.user = null
-        this.error = null
+        console.warn('auth init: session unavailable', e);
+        this.session = null;
+        this.user = null;
+        this.error = null;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
     async signInWithPassword(email: string, password: string) {
-      this.error = null
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      this.error = null;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        this.error = error.message
-        throw error
+        this.error = error.message;
+        throw error;
       }
-      this.user = data.user
-      this.session = data.session
-      return data
+      this.user = data.user;
+      this.session = data.session;
+      return data;
     },
 
     async signInWithMagicLink(email: string) {
-      this.error = null
-      const { data, error } = await supabase.auth.signInWithOtp({ email, 
-        options: { 
+      this.error = null;
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
           shouldCreateUser: false,
-          emailRedirectTo: import.meta.env.VITE_APP_URL + '/auth/callback' 
-        } 
-      })
+          emailRedirectTo: import.meta.env.VITE_APP_URL + '/auth/callback',
+        },
+      });
       if (error) {
-        this.error = error.message
-        throw error
+        this.error = error.message;
+        throw error;
       }
       // Magic link sent - user will complete sign-in via email
-      return data
+      return data;
     },
 
     async signOut() {
-      this.error = null
-      await supabase.auth.signOut()
-      this.user = null
-      this.session = null
+      this.error = null;
+      await supabase.auth.signOut();
+      this.user = null;
+      this.session = null;
     },
 
     async refreshSession() {
-      const { data: { session } } = await supabase.auth.getSession()
-      this.session = session
-      this.user = session?.user ?? null
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      this.session = session;
+      this.user = session?.user ?? null;
     },
 
     async resetPassword(password: string) {
-      const { data, error } = await supabase.auth.updateUser({ password })
+      const { data, error } = await supabase.auth.updateUser({ password });
       if (error) {
         this.error = error.message;
         throw error;
@@ -88,10 +96,10 @@ export async function initAuthStore() {
     },
 
     clearError() {
-      this.error = null
-    }
-  }
+      this.error = null;
+    },
+  };
 
-  Alpine.store('auth', authStore)
-  await authStore.init()
+  Alpine.store('auth', authStore);
+  await authStore.init();
 }

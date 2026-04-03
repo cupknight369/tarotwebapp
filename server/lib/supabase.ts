@@ -1,4 +1,4 @@
-import { createServerClient, type SupabaseClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import type { Request, Response } from 'express';
 import { parse as parseCookie } from 'cookie';
 
@@ -16,7 +16,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
  * @param res - Express response used to set refreshed session cookies.
  * @returns A Supabase SSR client configured for cookie-based auth.
  */
-export function createSupabaseClient(req: Request, res: Response): SupabaseClient {
+export function createSupabaseClient(req: Request, res: Response) {
   return createServerClient(supabaseUrl as string, supabaseAnonKey as string, {
     cookies: {
       getAll() {

@@ -1,5 +1,5 @@
-import Alpine from 'alpinejs'
-import { DialogStoreState } from '../types/dialog.js'
+import Alpine from 'alpinejs';
+import { DialogStoreState } from '../types/dialog.js';
 
 const DEFAULT_DIALOG_STATE: DialogStoreState = {
   open: false,
@@ -78,4 +78,4 @@ Alpine.data('dialogComponent', () => ({
     const d = this.store;
     this.inputValue = d?.inputDefault ?? '';
   },
-}))
+}));
