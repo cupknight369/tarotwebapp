@@ -2,6 +2,8 @@ import Alpine from 'alpinejs';
 import { getCardsByDeckId } from '../lib/decks.js';
 import { addCardToLocalDeck, listLocalCardsByDeckId, updateLocalCard } from '../lib/localDecks.js';
 import type { TarotCard } from '../types/canvas.js';
+import { addLocalCardFormSchema, saveLocalCardFormSchema } from '../validation/decks.js';
+import { zodFirstIssue } from '../validation/zodErrors.js';
 
 type OpenDeckEditDetail = { deckId?: string; deckTitle?: string };
 
@@ -158,28 +160,30 @@ Alpine.data('deckEditComponent', () => ({
 
   async submitAddCard() {
     if (!this.deckId) return;
-    const title = this.newCardTitle.trim();
-    if (!title) {
-      this.addError = 'Title is required';
-      return;
-    }
     const mainInput = document.getElementById('deck-edit-add-main') as HTMLInputElement | null;
     const censorInput = document.getElementById('deck-edit-add-censor') as HTMLInputElement | null;
     const mainFile = mainInput?.files?.[0];
-    if (!mainFile) {
-      this.addError = 'Main image is required';
+    const censorFile = censorInput?.files?.[0];
+    const parsed = addLocalCardFormSchema.safeParse({
+      title: this.newCardTitle,
+      number: this.newCardNumber,
+      mainFile,
+      censorFile: censorFile ?? undefined,
+    });
+    if (!parsed.success) {
+      this.addError = zodFirstIssue(parsed.error);
       return;
     }
-    const censorFile = censorInput?.files?.[0];
+    const { title, number, mainFile: imageFile, censorFile: censor } = parsed.data;
     this.addError = null;
     const deckId = this.deckId;
     try {
       const row = await addCardToLocalDeck({
         deckId,
         title,
-        number: Number(this.newCardNumber) || 1,
-        imageFile: mainFile,
-        censorFile: censorFile && censorFile.size > 0 ? censorFile : null,
+        number,
+        imageFile,
+        censorFile: censor && censor.size > 0 ? censor : null,
       });
       this.clearAddFileInputs();
       this.newCardTitle = '';
@@ -200,26 +204,31 @@ Alpine.data('deckEditComponent', () => ({
 
   async saveCard() {
     if (!this.deckId || !this.selectedCardId || this.localEmpty || this.formMode !== 'edit') return;
-    const title = this.editTitle.trim();
-    if (!title) return;
-    const n = Number(this.editNumber);
-    if (!Number.isFinite(n)) return;
-    this.saveError = null;
     const mainInput = document.getElementById('deck-edit-main') as HTMLInputElement | null;
     const censorInput = document.getElementById('deck-edit-censor') as HTMLInputElement | null;
     const mainFile = mainInput?.files?.[0];
     const censorFile = censorInput?.files?.[0];
+    const parsed = saveLocalCardFormSchema.safeParse({
+      title: this.editTitle,
+      number: this.editNumber,
+      mainFile: mainFile && mainFile.size > 0 ? mainFile : undefined,
+      censorFile: censorFile && censorFile.size > 0 ? censorFile : undefined,
+    });
+    if (!parsed.success) {
+      this.saveError = zodFirstIssue(parsed.error);
+      return;
+    }
+    const { title, number: n } = parsed.data;
+    this.saveError = null;
+    const mainForUpload = mainFile && mainFile.size > 0 ? mainFile : null;
+    const censorForUpload = censorFile && censorFile.size > 0 ? censorFile : null;
     try {
       await updateLocalCard({
         cardId: this.selectedCardId,
         title,
         number: n,
-        mainImageFile: mainFile && mainFile.size > 0 ? mainFile : null,
-        censorImageFile: this.clearCensor
-          ? null
-          : censorFile && censorFile.size > 0
-            ? censorFile
-            : null,
+        mainImageFile: mainForUpload,
+        censorImageFile: this.clearCensor ? null : censorForUpload,
         censorClear: this.clearCensor,
       });
     } catch (e) {

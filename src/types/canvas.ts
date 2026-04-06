@@ -117,6 +117,7 @@ export type MergedThis = {
   catalogOffers: CatalogDeckOffer[];
   onDeviceDecks: OnDeviceDeckEntry[];
   newLocalDeckTitle: string;
+  newLocalDeckTitleError: string;
   setDeckModalTab(tab: DeckModalTab): void;
   refreshDeckLists(): Promise<void>;
   openDeckModal(): Promise<void>;

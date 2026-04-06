@@ -14,6 +14,8 @@ import {
 } from '../lib/decks.js';
 import { downloadCloudDeckToDevice } from '../lib/cloudDeckDownload.js';
 import { createLocalDeck, deleteLocalDeck } from '../lib/localDecks.js';
+import { localDeckTitleSchema } from '../validation/decks.js';
+import { zodFirstIssue } from '../validation/zodErrors.js';
 
 export const DECK_MODAL_TAB_KEY = 'deck_modal_tab';
 
@@ -41,6 +43,7 @@ Alpine.data('deckComponent', () => ({
   catalogOffers: [] as CatalogDeckOffer[],
   onDeviceDecks: [] as OnDeviceDeckEntry[],
   newLocalDeckTitle: '',
+  newLocalDeckTitleError: '',
 
   setDeckModalTab(this: MergedThis, tab: DeckModalTab) {
     this.deckModalTab = tab;
@@ -58,6 +61,7 @@ Alpine.data('deckComponent', () => ({
 
   async openDeckModal(this: MergedThis) {
     this.deckModalOpen = true;
+    this.newLocalDeckTitleError = '';
     this.deckModalTab = readDeckModalTab();
     await this.refreshDeckLists();
   },
@@ -81,9 +85,13 @@ Alpine.data('deckComponent', () => ({
   },
 
   async createLocalDeckAction(this: MergedThis) {
-    const title = this.newLocalDeckTitle.trim();
-    if (!title) return;
-    await createLocalDeck(title, null);
+    const parsed = localDeckTitleSchema.safeParse(this.newLocalDeckTitle);
+    if (!parsed.success) {
+      this.newLocalDeckTitleError = zodFirstIssue(parsed.error);
+      return;
+    }
+    this.newLocalDeckTitleError = '';
+    await createLocalDeck(parsed.data, null);
     this.newLocalDeckTitle = '';
     await this.refreshDeckLists();
   },

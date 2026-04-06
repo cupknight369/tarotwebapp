@@ -1,5 +1,7 @@
 import Alpine from 'alpinejs';
 import { DialogStoreState } from '../types/dialog.js';
+import { dialogBoundedIntSchema, readingTitleSchema } from '../validation/dialog.js';
+import { zodFirstIssue } from '../validation/zodErrors.js';
 
 const DEFAULT_DIALOG_STATE: DialogStoreState = {
   open: false,
@@ -21,6 +23,7 @@ const DEFAULT_DIALOG_STATE: DialogStoreState = {
 
 Alpine.data('dialogComponent', () => ({
   inputValue: '' as string,
+  inputError: '' as string,
 
   get store(): DialogStoreState {
     return Alpine.store('dialog') as DialogStoreState;
@@ -53,29 +56,39 @@ Alpine.data('dialogComponent', () => ({
 
   handleInputSubmit() {
     const d = this.store;
-    const num = parseInt(this.inputValue, 10);
-    if (isNaN(num)) return;
     const min = d?.inputMin ?? 0;
     const max = d?.inputMax ?? 10;
-    if (num < min || num > max) return;
-    if (d?.onSubmit) d.onSubmit(num);
+    const parsed = dialogBoundedIntSchema(min, max).safeParse(this.inputValue);
+    if (!parsed.success) {
+      this.inputError = zodFirstIssue(parsed.error);
+      return;
+    }
+    this.inputError = '';
+    if (d?.onSubmit) d.onSubmit(parsed.data);
     this.close();
   },
 
   handleInputTextSubmit() {
     const d = this.store;
-    const text = (this.inputValue ?? '').trim();
-    if (d?.onSubmitText) d.onSubmitText(text || 'Untitled Reading');
+    const parsed = readingTitleSchema.safeParse(this.inputValue ?? '');
+    if (!parsed.success) {
+      this.inputError = zodFirstIssue(parsed.error);
+      return;
+    }
+    this.inputError = '';
+    if (d?.onSubmitText) d.onSubmitText(parsed.data);
     this.close();
   },
 
   initInputValue() {
     const d = this.store;
+    this.inputError = '';
     this.inputValue = d?.inputDefault ?? '1';
   },
 
   initInputTextValue() {
     const d = this.store;
+    this.inputError = '';
     this.inputValue = d?.inputDefault ?? '';
   },
 }));

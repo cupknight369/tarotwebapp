@@ -1,4 +1,6 @@
 import Alpine from 'alpinejs';
+import { magicLinkEmailSchema, passwordLoginSchema, passwordResetSchema } from '../validation/auth.js';
+import { zodFirstIssue } from '../validation/zodErrors.js';
 
 Alpine.data('authComponent', () => ({
   isAccountMenuOpen: false,
@@ -6,6 +8,7 @@ Alpine.data('authComponent', () => ({
   newPassword: '',
   confirmNewPassword: '',
   pwResetSuccessMessage: '',
+  validationError: '',
 
   loginMode: 'password' as 'password' | 'magiclink',
   email: '',
@@ -34,6 +37,7 @@ Alpine.data('authComponent', () => ({
     this.email = '';
     this.password = '';
     this.magicLinkSent = false;
+    this.validationError = '';
     this.auth.clearError();
   },
 
@@ -50,10 +54,20 @@ Alpine.data('authComponent', () => ({
 
   togglePassResetForm() {
     this.isPassResetOpen = !this.isPassResetOpen;
+    this.validationError = '';
   },
 
   async resetPassword() {
-    await this.auth.resetPassword(this.newPassword);
+    const parsed = passwordResetSchema.safeParse({
+      password: this.newPassword,
+      confirm: this.confirmNewPassword,
+    });
+    if (!parsed.success) {
+      this.validationError = zodFirstIssue(parsed.error);
+      return;
+    }
+    this.validationError = '';
+    await this.auth.resetPassword(parsed.data.password);
 
     if (this.auth.error) {
       return;
@@ -68,13 +82,19 @@ Alpine.data('authComponent', () => ({
 
   setLoginMode(mode: 'password' | 'magiclink') {
     this.loginMode = mode;
+    this.validationError = '';
     this.auth.clearError();
   },
 
   async submitPasswordLogin() {
-    if (!this.email.trim() || !this.password) return;
+    const parsed = passwordLoginSchema.safeParse({ email: this.email, password: this.password });
+    if (!parsed.success) {
+      this.validationError = zodFirstIssue(parsed.error);
+      return;
+    }
+    this.validationError = '';
     try {
-      await this.auth.signInWithPassword(this.email.trim(), this.password);
+      await this.auth.signInWithPassword(parsed.data.email, parsed.data.password);
       this.resetLoginUi();
     } catch (_e) {
       // Error shown via auth.error
@@ -82,9 +102,14 @@ Alpine.data('authComponent', () => ({
   },
 
   async submitMagicLink() {
-    if (!this.email.trim()) return;
+    const parsed = magicLinkEmailSchema.safeParse({ email: this.email });
+    if (!parsed.success) {
+      this.validationError = zodFirstIssue(parsed.error);
+      return;
+    }
+    this.validationError = '';
     try {
-      await this.auth.signInWithMagicLink(this.email.trim());
+      await this.auth.signInWithMagicLink(parsed.data.email);
       this.magicLinkSent = true;
     } catch (_e) {
       // Error shown via auth.error

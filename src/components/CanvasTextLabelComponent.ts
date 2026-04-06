@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import type { MergedThis, TextLabel, TextLabelAnchorPosition } from '../types/canvas.js';
+import { clampLabelFontSize, labelColorSchema, labelTextSchema } from '../validation/canvasLabel.js';
 
 Alpine.data('textLabelComponent', () => ({
   textLabels: [] as TextLabel[],
@@ -86,7 +87,21 @@ Alpine.data('textLabelComponent', () => ({
   updateTextLabel(this: MergedThis, id: string, newProps: Partial<TextLabel>) {
     const index = this.textLabels.findIndex((l) => l.id === id);
     if (index === -1) return;
-    this.textLabels[index] = { ...this.textLabels[index], ...newProps };
+    const current = this.textLabels[index];
+    const { fontSize, color, text, ...rest } = newProps;
+    const next: TextLabel = { ...current, ...rest };
+    if (fontSize !== undefined) {
+      next.fontSize = clampLabelFontSize(fontSize);
+    }
+    if (color !== undefined) {
+      const parsed = labelColorSchema.safeParse(color);
+      if (parsed.success) next.color = parsed.data;
+    }
+    if (text !== undefined) {
+      const parsed = labelTextSchema.safeParse(text);
+      if (parsed.success) next.text = parsed.data;
+    }
+    this.textLabels[index] = next;
     this.dirty = true;
   },
 

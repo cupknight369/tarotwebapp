@@ -19,6 +19,7 @@
       <p class="text-xl font-bold text-gray-200 pr-8 mb-6">Account</p>
 
       <span class="text-sm text-green-300" x-text="pwResetSuccessMessage"></span>
+      <span class="text-sm text-red-500 block mb-2" x-show="validationError" x-text="validationError"></span>
       <span class="text-sm text-red-500 block mb-2" x-show="auth.error" x-text="auth.error"></span>
 
       <div x-show="!$store.auth.loading && !$store.auth.isAuthenticated" class="flex flex-col gap-3">
