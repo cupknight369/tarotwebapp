@@ -109,6 +109,7 @@ export type MergedThis = {
   init(): void;
   shuffleDeck(): void;
   openDrawByIndexDialog(): void;
+  openDrawMultipleDialog(): void;
   serializeState(): Promise<SavedReadingState>;
   deserializeState(state: SavedReadingState): Promise<void>;
 

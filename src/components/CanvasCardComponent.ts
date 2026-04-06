@@ -66,6 +66,29 @@ Alpine.data('cardComponent', () => ({
     });
   },
 
+  openDrawMultipleDialog(this: MergedThis) {
+    const s = Alpine.store('shuffledCards') as TarotCard[];
+    if (s.length === 0) return;
+
+    const maxDraw = Math.min(10, s.length);
+    Alpine.store('dialog', {
+      open: true,
+      type: 'input',
+      title: `Number of cards (1-${maxDraw})?`,
+      inputMin: 1,
+      inputMax: maxDraw,
+      inputDefault: '1',
+      onSubmit: (n: number) => {
+        const draws = this.drawMultipleCards(n);
+        if (draws) {
+          const deck = Alpine.store('shuffledCards') as TarotCard[];
+          draws.forEach((i) => this.addCardToCanvas(deck[i]));
+        }
+      },
+      onCancel: () => {},
+    });
+  },
+
   addCardToCanvas(this: MergedThis, card: TarotCard): void {
     const activeDeckTitle = Alpine.store('activeDeckTitle') as string;
     const cardWithMeta: TarotCard = {
@@ -123,9 +146,11 @@ Alpine.data('cardComponent', () => ({
     const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
     if (shuffledCards.length === 0) return;
 
+    // Cannot draw more unique cards than exist in the deck; without a cap the loop never ends.
+    const count = Math.min(num, shuffledCards.length);
     const draws = new Set<number>();
 
-    while (draws.size < num) {
+    while (draws.size < count) {
       const randomNum = this.cryptoRandomInt(shuffledCards.length);
       if (!draws.has(randomNum)) {
         draws.add(randomNum);

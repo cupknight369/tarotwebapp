@@ -194,9 +194,9 @@
           <button 
             type="button"
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-            aria-label="Multiple draw (1-10)"
-            title="Multiple draw (1-10)"
-            @click="Alpine.store('dialog', { open: true, type: 'input', title: 'Number of cards (1-10)?', inputMin: 1, inputMax: 10, inputDefault: '1', onSubmit: (n) => { const draws = drawMultipleCards(n); if (draws) { const s = Alpine.store('shuffledCards'); draws.forEach(i => addCardToCanvas(s[i])); } }, onCancel: () => {} })">N</button>
+            aria-label="Multiple draw"
+            title="Draw several random cards from the deck (up to 10, or deck size if smaller)"
+            @click="openDrawMultipleDialog()">N</button>
           <button 
             type="button"
             class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
