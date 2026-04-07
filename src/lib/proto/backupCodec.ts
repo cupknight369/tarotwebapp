@@ -12,6 +12,7 @@ function deckRowToProto(d: LocalDeckRow): cktarot.DeckRow {
   }
   row.createdAt = d.created_at;
   row.modifiedAt = d.modified_at;
+  row.fromCatalog = d.from_catalog ?? false;
   return row;
 }
 
@@ -22,6 +23,7 @@ function deckRowFromProto(d: cktarot.DeckRow): LocalDeckRow {
     description: d.description !== undefined && d.description !== '' ? d.description : null,
     created_at: d.createdAt,
     modified_at: d.modifiedAt,
+    from_catalog: d.fromCatalog,
   };
 }
 

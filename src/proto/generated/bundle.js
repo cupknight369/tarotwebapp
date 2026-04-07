@@ -1893,6 +1893,7 @@ export const cktarot = $root.cktarot = (() => {
          * @property {string|null} [description] DeckRow description
          * @property {string|null} [createdAt] DeckRow createdAt
          * @property {string|null} [modifiedAt] DeckRow modifiedAt
+         * @property {boolean|null} [fromCatalog] DeckRow fromCatalog
          */
 
         /**
@@ -1950,6 +1951,14 @@ export const cktarot = $root.cktarot = (() => {
          */
         DeckRow.prototype.modifiedAt = "";
 
+        /**
+         * DeckRow fromCatalog.
+         * @member {boolean} fromCatalog
+         * @memberof cktarot.DeckRow
+         * @instance
+         */
+        DeckRow.prototype.fromCatalog = false;
+
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
 
@@ -1993,6 +2002,8 @@ export const cktarot = $root.cktarot = (() => {
                 writer.uint32(/* id 4, wireType 2 =*/34).string(message.createdAt);
             if (message.modifiedAt != null && Object.hasOwnProperty.call(message, "modifiedAt"))
                 writer.uint32(/* id 5, wireType 2 =*/42).string(message.modifiedAt);
+            if (message.fromCatalog != null && Object.hasOwnProperty.call(message, "fromCatalog"))
+                writer.uint32(/* id 6, wireType 0 =*/48).bool(message.fromCatalog);
             return writer;
         };
 
@@ -2049,6 +2060,10 @@ export const cktarot = $root.cktarot = (() => {
                         message.modifiedAt = reader.string();
                         break;
                     }
+                case 6: {
+                        message.fromCatalog = reader.bool();
+                        break;
+                    }
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -2102,6 +2117,9 @@ export const cktarot = $root.cktarot = (() => {
             if (message.modifiedAt != null && message.hasOwnProperty("modifiedAt"))
                 if (!$util.isString(message.modifiedAt))
                     return "modifiedAt: string expected";
+            if (message.fromCatalog != null && message.hasOwnProperty("fromCatalog"))
+                if (typeof message.fromCatalog !== "boolean")
+                    return "fromCatalog: boolean expected";
             return null;
         };
 
@@ -2127,6 +2145,8 @@ export const cktarot = $root.cktarot = (() => {
                 message.createdAt = String(object.createdAt);
             if (object.modifiedAt != null)
                 message.modifiedAt = String(object.modifiedAt);
+            if (object.fromCatalog != null)
+                message.fromCatalog = Boolean(object.fromCatalog);
             return message;
         };
 
@@ -2148,6 +2168,7 @@ export const cktarot = $root.cktarot = (() => {
                 object.title = "";
                 object.createdAt = "";
                 object.modifiedAt = "";
+                object.fromCatalog = false;
             }
             if (message.id != null && message.hasOwnProperty("id"))
                 object.id = message.id;
@@ -2162,6 +2183,8 @@ export const cktarot = $root.cktarot = (() => {
                 object.createdAt = message.createdAt;
             if (message.modifiedAt != null && message.hasOwnProperty("modifiedAt"))
                 object.modifiedAt = message.modifiedAt;
+            if (message.fromCatalog != null && message.hasOwnProperty("fromCatalog"))
+                object.fromCatalog = message.fromCatalog;
             return object;
         };
 

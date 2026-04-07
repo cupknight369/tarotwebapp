@@ -54,3 +54,19 @@ export function queryFailureMessage(f: QueryFailure): string {
       return f.message.trim() ? f.message : 'Could not load data from the server.';
   }
 }
+
+/**
+ * Maps an unexpected thrown value (e.g. failed fetch) to a {@link QueryFailure}.
+ *
+ * @param operation - Stable operation name for logs.
+ * @param e - Thrown value.
+ */
+export function exceptionToQueryFailure(operation: string, e: unknown): QueryFailure {
+  const message =
+    e instanceof Error ? e.message : typeof e === 'string' ? e : 'Unexpected error.';
+  return {
+    kind: 'unknown',
+    operation,
+    message: message.trim() ? message : 'Could not load data from the server.',
+  };
+}

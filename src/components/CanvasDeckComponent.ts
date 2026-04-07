@@ -53,22 +53,27 @@ Alpine.data('deckComponent', () => ({
   },
 
   async refreshDeckLists(this: MergedThis) {
-    const [catalogRes, onDeviceRes] = await Promise.all([
-      listCatalogDeckOffers(),
-      listOnDeviceDeckEntries(),
-    ]);
-    if (!catalogRes.ok) {
-      logError('deckComponent.refreshDeckLists.catalog', catalogRes.error);
-      showQueryFailureDialog(catalogRes.error);
-      return;
-    }
+    const onDeviceRes = await listOnDeviceDeckEntries();
     if (!onDeviceRes.ok) {
       logError('deckComponent.refreshDeckLists.onDevice', onDeviceRes.error);
       showQueryFailureDialog(onDeviceRes.error);
       return;
     }
-    this.catalogOffers = catalogRes.value;
     this.onDeviceDecks = onDeviceRes.value;
+
+    this.catalogOffers = [];
+    void (async () => {
+      const catalogRes = await listCatalogDeckOffers();
+      if (!catalogRes.ok) {
+        logError('deckComponent.refreshDeckLists.catalog', catalogRes.error);
+        return;
+      }
+      this.catalogOffers = catalogRes.value;
+      const refreshed = await listOnDeviceDeckEntries();
+      if (refreshed.ok) {
+        this.onDeviceDecks = refreshed.value;
+      }
+    })();
   },
 
   async openDeckModal(this: MergedThis) {

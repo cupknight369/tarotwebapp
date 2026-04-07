@@ -87,6 +87,7 @@ export async function downloadCloudDeckToDevice(
     description: deck.description,
     created_at: deck.created_at,
     modified_at: deck.modified_at,
+    from_catalog: true,
   };
 
   try {

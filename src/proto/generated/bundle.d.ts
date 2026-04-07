@@ -623,6 +623,9 @@ export namespace cktarot {
 
         /** DeckRow modifiedAt */
         modifiedAt?: (string|null);
+
+        /** DeckRow fromCatalog */
+        fromCatalog?: (boolean|null);
     }
 
     /** Represents a DeckRow. */
@@ -648,6 +651,9 @@ export namespace cktarot {
 
         /** DeckRow modifiedAt. */
         public modifiedAt: string;
+
+        /** DeckRow fromCatalog. */
+        public fromCatalog: boolean;
 
         /**
          * Creates a new DeckRow instance using the specified properties.

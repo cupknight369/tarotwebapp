@@ -5,13 +5,14 @@ import type { DeckRow, CardRow } from '../types/decks.js';
 import type { LocalCardImageRow, LocalCardRow } from '../types/localDb.js';
 import { err, ok, type Result } from './result.js';
 import type { QueryFailure } from './supabaseErrors.js';
-import { toQueryFailure } from './supabaseErrors.js';
+import { exceptionToQueryFailure, toQueryFailure } from './supabaseErrors.js';
 import {
   getCardImageRow,
   getCachedObjectUrlForBlobId,
   getLocalCardsByIds,
   listLocalCardsByDeckId,
   listLocalDecks,
+  putLocalDeck,
   setCachedObjectUrl,
 } from './localDecks.js';
 
@@ -20,25 +21,86 @@ export const LAST_DECK_STORAGE_KEY = 'last_deck_id';
 /** Seeded default deck id (matches migration). */
 export const DEFAULT_DECK_ID = 'a0000000-0000-4000-8000-000000000001';
 
-async function listCloudDecks(): Promise<Result<DeckRow[], QueryFailure>> {
-  const { data, error } = await supabase
-    .from('deck')
-    .select('id, title, description, created_at, modified_at')
-    .order('title', { ascending: true });
+/** Max wait for Supabase deck/catalog HTTP — avoids blocking local IDB when the network hangs. */
+const CLOUD_REQUEST_TIMEOUT_MS = 15_000;
 
-  if (error) {
-    return err(toQueryFailure(error, 'listCloudDecks'));
-  }
-  if (!data) return ok([]);
-  return ok(data as DeckRow[]);
+/**
+ * Resolves with a timeout error if `work` does not settle in time (underlying fetch may still run).
+ *
+ * @param ms - Timeout in milliseconds.
+ * @param operation - Operation label for failures.
+ * @param work - Promise of a Result from the network layer.
+ */
+function withTimeoutResult<T>(
+  ms: number,
+  operation: string,
+  work: Promise<Result<T, QueryFailure>>,
+): Promise<Result<T, QueryFailure>> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve(
+        err({
+          kind: 'unknown',
+          operation,
+          message: `Request timed out after ${ms} ms.`,
+        }),
+      );
+    }, ms);
+    work
+      .then((r) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(r);
+      })
+      .catch((e) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(err(exceptionToQueryFailure(operation, e)));
+      });
+  });
 }
 
-/** Supabase catalog rows with `installed` when the same deck id exists in IDB. */
+async function listCloudDecks(): Promise<Result<DeckRow[], QueryFailure>> {
+  try {
+    const { data, error } = await supabase
+      .from('deck')
+      .select('id, title, description, created_at, modified_at')
+      .order('title', { ascending: true });
+
+    if (error) {
+      return err(toQueryFailure(error, 'listCloudDecks'));
+    }
+    if (!data) return ok([]);
+    return ok(data as DeckRow[]);
+  } catch (e) {
+    return err(exceptionToQueryFailure('listCloudDecks', e));
+  }
+}
+
+function fetchCatalogDeckRows(): Promise<Result<DeckRow[], QueryFailure>> {
+  return withTimeoutResult(CLOUD_REQUEST_TIMEOUT_MS, 'listCloudDecks', listCloudDecks());
+}
+
+/**
+ * Supabase catalog rows with `installed` when the same deck id exists in IDB.
+ * Uses a timeout so a hung network cannot block forever. Callers may treat failure as an empty store.
+ */
 export async function listCatalogDeckOffers(): Promise<Result<CatalogDeckOffer[], QueryFailure>> {
-  const [catalogResult, localRows] = await Promise.all([listCloudDecks(), listLocalDecks()]);
+  const localRows = await listLocalDecks();
+  const catalogResult = await fetchCatalogDeckRows();
   if (!catalogResult.ok) return catalogResult;
   const catalog = catalogResult.value;
   const localIds = new Set(localRows.map((l) => l.id));
+  const catalogIds = new Set(catalog.map((c) => c.id));
+  const migrations = localRows
+    .filter((d) => d.from_catalog === undefined)
+    .map((d) => putLocalDeck({ ...d, from_catalog: catalogIds.has(d.id) }));
+  await Promise.all(migrations);
   return ok(
     catalog.map((d) => ({
       id: d.id,
@@ -49,35 +111,30 @@ export async function listCatalogDeckOffers(): Promise<Result<CatalogDeckOffer[]
   );
 }
 
-/** All IndexedDB decks with `fromCatalog` when the id exists in the Supabase catalog. */
+/**
+ * All IndexedDB decks (no network). Cloud badge uses persisted `from_catalog` only; run
+ * {@link listCatalogDeckOffers} in the background to refresh flags after the catalog loads.
+ */
 export async function listOnDeviceDeckEntries(): Promise<Result<OnDeviceDeckEntry[], QueryFailure>> {
-  const [catalogResult, localRows] = await Promise.all([listCloudDecks(), listLocalDecks()]);
-  if (!catalogResult.ok) return catalogResult;
-  const catalog = catalogResult.value;
-  const catalogIds = new Set(catalog.map((c) => c.id));
-  return ok(
-    localRows
-      .map((d) => ({
-        id: d.id,
-        title: d.title,
-        description: d.description,
-        created_at: d.created_at,
-        modified_at: d.modified_at,
-        fromCatalog: catalogIds.has(d.id),
-      }))
-      .sort((a, b) => a.title.localeCompare(b.title)),
-  );
+  const localRows = await listLocalDecks();
+  const entries: OnDeviceDeckEntry[] = localRows.map((d) => ({
+    id: d.id,
+    title: d.title,
+    description: d.description,
+    created_at: d.created_at,
+    modified_at: d.modified_at,
+    fromCatalog: d.from_catalog === true,
+  }));
+  entries.sort((a, b) => a.title.localeCompare(b.title));
+  return ok(entries);
 }
 
-/** Valid deck ids = catalog ∪ on-device (for `last_deck_id` validation). */
+/**
+ * Deck ids present in IndexedDB (no network). Cloud-only ids are not included until a catalog fetch succeeds elsewhere.
+ */
 export async function getKnownDeckIds(): Promise<Result<Set<string>, QueryFailure>> {
-  const [catalogResult, localRows] = await Promise.all([listCloudDecks(), listLocalDecks()]);
-  if (!catalogResult.ok) return catalogResult;
-  const catalog = catalogResult.value;
-  const ids = new Set<string>();
-  for (const d of catalog) ids.add(d.id);
-  for (const d of localRows) ids.add(d.id);
-  return ok(ids);
+  const localRows = await listLocalDecks();
+  return ok(new Set(localRows.map((d) => d.id)));
 }
 
 /**
@@ -85,14 +142,13 @@ export async function getKnownDeckIds(): Promise<Result<Set<string>, QueryFailur
  * If the catalog request fails but a local deck exists, returns the local title only.
  */
 async function getDeckTitle(deckId: string): Promise<Result<string | undefined, QueryFailure>> {
-  const [localDecks, catalogResult] = await Promise.all([listLocalDecks(), listCloudDecks()]);
+  const localDecks = await listLocalDecks();
   const localTitle = localDecks.find((d) => d.id === deckId)?.title;
-  if (!catalogResult.ok) {
-    if (localTitle !== undefined) return ok(localTitle);
-    return catalogResult;
-  }
+  if (localTitle !== undefined) return ok(localTitle);
+  const catalogResult = await fetchCatalogDeckRows();
+  if (!catalogResult.ok) return catalogResult;
   const catalog = catalogResult.value;
-  return ok(localTitle ?? catalog.find((d) => d.id === deckId)?.title);
+  return ok(catalog.find((d) => d.id === deckId)?.title);
 }
 
 function rowToTarotCard(row: CardRow, deckTitle?: string): TarotCard {
@@ -167,20 +223,35 @@ export async function getCardsByDeckId(deckId: string): Promise<Result<TarotCard
     return ok(out);
   }
 
-  const { data, error } = await supabase
-    .from('card')
-    .select('id, title, number, image, censor_image, deck_id')
-    .eq('deck_id', deckId)
-    .order('number', { ascending: true });
-
-  if (error) {
-    return err(toQueryFailure(error, 'getCardsByDeckId'));
-  }
-  if (data && data.length > 0) {
-    return ok((data as CardRow[]).map((row) => rowToTarotCard(row, deckTitle)));
+  const cloudCardsResult = await withTimeoutResult(
+    CLOUD_REQUEST_TIMEOUT_MS,
+    'fetchCloudCardsForDeck',
+    fetchCloudCardsForDeck(deckId),
+  );
+  if (!cloudCardsResult.ok) return cloudCardsResult;
+  const data = cloudCardsResult.value;
+  if (data.length > 0) {
+    return ok(data.map((row) => rowToTarotCard(row, deckTitle)));
   }
 
   return ok([]);
+}
+
+async function fetchCloudCardsForDeck(deckId: string): Promise<Result<CardRow[], QueryFailure>> {
+  try {
+    const { data, error } = await supabase
+      .from('card')
+      .select('id, title, number, image, censor_image, deck_id')
+      .eq('deck_id', deckId)
+      .order('number', { ascending: true });
+
+    if (error) {
+      return err(toQueryFailure(error, 'fetchCloudCardsForDeck'));
+    }
+    return ok((data ?? []) as CardRow[]);
+  } catch (e) {
+    return err(exceptionToQueryFailure('fetchCloudCardsForDeck', e));
+  }
 }
 
 export async function getCardsByIds(
@@ -210,7 +281,7 @@ export async function getCardsByIds(
     return ok(map);
   }
 
-  const catalogResult = await listCloudDecks();
+  const catalogResult = await fetchCatalogDeckRows();
   if (!catalogResult.ok) return catalogResult;
   const catalog = catalogResult.value;
   for (const d of catalog) {
@@ -225,20 +296,32 @@ export async function getCardsByIds(
     }
   }
 
-  const { data, error } = await supabase
-    .from('card')
-    .select('id, title, number, image, censor_image, deck_id')
-    .in('id', needFromCloud);
-
-  if (error) {
-    return err(toQueryFailure(error, 'getCardsByIds'));
-  }
-  if (data) {
-    for (const row of data as CardRow[]) {
-      const deckTitle = deckTitleById.get(row.deck_id);
-      const card = rowToTarotCard(row, deckTitle);
-      map.set(card.id, card);
-    }
+  const cloudByIdsResult = await withTimeoutResult(
+    CLOUD_REQUEST_TIMEOUT_MS,
+    'fetchCloudCardsByIds',
+    fetchCloudCardsByIds(needFromCloud),
+  );
+  if (!cloudByIdsResult.ok) return cloudByIdsResult;
+  for (const row of cloudByIdsResult.value) {
+    const deckTitle = deckTitleById.get(row.deck_id);
+    const card = rowToTarotCard(row, deckTitle);
+    map.set(card.id, card);
   }
   return ok(map);
+}
+
+async function fetchCloudCardsByIds(cardIds: string[]): Promise<Result<CardRow[], QueryFailure>> {
+  try {
+    const { data, error } = await supabase
+      .from('card')
+      .select('id, title, number, image, censor_image, deck_id')
+      .in('id', cardIds);
+
+    if (error) {
+      return err(toQueryFailure(error, 'fetchCloudCardsByIds'));
+    }
+    return ok((data ?? []) as CardRow[]);
+  } catch (e) {
+    return err(exceptionToQueryFailure('fetchCloudCardsByIds', e));
+  }
 }

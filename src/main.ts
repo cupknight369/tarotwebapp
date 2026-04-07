@@ -7,7 +7,6 @@ import { startCardImagePrefetch } from './lib/cardImageUrls.js';
 import {
   DEFAULT_DECK_ID,
   getCardsByDeckId,
-  getKnownDeckIds,
   LAST_DECK_STORAGE_KEY,
   listCatalogDeckOffers,
   listOnDeviceDeckEntries,
@@ -41,24 +40,22 @@ Alpine.store('activeDeckTitle', '');
 /** Loads the last or default deck into Alpine stores and persists `last_deck_id`. */
 async function bootstrapDeck(): Promise<void> {
   let deckId = localStorage.getItem(LAST_DECK_STORAGE_KEY);
-  const [knownRes, catalogRes, onDeviceRes] = await Promise.all([
-    getKnownDeckIds(),
-    listCatalogDeckOffers(),
-    listOnDeviceDeckEntries(),
-  ]);
-  const firstFailure =
-    !knownRes.ok ? knownRes.error : !catalogRes.ok ? catalogRes.error : !onDeviceRes.ok ? onDeviceRes.error : null;
-  if (firstFailure) {
-    logError('bootstrapDeck.loadDeckLists', firstFailure);
-    showQueryFailureDialog(firstFailure);
+  const onDeviceRes = await listOnDeviceDeckEntries();
+  if (!onDeviceRes.ok) {
+    logError('bootstrapDeck.loadDeckLists', onDeviceRes.error);
+    showQueryFailureDialog(onDeviceRes.error);
   }
-  const knownIds = knownRes.ok ? knownRes.value : new Set<string>();
-  const catalogOffers = catalogRes.ok ? catalogRes.value : [];
   const onDevice = onDeviceRes.ok ? onDeviceRes.value : [];
+  const knownIds = new Set(onDevice.map((d) => d.id));
+
+  void listCatalogDeckOffers().then((catalogRes) => {
+    if (!catalogRes.ok) {
+      logError('bootstrapDeck.catalog', catalogRes.error);
+    }
+  });
 
   if (!deckId || !knownIds.has(deckId)) {
-    const sorted = [...catalogOffers].sort((a, b) => a.title.localeCompare(b.title));
-    deckId = sorted[0]?.id ?? onDevice[0]?.id ?? DEFAULT_DECK_ID;
+    deckId = onDevice[0]?.id ?? DEFAULT_DECK_ID;
   }
   const cardsRes = await getCardsByDeckId(deckId);
   if (!cardsRes.ok) {
@@ -71,10 +68,7 @@ async function bootstrapDeck(): Promise<void> {
     return;
   }
   const cards = cardsRes.value;
-  const title =
-    onDevice.find((d) => d.id === deckId)?.title ??
-    catalogOffers.find((c) => c.id === deckId)?.title ??
-    '';
+  const title = onDevice.find((d) => d.id === deckId)?.title ?? '';
   Alpine.store('shuffledCards', cards);
   Alpine.store('activeDeckId', deckId);
   Alpine.store('activeDeckTitle', title);

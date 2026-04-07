@@ -13,6 +13,11 @@ export interface LocalDeckRow {
   description: string | null;
   created_at: string;
   modified_at: string;
+  /**
+   * True when installed from the cloud catalog; false for user-created decks.
+   * Omitted on legacy rows until repaired (see `listOnDeviceDeckEntries` migration).
+   */
+  from_catalog?: boolean;
 }
 
 /** Local card in IndexedDB `cards` store (references `cardImages`). */

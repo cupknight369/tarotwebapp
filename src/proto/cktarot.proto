@@ -76,6 +76,7 @@ message DeckRow {
   optional string description = 3;
   string created_at = 4;
   string modified_at = 5;
+  bool from_catalog = 6;
 }
 
 message CardRow {

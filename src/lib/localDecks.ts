@@ -59,6 +59,7 @@ export async function createLocalDeck(
     description,
     created_at: now,
     modified_at: now,
+    from_catalog: false,
   };
   await putLocalDeck(row);
   return row;
