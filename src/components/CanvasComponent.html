@@ -37,7 +37,7 @@
             >
               <template x-for="draggableCard in draggableCards" :key="draggableCard.id">
                 <div
-                  class="absolute cursor-grab select-none will-change-transform origin-center hover:border-5 hover:border-purple-600"
+                  class="absolute cursor-grab select-none will-change-transform origin-center border-5 border-transparent hover:border-purple-600"
                   :id="draggableCard.id"
                   :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
                 >
@@ -82,7 +82,7 @@
               <template x-for="label in textLabels" :key="label.id">
                 <div
                   :data-text-id="label.id"
-                  class="absolute select-none will-change-transform origin-top-left cursor-grab hover:border-5 hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em] w-max max-w-none whitespace-nowrap overflow-visible"
+                  class="absolute select-none will-change-transform origin-top-left cursor-grab border-5 border-transparent hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em] w-max max-w-none whitespace-nowrap overflow-visible"
                   :style="getTextLabelStyle(label)"
                   @dblclick.stop="editingTextId = label.id"
                 >
