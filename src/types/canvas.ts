@@ -37,6 +37,8 @@ export type MergedThis = {
   loadModalConfirmingForId: string | null;
   localSavedReadings: { id: string; name: string; updated_at: string }[];
   saveAndLoadTargetId: string | null;
+  readingSaveFlashVisible: boolean;
+  _readingSaveFlashTimer: ReturnType<typeof setTimeout> | null;
   dragStart: {
     startCardX: number;
     startCardY: number;
@@ -136,6 +138,7 @@ export type MergedThis = {
   onSelectReadingToLoad(id: string): Promise<void>;
   saveAndLoad(id: string): Promise<void>;
   handleSaveClick(): void;
+  showReadingSaveFlash(): void;
   triggerTitleDialog(): void;
   discardAndLoad(id: string): Promise<void>;
   cancelLoadConfirm(): void;

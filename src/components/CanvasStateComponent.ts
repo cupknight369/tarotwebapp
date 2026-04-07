@@ -8,6 +8,19 @@ import { showQueryFailureDialog } from '../lib/queryFailureUi.js';
 import { getCardImageRow, getLocalCardsByIds } from '../lib/localDecks.js';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
 
+/** Opens the global confirm dialog for a failed reading save. */
+function openSaveFailureDialog(message: string): void {
+  Alpine.store('dialog', {
+    open: true,
+    type: 'confirm',
+    title: message,
+    confirmLabel: 'OK',
+    cancelLabelVisible: false,
+    onConfirm: () => {},
+    onCancel: () => {},
+  });
+}
+
 Alpine.data('stateComponent', () => ({
   dirty: false,
   loadedReadingId: null as string | null,
@@ -15,6 +28,20 @@ Alpine.data('stateComponent', () => ({
   loadModalConfirmingForId: null as string | null,
   localSavedReadings: [] as { id: string; name: string; updated_at: string }[],
   saveAndLoadTargetId: null as string | null,
+  readingSaveFlashVisible: false,
+  _readingSaveFlashTimer: null as ReturnType<typeof setTimeout> | null,
+
+  showReadingSaveFlash(this: MergedThis): void {
+    if (this._readingSaveFlashTimer !== null) {
+      clearTimeout(this._readingSaveFlashTimer);
+      this._readingSaveFlashTimer = null;
+    }
+    this.readingSaveFlashVisible = true;
+    this._readingSaveFlashTimer = setTimeout(() => {
+      this.readingSaveFlashVisible = false;
+      this._readingSaveFlashTimer = null;
+    }, 2200);
+  },
 
   async serializeState(this: MergedThis): Promise<SavedReadingState> {
     const ids = this.draggableCards.map((c) => c.card.id);
@@ -242,15 +269,10 @@ Alpine.data('stateComponent', () => ({
       if (confirmSave) {
         const result = await this.saveCurrentReading();
         if (!result.ok) {
-          Alpine.store('dialog', {
-            open: true,
-            type: 'confirm',
-            title: result.error ?? 'Failed to save',
-            onConfirm: () => {},
-            onCancel: () => {},
-          });
+          openSaveFailureDialog(result.error ?? 'Could not save reading.');
           return;
         }
+        this.showReadingSaveFlash();
       }
     } else if (this.dirty) {
       Alpine.store('dialog', {
@@ -265,16 +287,10 @@ Alpine.data('stateComponent', () => ({
         onSubmitText: (title: string) => {
           void this.saveCurrentReading(title).then((result) => {
             if (!result.ok) {
-              Alpine.store('dialog', {
-                open: true,
-                type: 'confirm',
-                title: result.error ?? 'Failed to save',
-                cancelLabelVisible: false,
-                onConfirm: () => {},
-                onCancel: () => {},
-              });
+              openSaveFailureDialog(result.error ?? 'Could not save reading.');
               return;
             }
+            this.showReadingSaveFlash();
           });
         },
         onCancel: () => {},
@@ -340,15 +356,10 @@ Alpine.data('stateComponent', () => ({
     if (this.loadedReadingId) {
       const result = await this.saveCurrentReading();
       if (!result.ok) {
-        Alpine.store('dialog', {
-          open: true,
-          type: 'confirm',
-          title: result.error ?? 'Failed to save',
-          onConfirm: () => {},
-          onCancel: () => {},
-        });
+        openSaveFailureDialog(result.error ?? 'Could not save reading.');
         return;
       }
+      this.showReadingSaveFlash();
       await this.loadReadingById(id);
       this.closeLoadModal();
       return;
@@ -360,25 +371,10 @@ Alpine.data('stateComponent', () => ({
   handleSaveClick(this: MergedThis): void {
     if (this.loadedReadingId) {
       void this.saveCurrentReading().then((result) => {
-        const okTitle = 'Reading saved (this device)';
         if (result.ok) {
-          Alpine.store('dialog', {
-            open: true,
-            type: 'confirm',
-            title: okTitle,
-            confirmLabel: 'Ok',
-            cancelLabelVisible: false,
-            onConfirm: () => {},
-          });
+          this.showReadingSaveFlash();
         } else {
-          Alpine.store('dialog', {
-            open: true,
-            type: 'confirm',
-            title: result.error ?? 'Failed to save',
-            confirmLabel: 'Ok',
-            cancelLabelVisible: false,
-            onConfirm: () => {},
-          });
+          openSaveFailureDialog(result.error ?? 'Could not save reading.');
         }
       });
 
@@ -403,16 +399,10 @@ Alpine.data('stateComponent', () => ({
           const targetId = this.saveAndLoadTargetId;
           this.saveAndLoadTargetId = null;
           if (!result.ok) {
-            Alpine.store('dialog', {
-              open: true,
-              type: 'confirm',
-              title: result.error ?? 'Failed to save',
-              cancelLabelVisible: false,
-              onConfirm: () => {},
-              onCancel: () => {},
-            });
+            openSaveFailureDialog(result.error ?? 'Could not save reading.');
             return;
           }
+          this.showReadingSaveFlash();
           if (targetId) {
             await this.loadReadingById(targetId);
             this.closeLoadModal();

@@ -1,7 +1,17 @@
 <div x-data="scaleComponent">
   <div x-data="cardComponent">
     <div x-data="textLabelComponent">
-      <div x-data="stateComponent">
+      <div x-data="stateComponent" class="relative">
+        <div
+          x-cloak
+          x-show="readingSaveFlashVisible"
+          x-transition
+          class="pointer-events-none absolute left-1/2 top-4 z-[10001] -translate-x-1/2 text-sm font-semibold text-purple-400 drop-shadow-[0_0_8px_rgb(0_0_0/0.85)]"
+          role="status"
+          aria-live="polite"
+        >
+          Saved successfully
+        </div>
         <div
           x-data="canvasComponent"
           x-cloak
