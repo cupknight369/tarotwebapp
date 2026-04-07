@@ -100,8 +100,8 @@
                           type="number"
                           :value="label.fontSize"
                           @input="updateTextLabel(label.id, { fontSize: parseInt($event.target.value) || 16 })"
-                          min="8"
-                          max="72"
+                          min="1"
+                          max="555"
                           class="w-14 px-2 py-1 rounded bg-gray-700 text-gray-200 border border-gray-600 text-sm"
                         />
                         <button

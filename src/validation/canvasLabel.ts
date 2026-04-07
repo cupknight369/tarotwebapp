@@ -13,11 +13,11 @@ export const labelTextSchema = z
   .max(TEXT_MAX, `Text must be at most ${TEXT_MAX} characters`);
 
 /**
- * Clamps to 8–72; non-finite values fall back to 16 (previous UI behavior).
+ * Clamps to 8–555; non-finite values fall back to 16 (previous UI behavior).
  * @param n - Raw font size from input or state.
  * @returns Clamped integer font size.
  */
 export function clampLabelFontSize(n: number): number {
   if (!Number.isFinite(n)) return 16;
-  return Math.min(72, Math.max(8, Math.round(n)));
+  return Math.min(555, Math.round(n));
 }
