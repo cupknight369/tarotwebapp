@@ -1,5 +1,9 @@
 import Alpine from 'alpinejs';
-import { magicLinkEmailSchema, passwordLoginSchema, passwordResetSchema } from '../validation/auth.js';
+import {
+  magicLinkEmailSchema,
+  passwordLoginSchema,
+  passwordResetSchema,
+} from '../validation/auth.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
 
 Alpine.data('authComponent', () => ({

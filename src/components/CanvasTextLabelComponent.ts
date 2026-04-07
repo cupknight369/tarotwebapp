@@ -1,6 +1,10 @@
 import Alpine from 'alpinejs';
 import type { MergedThis, TextLabel, TextLabelAnchorPosition } from '../types/canvas.js';
-import { clampLabelFontSize, labelColorSchema, labelTextSchema } from '../validation/canvasLabel.js';
+import {
+  clampLabelFontSize,
+  labelColorSchema,
+  labelTextSchema,
+} from '../validation/canvasLabel.js';
 
 Alpine.data('textLabelComponent', () => ({
   textLabels: [] as TextLabel[],

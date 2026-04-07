@@ -23,7 +23,8 @@ export const deckCardNumberSchema = z.coerce
   .max(CARD_NUMBER_MAX, `Number must be at most ${CARD_NUMBER_MAX}`);
 
 const imageFileSchema = z.custom<File>(
-  (f) => f instanceof File && f.size > 0 && typeof f.type === 'string' && f.type.startsWith('image/'),
+  (f) =>
+    f instanceof File && f.size > 0 && typeof f.type === 'string' && f.type.startsWith('image/'),
   { message: 'Choose a valid image file' },
 );
 

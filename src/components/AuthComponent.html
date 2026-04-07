@@ -2,28 +2,44 @@
   <button
     type="button"
     @click="toggleAccountMenu()"
-    class="fixed top-2 left-2 z-[9999] w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer">👤</button>
+    class="fixed top-2 left-2 z-[9999] w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+  >
+    👤
+  </button>
 
   <div
     class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
     aria-modal="true"
-    x-show="isAccountMenuOpen">
-    <div class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-      <button 
+    x-show="isAccountMenuOpen"
+  >
+    <div
+      class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto"
+    >
+      <button
         type="button"
         class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
         aria-label="Close"
-        @click="toggleAccountMenu()">
+        @click="toggleAccountMenu()"
+      >
         <span class="text-xl leading-none">×</span>
       </button>
       <p class="text-xl font-bold text-gray-200 pr-8 mb-6">Account</p>
 
       <span class="text-sm text-green-300" x-text="pwResetSuccessMessage"></span>
-      <span class="text-sm text-red-500 block mb-2" x-show="validationError" x-text="validationError"></span>
+      <span
+        class="text-sm text-red-500 block mb-2"
+        x-show="validationError"
+        x-text="validationError"
+      ></span>
       <span class="text-sm text-red-500 block mb-2" x-show="auth.error" x-text="auth.error"></span>
 
-      <div x-show="!$store.auth.loading && !$store.auth.isAuthenticated" class="flex flex-col gap-3">
-        <p class="text-sm text-gray-400">Sign with email & password or have a magic link sent to your email to sign in.</p>
+      <div
+        x-show="!$store.auth.loading && !$store.auth.isAuthenticated"
+        class="flex flex-col gap-3"
+      >
+        <p class="text-sm text-gray-400">
+          Sign with email & password or have a magic link sent to your email to sign in.
+        </p>
 
         <template x-if="!magicLinkSent">
           <div>
@@ -32,43 +48,54 @@
                 type="button"
                 :class="loginMode === 'password' ? 'bg-purple-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'"
                 class="px-3 py-2 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
-                @click="setLoginMode('password')">
+                @click="setLoginMode('password')"
+              >
                 Password
               </button>
               <button
                 type="button"
                 :class="loginMode === 'magiclink' ? 'bg-purple-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'"
                 class="px-3 py-2 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
-                @click="setLoginMode('magiclink')">
+                @click="setLoginMode('magiclink')"
+              >
                 Magic link
               </button>
             </div>
 
             <div class="space-y-4">
               <div>
-                <label for="account-login-email" class="block text-sm text-gray-300 mb-1">Email</label>
+                <label for="account-login-email" class="block text-sm text-gray-300 mb-1"
+                  >Email</label
+                >
                 <input
                   id="account-login-email"
                   type="email"
                   x-model="email"
                   placeholder="you@example.com"
-                  class="w-full px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                  class="w-full px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
               </div>
 
               <template x-if="loginMode === 'password'">
                 <div>
-                  <label for="account-login-password" class="block text-sm text-gray-300 mb-1">Password</label>
+                  <label for="account-login-password" class="block text-sm text-gray-300 mb-1"
+                    >Password</label
+                  >
                   <input
                     id="account-login-password"
                     type="password"
                     x-model="password"
-                    class="w-full px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    class="w-full px-3 py-2 rounded-lg bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
                 </div>
               </template>
 
               <template x-if="loginMode === 'magiclink'">
-                <p class="text-sm text-amber-200/90 bg-amber-900/30 border border-amber-700/50 rounded-lg px-3 py-2">
-                  The sign-in link may open in a new tab or window. Save any unsaved readings in this window before you continue.
+                <p
+                  class="text-sm text-amber-200/90 bg-amber-900/30 border border-amber-700/50 rounded-lg px-3 py-2"
+                >
+                  The sign-in link may open in a new tab or window. Save any unsaved readings in
+                  this window before you continue.
                 </p>
               </template>
             </div>
@@ -78,7 +105,8 @@
                 <button
                   type="button"
                   class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
-                  @click="submitPasswordLogin()">
+                  @click="submitPasswordLogin()"
+                >
                   Sign in
                 </button>
               </template>
@@ -86,7 +114,8 @@
                 <button
                   type="button"
                   class="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
-                  @click="submitMagicLink()">
+                  @click="submitMagicLink()"
+                >
                   Send magic link
                 </button>
               </template>
@@ -96,50 +125,78 @@
 
         <template x-if="magicLinkSent">
           <div>
-            <p class="text-gray-200 mb-4">Check your email for a sign-in link. Click the link to complete sign in.</p>
+            <p class="text-gray-200 mb-4">
+              Check your email for a sign-in link. Click the link to complete sign in.
+            </p>
           </div>
         </template>
       </div>
 
-      <div x-show="$store.auth.isAuthenticated && !isPassResetOpen" class="flex flex-col gap-3 justify-end">
+      <div
+        x-show="$store.auth.isAuthenticated && !isPassResetOpen"
+        class="flex flex-col gap-3 justify-end"
+      >
         <span class="text-sm text-gray-300" x-text="userEmail"></span>
-        <p class="text-xs text-gray-500" x-show="!$store.auth.isEmailConfirmed">Email not verified — some account features may be limited until you verify.</p>
+        <p class="text-xs text-gray-500" x-show="!$store.auth.isEmailConfirmed">
+          Email not verified — some account features may be limited until you verify.
+        </p>
         <div>
           <button
             type="button"
             class="w-fit px-3 py-1.5 rounded bg-gray-600/70 text-white text-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-            @click="logout()">
+            @click="logout()"
+          >
             Log out
           </button>
           |
           <a
             href="#"
             class="text-sm text-gray-300 hover:text-white"
-            @click.prevent="togglePassResetForm()">
+            @click.prevent="togglePassResetForm()"
+          >
             Reset password
           </a>
         </div>
       </div>
 
-      <div x-show="$store.auth.isAuthenticated && isPassResetOpen" class="flex flex-col gap-3 justify-end">
-        <input type="password" :value="newPassword" @input="newPassword = $event.target.value" class="w-full px-3 py-2 rounded bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="New password">
-        <input type="password" :value="confirmNewPassword" @input="confirmNewPassword = $event.target.value" class="w-full px-3 py-2 rounded bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Confirm new password">
-        <span class="text-sm text-red-500" x-text="newPassword !== confirmNewPassword ? 'Passwords do not match' : ''"></span>
+      <div
+        x-show="$store.auth.isAuthenticated && isPassResetOpen"
+        class="flex flex-col gap-3 justify-end"
+      >
+        <input
+          type="password"
+          :value="newPassword"
+          @input="newPassword = $event.target.value"
+          class="w-full px-3 py-2 rounded bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          placeholder="New password"
+        />
+        <input
+          type="password"
+          :value="confirmNewPassword"
+          @input="confirmNewPassword = $event.target.value"
+          class="w-full px-3 py-2 rounded bg-gray-700 text-gray-200 border border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          placeholder="Confirm new password"
+        />
+        <span
+          class="text-sm text-red-500"
+          x-text="newPassword !== confirmNewPassword ? 'Passwords do not match' : ''"
+        ></span>
         <button
           type="button"
           class="w-content px-3 py-1.5 rounded bg-gray-600/70 text-white text-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
           :disabled="newPassword !== confirmNewPassword"
-          @click="resetPassword()">
+          @click="resetPassword()"
+        >
           Reset password
         </button>
         <button
           type="button"
           class="w-fit px-3 py-1.5 rounded bg-gray-600/70 text-white text-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-          @click="togglePassResetForm()">
+          @click="togglePassResetForm()"
+        >
           Cancel
         </button>
       </div>
-
     </div>
   </div>
 </div>

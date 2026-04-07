@@ -1,4 +1,5 @@
 import eslint from '@eslint/js';
+import eslintConfigPrettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
 
@@ -6,12 +7,7 @@ const tsFiles = ['**/*.ts'];
 
 export default tseslint.config(
   {
-    ignores: [
-      '**/node_modules/**',
-      '**/dist/**',
-      'src/proto/generated/**',
-      '**/coverage/**',
-    ],
+    ignores: ['**/node_modules/**', '**/dist/**', 'src/proto/generated/**', '**/coverage/**'],
   },
   {
     files: ['**/*.{js,mjs,cjs}'],
@@ -37,4 +33,5 @@ export default tseslint.config(
       },
     },
   },
+  eslintConfigPrettier,
 );

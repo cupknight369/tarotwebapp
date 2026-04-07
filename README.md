@@ -5,6 +5,7 @@ A TypeScript-based tarot card drawing application using Alpine.js, with Express 
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -30,6 +31,7 @@ npm run dev
 ```
 
 This runs:
+
 - **Vite** on port 5173 (frontend dev server)
 - **Express** on port 8001 (proxies to Vite, enforces auth)
 
