@@ -64,6 +64,6 @@ export function openTarotDb(): Promise<IDBDatabase> {
 export function idbRequest<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     req.onerror = () => reject(req.error ?? new Error('IDBRequest failed'));
-    req.onsuccess = () => resolve(req.result as T);
+    req.onsuccess = () => resolve(req.result);
   });
 }

@@ -6,7 +6,7 @@ function encodeFontStyle(s: 'normal' | 'italic'): number {
 }
 
 function decodeFontStyle(n: number): 'normal' | 'italic' {
-  return n === cktarot.FontStyle.FONT_STYLE_ITALIC ? 'italic' : 'normal';
+  return (n as cktarot.FontStyle) === cktarot.FontStyle.FONT_STYLE_ITALIC ? 'italic' : 'normal';
 }
 
 function encodeTextDecoration(s: 'none' | 'underline'): number {
@@ -16,7 +16,9 @@ function encodeTextDecoration(s: 'none' | 'underline'): number {
 }
 
 function decodeTextDecoration(n: number): 'none' | 'underline' {
-  return n === cktarot.TextDecoration.TEXT_DECORATION_UNDERLINE ? 'underline' : 'none';
+  return (n as cktarot.TextDecoration) === cktarot.TextDecoration.TEXT_DECORATION_UNDERLINE
+    ? 'underline'
+    : 'none';
 }
 
 function encodeAnchorPosition(s: 'above' | 'below' | 'left' | 'right' | null): number {
@@ -36,7 +38,7 @@ function encodeAnchorPosition(s: 'above' | 'below' | 'left' | 'right' | null): n
 }
 
 function decodeAnchorPosition(n: number): 'above' | 'below' | 'left' | 'right' | null {
-  switch (n) {
+  switch (n as cktarot.AnchorPosition) {
     case cktarot.AnchorPosition.ANCHOR_POSITION_ABOVE:
       return 'above';
     case cktarot.AnchorPosition.ANCHOR_POSITION_BELOW:

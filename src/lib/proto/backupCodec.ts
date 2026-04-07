@@ -85,7 +85,7 @@ export async function materializeCardRowFromProto(
         c.censoredMimeType !== undefined && c.censoredMimeType !== null && c.censoredMimeType !== ''
           ? c.censoredMimeType
           : 'application/octet-stream';
-      const blob = new Blob([new Uint8Array(c.censoredData as Uint8Array)], {
+      const blob = new Blob([new Uint8Array(c.censoredData)], {
         type: cm,
       });
       await putLocalCardImageRow({

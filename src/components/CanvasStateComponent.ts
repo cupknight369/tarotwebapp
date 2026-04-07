@@ -103,7 +103,7 @@ Alpine.data('stateComponent', () => ({
           const cm = c.censored_mime_type?.trim()
             ? c.censored_mime_type
             : 'application/octet-stream';
-          const censorBytes = new Uint8Array(c.censored_data!);
+          const censorBytes = new Uint8Array(c.censored_data);
           censoredImg = URL.createObjectURL(new Blob([censorBytes], { type: cm }));
         }
         if (resolved) {
@@ -255,7 +255,7 @@ Alpine.data('stateComponent', () => ({
         cancelLabel: "Don't Save",
         inputDefault: '',
         onSubmitText: (title: string) => {
-          this.saveCurrentReading(title).then(async (result) => {
+          void this.saveCurrentReading(title).then((result) => {
             if (!result.ok) {
               Alpine.store('dialog', {
                 open: true,
@@ -351,25 +351,27 @@ Alpine.data('stateComponent', () => ({
 
   handleSaveClick(this: MergedThis): void {
     if (this.loadedReadingId) {
-      this.saveCurrentReading().then((result) => {
+      void this.saveCurrentReading().then((result) => {
         const okTitle = 'Reading saved (this device)';
-        result.ok
-          ? Alpine.store('dialog', {
-              open: true,
-              type: 'confirm',
-              title: okTitle,
-              confirmLabel: 'Ok',
-              cancelLabelVisible: false,
-              onConfirm: () => {},
-            })
-          : Alpine.store('dialog', {
-              open: true,
-              type: 'confirm',
-              title: result.error ?? 'Failed to save',
-              confirmLabel: 'Ok',
-              cancelLabelVisible: false,
-              onConfirm: () => {},
-            });
+        if (result.ok) {
+          Alpine.store('dialog', {
+            open: true,
+            type: 'confirm',
+            title: okTitle,
+            confirmLabel: 'Ok',
+            cancelLabelVisible: false,
+            onConfirm: () => {},
+          });
+        } else {
+          Alpine.store('dialog', {
+            open: true,
+            type: 'confirm',
+            title: result.error ?? 'Failed to save',
+            confirmLabel: 'Ok',
+            cancelLabelVisible: false,
+            onConfirm: () => {},
+          });
+        }
       });
 
       return;
@@ -389,7 +391,7 @@ Alpine.data('stateComponent', () => ({
       cancelLabelVisible: true,
       inputDefault: '',
       onSubmitText: (title: string) => {
-        this.saveCurrentReading(title).then(async (result) => {
+        void this.saveCurrentReading(title).then(async (result) => {
           const targetId = this.saveAndLoadTargetId;
           this.saveAndLoadTargetId = null;
           if (!result.ok) {

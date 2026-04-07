@@ -86,7 +86,7 @@ export async function initAuthStore(): Promise<void> {
     },
 
     async resetPassword(password: string) {
-      const { data, error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) {
         this.error = error.message;
         throw error;

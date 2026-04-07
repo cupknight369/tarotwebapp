@@ -260,17 +260,17 @@ Alpine.data('canvasComponent', () => ({
       });
     });
 
-    this.viewport!.addEventListener('touchstart', (ev: TouchEvent) => this.onTouchStart(ev));
-    this.viewport!.addEventListener('touchmove', (ev: TouchEvent) => this.onTouchMove(ev), {
+    this.viewport.addEventListener('touchstart', (ev: TouchEvent) => this.onTouchStart(ev));
+    this.viewport.addEventListener('touchmove', (ev: TouchEvent) => this.onTouchMove(ev), {
       passive: false,
     });
-    this.viewport!.addEventListener('touchend', (ev: TouchEvent) => this.onTouchEnd(ev));
-    this.viewport!.addEventListener('touchcancel', (ev: TouchEvent) => this.onTouchCancel(ev));
+    this.viewport.addEventListener('touchend', (ev: TouchEvent) => this.onTouchEnd(ev));
+    this.viewport.addEventListener('touchcancel', (ev: TouchEvent) => this.onTouchCancel(ev));
   },
 
   onMouseDown(this: MergedThis, event: MouseLikeEvent) {
     const target = event.target as HTMLElement;
-    const textEl = target.closest('[data-text-id]') as HTMLElement | null;
+    const textEl = target.closest('[data-text-id]');
     const textId = textEl ? textEl.getAttribute('data-text-id') : null;
     if (textId && this.textLabels.some((l) => l.id === textId)) {
       this.draggingTextId = textId;
@@ -344,7 +344,7 @@ Alpine.data('canvasComponent', () => ({
   onMouseMove(this: MergedThis, e: MouseLikeEvent) {
     if (this.selectionBox) {
       const { x, y } = this.screenToContent(e.clientX, e.clientY);
-      this.selectionBox = { ...this.selectionBox!, currentX: x, currentY: y };
+      this.selectionBox = { ...this.selectionBox, currentX: x, currentY: y };
       this.updateSelectionBoxStyle();
       return;
     }
@@ -525,7 +525,7 @@ Alpine.data('canvasComponent', () => ({
 
   onContextMenu(this: MergedThis, event: MouseLikeEvent) {
     const target = event.target as HTMLElement;
-    const textEl = target.closest('[data-text-id]') as HTMLElement | null;
+    const textEl = target.closest('[data-text-id]');
     const textId = textEl ? textEl.getAttribute('data-text-id') : null;
     if (textId && this.textLabels.some((l) => l.id === textId)) {
       if (event.preventDefault) event.preventDefault();

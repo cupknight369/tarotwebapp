@@ -96,7 +96,7 @@ Alpine.data('authComponent', () => ({
     try {
       await this.auth.signInWithPassword(parsed.data.email, parsed.data.password);
       this.resetLoginUi();
-    } catch (_e) {
+    } catch {
       // Error shown via auth.error
     }
   },
@@ -111,7 +111,7 @@ Alpine.data('authComponent', () => ({
     try {
       await this.auth.signInWithMagicLink(parsed.data.email);
       this.magicLinkSent = true;
-    } catch (_e) {
+    } catch {
       // Error shown via auth.error
     }
   },
