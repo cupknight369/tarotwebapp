@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import { logError } from '../lib/logError.js';
 import { supabase } from '../lib/supabase.js';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -32,7 +33,7 @@ export async function initAuthStore(): Promise<void> {
           this.user = session?.user ?? null;
         });
       } catch (e) {
-        console.warn('auth init: session unavailable', e);
+        logError('authStore.init.getSession', e);
         this.session = null;
         this.user = null;
         this.error = null;

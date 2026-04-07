@@ -12,7 +12,9 @@ import {
   listCatalogDeckOffers,
   listOnDeviceDeckEntries,
 } from '../lib/decks.js';
-import { downloadCloudDeckToDevice } from '../lib/cloudDeckDownload.js';
+import { downloadCloudDeckToDevice, downloadFailureMessage } from '../lib/cloudDeckDownload.js';
+import { logError } from '../lib/logError.js';
+import { showQueryFailureDialog } from '../lib/queryFailureUi.js';
 import { createLocalDeck, deleteLocalDeck } from '../lib/localDecks.js';
 import { localDeckTitleSchema } from '../validation/decks.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
@@ -51,12 +53,22 @@ Alpine.data('deckComponent', () => ({
   },
 
   async refreshDeckLists(this: MergedThis) {
-    const [catalog, onDevice] = await Promise.all([
+    const [catalogRes, onDeviceRes] = await Promise.all([
       listCatalogDeckOffers(),
       listOnDeviceDeckEntries(),
     ]);
-    this.catalogOffers = catalog;
-    this.onDeviceDecks = onDevice;
+    if (!catalogRes.ok) {
+      logError('deckComponent.refreshDeckLists.catalog', catalogRes.error);
+      showQueryFailureDialog(catalogRes.error);
+      return;
+    }
+    if (!onDeviceRes.ok) {
+      logError('deckComponent.refreshDeckLists.onDevice', onDeviceRes.error);
+      showQueryFailureDialog(onDeviceRes.error);
+      return;
+    }
+    this.catalogOffers = catalogRes.value;
+    this.onDeviceDecks = onDeviceRes.value;
   },
 
   async openDeckModal(this: MergedThis) {
@@ -71,7 +83,13 @@ Alpine.data('deckComponent', () => ({
   },
 
   async switchToDeck(this: MergedThis, deckId: string) {
-    const cards = await getCardsByDeckId(deckId);
+    const cardsRes = await getCardsByDeckId(deckId);
+    if (!cardsRes.ok) {
+      logError('deckComponent.switchToDeck', cardsRes.error);
+      showQueryFailureDialog(cardsRes.error);
+      return;
+    }
+    const cards = cardsRes.value;
     const title =
       this.onDeviceDecks.find((d) => d.id === deckId)?.title ??
       this.catalogOffers.find((c) => c.id === deckId)?.title ??
@@ -97,14 +115,12 @@ Alpine.data('deckComponent', () => ({
   },
 
   async downloadCatalogDeckAction(this: MergedThis, deckId: string) {
-    try {
-      await downloadCloudDeckToDevice(deckId);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Download failed';
+    const downloadRes = await downloadCloudDeckToDevice(deckId);
+    if (!downloadRes.ok) {
       Alpine.store('dialog', {
         open: true,
         type: 'confirm',
-        title: msg,
+        title: downloadFailureMessage(downloadRes.error),
         confirmLabel: 'Ok',
         cancelLabelVisible: false,
         onConfirm: () => {},
@@ -114,8 +130,13 @@ Alpine.data('deckComponent', () => ({
     await this.refreshDeckLists();
     const activeId = Alpine.store('activeDeckId') as string;
     if (activeId === deckId) {
-      const cards = await getCardsByDeckId(deckId);
-      Alpine.store('shuffledCards', cards);
+      const cardsRes = await getCardsByDeckId(deckId);
+      if (!cardsRes.ok) {
+        logError('deckComponent.downloadCatalogDeckAction.reloadCards', cardsRes.error);
+        showQueryFailureDialog(cardsRes.error);
+        return;
+      }
+      Alpine.store('shuffledCards', cardsRes.value);
       this.shuffleDeck();
     }
   },

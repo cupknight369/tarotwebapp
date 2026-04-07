@@ -1,4 +1,5 @@
 import type { TransformOptions } from '@supabase/storage-js';
+import { logDebug } from './logError.js';
 import { supabase } from './supabase.js';
 
 export const CARD_IMAGE_BUCKET = 'card-images';
@@ -50,5 +51,7 @@ export function startCardImagePrefetch(): void {
       const batch = urls.slice(i, i + PREFETCH_CONCURRENCY);
       await Promise.all(batch.map(loadImage));
     }
-  })().catch(() => {});
+  })().catch((e) => {
+    logDebug('startCardImagePrefetch', e);
+  });
 }

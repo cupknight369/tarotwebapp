@@ -3,6 +3,8 @@ import type { MergedThis, TarotCard } from '../types/canvas.js';
 import type { SavedReadingState } from '../types/readingState.js';
 import * as localReadingsLib from '../lib/localReadings.js';
 import { getCardsByIds } from '../lib/decks.js';
+import { logError } from '../lib/logError.js';
+import { showQueryFailureDialog } from '../lib/queryFailureUi.js';
 import { getCardImageRow, getLocalCardsByIds } from '../lib/localDecks.js';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
 
@@ -82,12 +84,18 @@ Alpine.data('stateComponent', () => ({
   },
 
   async deserializeState(this: MergedThis, state: SavedReadingState): Promise<void> {
+    const ids = state.cards.map((c) => c.card_id);
+    const cardMapRes = await getCardsByIds(ids);
+    if (!cardMapRes.ok) {
+      logError('stateComponent.deserializeState.getCardsByIds', cardMapRes.error);
+      showQueryFailureDialog(cardMapRes.error);
+      return;
+    }
+    const cardMap = cardMapRes.value;
+
     for (const dc of this.draggableCards) {
       revokeTarotCardBlobUrls(dc.card);
     }
-
-    const ids = state.cards.map((c) => c.card_id);
-    const cardMap = await getCardsByIds(ids);
 
     this.draggableCards = state.cards.map((c) => {
       const resolved = cardMap.get(c.card_id);

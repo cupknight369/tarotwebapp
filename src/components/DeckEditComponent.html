@@ -36,6 +36,7 @@
           </button>
         </div>
         <p class="mt-3 text-sm text-gray-400" x-show="loading">Loading…</p>
+        <p class="mt-3 text-sm text-red-400" x-show="loadError" x-text="loadError"></p>
         <p class="mt-3 text-sm text-amber-400/90" x-show="open && !loading && localEmpty">
           No cards on this device for this deck yet. Use the form on the right to add a card.
         </p>

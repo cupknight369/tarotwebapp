@@ -1,3 +1,4 @@
+import { logError } from './logError.js';
 import type { LocalCardRow, LocalDeckRow, LocalReadingRow } from '../types/localDb.js';
 import type { BackupProgress } from '../types/settings.js';
 import { openTarotDb, STORE_CARDS, STORE_DECKS, STORE_READINGS, idbRequest } from './indexedDb.js';
@@ -23,6 +24,7 @@ export function backupFilename(): string {
 }
 
 function pushError(errors: string[], msg: string, e: unknown): void {
+  logError(`localBackup.${msg}`, e);
   const detail = e instanceof Error ? e.message : String(e);
   errors.push(`${msg}: ${detail}`);
 }

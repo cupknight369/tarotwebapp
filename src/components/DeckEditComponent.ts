@@ -1,5 +1,7 @@
 import Alpine from 'alpinejs';
 import { getCardsByDeckId } from '../lib/decks.js';
+import { logError } from '../lib/logError.js';
+import { queryFailureMessage } from '../lib/supabaseErrors.js';
 import { addCardToLocalDeck, listLocalCardsByDeckId, updateLocalCard } from '../lib/localDecks.js';
 import type { TarotCard } from '../types/canvas.js';
 import { addLocalCardFormSchema, saveLocalCardFormSchema } from '../validation/decks.js';
@@ -35,6 +37,7 @@ Alpine.data('deckEditComponent', () => ({
   loading: false,
   saveError: null as string | null,
   addError: null as string | null,
+  loadError: null as string | null,
   formMode: 'edit' as FormMode,
   selectedCardId: null as string | null,
   editTitle: '',
@@ -103,6 +106,7 @@ Alpine.data('deckEditComponent', () => ({
     this.open = true;
     this.saveError = null;
     this.addError = null;
+    this.loadError = null;
     this.formMode = 'edit';
     this.loading = true;
     try {
@@ -118,7 +122,15 @@ Alpine.data('deckEditComponent', () => ({
         this.clearAddFileInputs();
         return;
       }
-      this.cards = await getCardsByDeckId(deckId);
+      const cardsRes = await getCardsByDeckId(deckId);
+      if (!cardsRes.ok) {
+        logError('deckEdit.onOpen.getCardsByDeckId', cardsRes.error);
+        this.loadError = queryFailureMessage(cardsRes.error);
+        this.cards = [];
+        this.selectedCardId = null;
+        return;
+      }
+      this.cards = cardsRes.value;
       const firstId = this.cards[0]?.id ?? null;
       this.selectCard(firstId);
     } finally {
@@ -135,6 +147,7 @@ Alpine.data('deckEditComponent', () => ({
     this.selectedCardId = null;
     this.saveError = null;
     this.addError = null;
+    this.loadError = null;
     this.formMode = 'edit';
     this.newCardTitle = '';
     this.newCardNumber = 1;
@@ -189,7 +202,13 @@ Alpine.data('deckEditComponent', () => ({
       this.newCardTitle = '';
       this.newCardNumber = 1;
       this.localEmpty = false;
-      this.cards = await getCardsByDeckId(deckId);
+      const cardsRes = await getCardsByDeckId(deckId);
+      if (!cardsRes.ok) {
+        logError('deckEdit.submitAddCard.getCardsByDeckId', cardsRes.error);
+        this.addError = queryFailureMessage(cardsRes.error);
+        return;
+      }
+      this.cards = cardsRes.value;
       this.formMode = 'edit';
       this.selectCard(row.id);
       const activeId = Alpine.store('activeDeckId') as string;
@@ -238,7 +257,13 @@ Alpine.data('deckEditComponent', () => ({
     this.clearFileInputs();
     this.clearCensor = false;
     const sel = this.selectedCardId;
-    this.cards = await getCardsByDeckId(this.deckId);
+    const cardsRes = await getCardsByDeckId(this.deckId);
+    if (!cardsRes.ok) {
+      logError('deckEdit.saveCard.getCardsByDeckId', cardsRes.error);
+      this.saveError = queryFailureMessage(cardsRes.error);
+      return;
+    }
+    this.cards = cardsRes.value;
     this.selectCard(sel);
     const activeId = Alpine.store('activeDeckId') as string;
     if (activeId === this.deckId) {
