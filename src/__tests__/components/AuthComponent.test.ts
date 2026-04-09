@@ -83,6 +83,12 @@ function createAuthStore(): AuthStore & {
     signInWithPassword: vi.fn().mockResolvedValue(undefined),
     signInWithMagicLink: vi.fn().mockResolvedValue(undefined),
     clearError: vi.fn(),
+  } as unknown as AuthStore & {
+    signOut: ReturnType<typeof vi.fn>;
+    resetPassword: ReturnType<typeof vi.fn>;
+    signInWithPassword: ReturnType<typeof vi.fn>;
+    signInWithMagicLink: ReturnType<typeof vi.fn>;
+    clearError: ReturnType<typeof vi.fn>;
   };
 }
 
