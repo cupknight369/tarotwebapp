@@ -1,5 +1,5 @@
 /**
- * Express dev/prod server: listens after creating the app from createApp.
+ * Boots the HTTP server (used by main entry and tests).
  */
 
 import { createServer } from 'node:http';
@@ -9,7 +9,12 @@ import { logServerError } from './serverLog.js';
 
 const PORT = process.env.PORT ?? 8001;
 
-async function startServer(): Promise<void> {
+/**
+ * Creates the app and listens on `PORT`.
+ *
+ * @returns Resolves after `listen` succeeds (callback invoked).
+ */
+export async function startServer(): Promise<void> {
   const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
   try {
     const app = await createApp(mode);
@@ -27,5 +32,3 @@ async function startServer(): Promise<void> {
     process.exit(1);
   }
 }
-
-void startServer();

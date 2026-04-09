@@ -10,7 +10,7 @@ const outfile = join(root, 'dist', 'index.cjs');
 mkdirSync(dirname(outfile), { recursive: true });
 
 await esbuild.build({
-  entryPoints: [join(root, 'server', 'index.ts')],
+  entryPoints: [join(root, 'server', 'main.ts')],
   bundle: true,
   platform: 'node',
   format: 'cjs',

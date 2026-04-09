@@ -20,6 +20,7 @@ export default defineConfig({
         'vite.config.ts',
         'vitest.config.ts',
         'vitest.setup.ts',
+        'server/main.ts',
       ],
     },
   },

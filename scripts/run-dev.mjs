@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const envFile = join(root, '.env');
 const tsxCli = join(root, 'node_modules', 'tsx', 'dist', 'cli.mjs');
-const script = join(root, 'server', 'index.ts');
+const script = join(root, 'server', 'main.ts');
 
 const nodeArgs = [];
 if (existsSync(envFile)) {
