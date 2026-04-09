@@ -7,7 +7,14 @@ const tsFiles = ['**/*.ts'];
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', 'src/proto/generated/**', '**/coverage/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'src/proto/generated/**',
+      '**/coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+    ],
   },
   {
     files: ['**/*.{js,mjs,cjs}'],
