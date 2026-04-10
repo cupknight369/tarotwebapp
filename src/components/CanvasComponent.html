@@ -445,95 +445,95 @@
                   <div class="overflow-y-auto flex-1 min-h-0 space-y-3">
                     <div x-show="deckModalTab === 'onDevice'" class="space-y-3">
                       <template x-for="d in onDeviceDecks" :key="d.id">
-                      <div class="rounded bg-gray-700/50 p-2">
-                        <div class="flex items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            class="flex-1 min-w-0 text-left py-2 px-3 rounded hover:bg-gray-700 text-gray-200 hover:text-white cursor-pointer"
-                            @click="switchToDeck(d.id)"
-                          >
-                            <span x-text="d.title"></span>
-                            <span class="text-xs text-sky-400 ml-1" x-show="d.fromCatalog"
-                              >Cloud</span
+                        <div class="rounded bg-gray-700/50 p-2">
+                          <div class="flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              class="flex-1 min-w-0 text-left py-2 px-3 rounded hover:bg-gray-700 text-gray-200 hover:text-white cursor-pointer"
+                              @click="switchToDeck(d.id)"
                             >
-                            <span
-                              class="block text-sm text-gray-400 mt-0.5"
-                              x-show="d.description"
-                              x-text="d.description"
-                            ></span>
-                          </button>
-                          <button
-                            type="button"
-                            class="shrink-0 px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
-                            title="Delete deck"
-                            @click.stop="deleteLocalDeckAction(d.id)"
-                          >
-                            ×
-                          </button>
+                              <span x-text="d.title"></span>
+                              <span class="text-xs text-sky-400 ml-1" x-show="d.fromCatalog"
+                                >Cloud</span
+                              >
+                              <span
+                                class="block text-sm text-gray-400 mt-0.5"
+                                x-show="d.description"
+                                x-text="d.description"
+                              ></span>
+                            </button>
+                            <button
+                              type="button"
+                              class="shrink-0 px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
+                              title="Delete deck"
+                              @click.stop="deleteLocalDeckAction(d.id)"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div class="mt-2 pl-2">
+                            <button
+                              type="button"
+                              class="text-xs text-purple-300 hover:text-white cursor-pointer"
+                              @click.stop="$dispatch('open-deck-edit', { deckId: d.id, deckTitle: d.title }); closeDeckModal()"
+                            >
+                              Edit
+                            </button>
+                          </div>
                         </div>
-                        <div class="mt-2 pl-2">
-                          <button
-                            type="button"
-                            class="text-xs text-purple-300 hover:text-white cursor-pointer"
-                            @click.stop="$dispatch('open-deck-edit', { deckId: d.id, deckTitle: d.title }); closeDeckModal()"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      </div>
-                    </template>
+                      </template>
                       <p x-show="onDeviceDecks.length === 0" class="text-gray-400 py-2 text-sm">
                         No decks on this device yet. Open the Store tab to download a deck, or
                         create one below.
                       </p>
                     </div>
                     <div x-show="deckModalTab === 'store'" class="space-y-3">
-                    <p class="text-xs text-gray-500 -mt-1 mb-2">
-                      Browse the catalog and download decks to use offline with images stored on
-                      this device.
-                    </p>
-                    <template x-for="c in catalogOffers" :key="c.id">
-                      <div class="rounded bg-gray-700/50 p-3">
-                        <div class="flex items-start justify-between gap-2">
-                          <div class="min-w-0 flex-1">
-                            <p class="text-gray-200 font-medium" x-text="c.title"></p>
-                            <p
-                              class="text-sm text-gray-400 mt-0.5"
-                              x-show="c.description"
-                              x-text="c.description"
-                            ></p>
-                          </div>
-                          <div class="flex flex-col items-end gap-1 shrink-0">
-                            <button
-                              type="button"
-                              x-show="!c.installed"
-                              class="px-2 py-1 rounded text-xs bg-purple-600 text-white hover:bg-purple-500"
-                              @click="downloadCatalogDeckAction(c.id)"
-                            >
-                              Download
-                            </button>
-                            <span
-                              x-show="c.installed"
-                              class="text-green-400 text-sm"
-                              title="Installed"
-                              >✓</span
-                            >
-                            <button
-                              type="button"
-                              x-show="c.installed"
-                              class="text-xs text-red-400 hover:text-red-300"
-                              @click="removeCatalogInstallAction(c.id)"
-                            >
-                              Remove
-                            </button>
+                      <p class="text-xs text-gray-500 -mt-1 mb-2">
+                        Browse the catalog and download decks to use offline with images stored on
+                        this device.
+                      </p>
+                      <template x-for="c in catalogOffers" :key="c.id">
+                        <div class="rounded bg-gray-700/50 p-3">
+                          <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                              <p class="text-gray-200 font-medium" x-text="c.title"></p>
+                              <p
+                                class="text-sm text-gray-400 mt-0.5"
+                                x-show="c.description"
+                                x-text="c.description"
+                              ></p>
+                            </div>
+                            <div class="flex flex-col items-end gap-1 shrink-0">
+                              <button
+                                type="button"
+                                x-show="!c.installed"
+                                class="px-2 py-1 rounded text-xs bg-purple-600 text-white hover:bg-purple-500"
+                                @click="downloadCatalogDeckAction(c.id)"
+                              >
+                                Download
+                              </button>
+                              <span
+                                x-show="c.installed"
+                                class="text-green-400 text-sm"
+                                title="Installed"
+                                >✓</span
+                              >
+                              <button
+                                type="button"
+                                x-show="c.installed"
+                                class="text-xs text-red-400 hover:text-red-300"
+                                @click="removeCatalogInstallAction(c.id)"
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </template>
-                    <p x-show="catalogOffers.length === 0" class="text-gray-400 py-2 text-sm">
-                      No decks in the store.
-                    </p>
-                  </div>
+                      </template>
+                      <p x-show="catalogOffers.length === 0" class="text-gray-400 py-2 text-sm">
+                        No decks in the store.
+                      </p>
+                    </div>
                   </div>
                   <div
                     x-show="deckModalTab === 'onDevice'"
