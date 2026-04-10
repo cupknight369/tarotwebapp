@@ -4,28 +4,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/** Minimal Alpine stub: captures `Alpine.data('authComponent', …)` and backs `Alpine.store`. */
-const alpineStub = vi.hoisted(() => {
-  const rawStores: Record<string, unknown> = {};
-  let authComponentFactory: (() => object) | null = null;
-  return {
-    rawStores,
-    getAuthComponentFactory: () => authComponentFactory,
-    Alpine: {
-      data(name: string, factory: () => object) {
-        if (name === 'authComponent') {
-          authComponentFactory = factory;
-        }
-      },
-      store(name: string, value?: unknown) {
-        if (arguments.length >= 2) {
-          rawStores[name] = value;
-        }
-        return rawStores[name];
-      },
-    },
-  };
-});
+import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCapture.js';
+
+const alpineStub = vi.hoisted(() =>
+  (globalThis as unknown as VitestGlobalWithAlpineDataCapture).__vitestCreateAlpineDataCapture('authComponent'),
+);
 
 vi.mock('alpinejs', () => ({
   default: alpineStub.Alpine,
@@ -94,7 +77,7 @@ function createAuthStore(): AuthStore & {
 
 function mountComponent(auth: AuthStore): AuthComponentInstance {
   alpineStub.rawStores.auth = auth;
-  const factory = alpineStub.getAuthComponentFactory();
+  const factory = alpineStub.getFactory();
   if (!factory) {
     throw new Error('authComponent factory was not registered');
   }

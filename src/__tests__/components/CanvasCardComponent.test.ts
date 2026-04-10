@@ -5,28 +5,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DraggableCard, TarotCard, TextLabel } from '../../types/canvas.js';
+import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCapture.js';
 
-const alpineStub = vi.hoisted(() => {
-  const rawStores: Record<string, unknown> = {};
-  let cardFactory: (() => object) | null = null;
-  return {
-    rawStores,
-    getCardFactory: () => cardFactory,
-    Alpine: {
-      data(name: string, factory: () => object) {
-        if (name === 'cardComponent') {
-          cardFactory = factory;
-        }
-      },
-      store(name: string, value?: unknown) {
-        if (arguments.length >= 2) {
-          rawStores[name] = value;
-        }
-        return rawStores[name];
-      },
-    },
-  };
-});
+const alpineStub = vi.hoisted(() =>
+  (globalThis as unknown as VitestGlobalWithAlpineDataCapture).__vitestCreateAlpineDataCapture('cardComponent'),
+);
 
 vi.mock('alpinejs', () => ({
   default: alpineStub.Alpine,
@@ -115,7 +98,7 @@ function viewportStub(width: number, height: number): HTMLDivElement {
 }
 
 function mountBase(): CardComponentApi {
-  const factory = alpineStub.getCardFactory();
+  const factory = alpineStub.getFactory();
   if (!factory) {
     throw new Error('cardComponent factory not registered');
   }
