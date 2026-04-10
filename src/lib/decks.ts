@@ -29,7 +29,8 @@ const CLOUD_REQUEST_TIMEOUT_MS = 15_000;
  *
  * @param ms - Timeout in milliseconds.
  * @param operation - Operation label for failures.
- * @param work - Promise of a Result from the network layer.
+ * @param work - Promise that fulfills with a Result from the network layer (must not reject;
+ *     failures are returned as `err(...)` from the async work).
  */
 function withTimeoutResult<T>(
   ms: number,
@@ -49,19 +50,12 @@ function withTimeoutResult<T>(
         }),
       );
     }, ms);
-    work
-      .then((r) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(r);
-      })
-      .catch((e) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(err(exceptionToQueryFailure(operation, e)));
-      });
+    void work.then((r) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(r);
+    });
   });
 }
 
