@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  clampFixedWidthPx,
   clampLabelFontSize,
   labelColorSchema,
   labelTextSchema,
@@ -16,6 +17,19 @@ describe('clampLabelFontSize', () => {
     expect(clampLabelFontSize(4)).toBe(4);
     expect(clampLabelFontSize(600)).toBe(555);
     expect(clampLabelFontSize(20.4)).toBe(20);
+  });
+});
+
+describe('clampFixedWidthPx', () => {
+  it('returns 240 for non-finite input', () => {
+    expect(clampFixedWidthPx(Number.NaN)).toBe(240);
+    expect(clampFixedWidthPx(Number.POSITIVE_INFINITY)).toBe(240);
+  });
+
+  it('clamps to 40–1200 and rounds', () => {
+    expect(clampFixedWidthPx(3)).toBe(40);
+    expect(clampFixedWidthPx(2000)).toBe(1200);
+    expect(clampFixedWidthPx(88.7)).toBe(89);
   });
 });
 

@@ -1,6 +1,7 @@
 import { MouseLikeEvent, MergedThis } from '../types/canvas.js';
 import Alpine from 'alpinejs';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
+import { clampFixedWidthPx } from '../validation/canvasLabel.js';
 
 Alpine.data('canvasComponent', () => ({
   dragContainer: null as HTMLElement | null,
@@ -270,6 +271,22 @@ Alpine.data('canvasComponent', () => ({
 
   onMouseDown(this: MergedThis, event: MouseLikeEvent) {
     const target = event.target as HTMLElement;
+    const resizeHit = target.closest('[data-text-resize]');
+    if (resizeHit) {
+      const textEl = resizeHit.closest('[data-text-id]');
+      const textId = textEl ? textEl.getAttribute('data-text-id') : null;
+      const label = textId ? this.textLabels.find((l) => l.id === textId) : undefined;
+      if (label?.fixedWidth) {
+        const rect = this.dragContainer!.getBoundingClientRect();
+        this.resizingTextId = textId;
+        this.textResizeStart = {
+          startWidthPx: clampFixedWidthPx(label.fixedWidthPx > 0 ? label.fixedWidthPx : 240),
+          startDropX: event.clientX - rect.left - this.dragContainer!.clientLeft,
+        };
+        return;
+      }
+    }
+
     const textEl = target.closest('[data-text-id]');
     const textId = textEl ? textEl.getAttribute('data-text-id') : null;
     if (textId && this.textLabels.some((l) => l.id === textId)) {
@@ -349,6 +366,15 @@ Alpine.data('canvasComponent', () => ({
       return;
     }
 
+    if (this.resizingTextId && this.textResizeStart) {
+      const rect = this.dragContainer!.getBoundingClientRect();
+      const dropX = e.clientX - rect.left - this.dragContainer!.clientLeft;
+      const delta = (dropX - this.textResizeStart.startDropX) / this.scale;
+      const next = clampFixedWidthPx(this.textResizeStart.startWidthPx + delta);
+      this.updateTextLabel(this.resizingTextId, { fixedWidthPx: next });
+      return;
+    }
+
     if (this.draggingTextId && this.textDragStart) {
       const rect = this.dragContainer!.getBoundingClientRect();
       const dropX = e.clientX - rect.left - this.dragContainer!.clientLeft;
@@ -408,6 +434,12 @@ Alpine.data('canvasComponent', () => ({
       this.selectedCardIds = ids;
       this.selectionBox = null;
       this.selectionBoxStyle = '';
+      return;
+    }
+
+    if (this.resizingTextId) {
+      this.resizingTextId = null;
+      this.textResizeStart = null;
       return;
     }
 
@@ -503,6 +535,8 @@ Alpine.data('canvasComponent', () => ({
     this.maxTextZIndex = 0;
     this.draggingTextId = null;
     this.textDragStart = null;
+    this.resizingTextId = null;
+    this.textResizeStart = null;
     this.editingTextId = null;
     this.pendingAnchor = null;
     this.dirty = true;
@@ -517,6 +551,8 @@ Alpine.data('canvasComponent', () => ({
     this.dragStart = null;
     this.draggingTextId = null;
     this.textDragStart = null;
+    this.resizingTextId = null;
+    this.textResizeStart = null;
     this.selectionBox = null;
     this.selectionBoxStyle = '';
     this.groupDragOffsets = null;

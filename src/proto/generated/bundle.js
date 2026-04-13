@@ -1045,6 +1045,8 @@ export const cktarot = $root.cktarot = (() => {
          * @property {number|null} [zIndex] TextLabel zIndex
          * @property {string|null} [anchorCardId] TextLabel anchorCardId
          * @property {cktarot.AnchorPosition|null} [anchorPosition] TextLabel anchorPosition
+         * @property {boolean|null} [fixedWidth] TextLabel fixedWidth
+         * @property {number|null} [fixedWidthPx] TextLabel fixedWidthPx
          */
 
         /**
@@ -1158,6 +1160,22 @@ export const cktarot = $root.cktarot = (() => {
          */
         TextLabel.prototype.anchorPosition = 0;
 
+        /**
+         * TextLabel fixedWidth.
+         * @member {boolean} fixedWidth
+         * @memberof cktarot.TextLabel
+         * @instance
+         */
+        TextLabel.prototype.fixedWidth = false;
+
+        /**
+         * TextLabel fixedWidthPx.
+         * @member {number} fixedWidthPx
+         * @memberof cktarot.TextLabel
+         * @instance
+         */
+        TextLabel.prototype.fixedWidthPx = 0;
+
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
 
@@ -1215,6 +1233,10 @@ export const cktarot = $root.cktarot = (() => {
                 writer.uint32(/* id 11, wireType 2 =*/90).string(message.anchorCardId);
             if (message.anchorPosition != null && Object.hasOwnProperty.call(message, "anchorPosition"))
                 writer.uint32(/* id 12, wireType 0 =*/96).int32(message.anchorPosition);
+            if (message.fixedWidth != null && Object.hasOwnProperty.call(message, "fixedWidth"))
+                writer.uint32(/* id 13, wireType 0 =*/104).bool(message.fixedWidth);
+            if (message.fixedWidthPx != null && Object.hasOwnProperty.call(message, "fixedWidthPx"))
+                writer.uint32(/* id 14, wireType 1 =*/113).double(message.fixedWidthPx);
             return writer;
         };
 
@@ -1297,6 +1319,14 @@ export const cktarot = $root.cktarot = (() => {
                     }
                 case 12: {
                         message.anchorPosition = reader.int32();
+                        break;
+                    }
+                case 13: {
+                        message.fixedWidth = reader.bool();
+                        break;
+                    }
+                case 14: {
+                        message.fixedWidthPx = reader.double();
                         break;
                     }
                 default:
@@ -1393,6 +1423,12 @@ export const cktarot = $root.cktarot = (() => {
                 case 4:
                     break;
                 }
+            if (message.fixedWidth != null && message.hasOwnProperty("fixedWidth"))
+                if (typeof message.fixedWidth !== "boolean")
+                    return "fixedWidth: boolean expected";
+            if (message.fixedWidthPx != null && message.hasOwnProperty("fixedWidthPx"))
+                if (typeof message.fixedWidthPx !== "number")
+                    return "fixedWidthPx: number expected";
             return null;
         };
 
@@ -1494,6 +1530,10 @@ export const cktarot = $root.cktarot = (() => {
                 message.anchorPosition = 4;
                 break;
             }
+            if (object.fixedWidth != null)
+                message.fixedWidth = Boolean(object.fixedWidth);
+            if (object.fixedWidthPx != null)
+                message.fixedWidthPx = Number(object.fixedWidthPx);
             return message;
         };
 
@@ -1522,6 +1562,8 @@ export const cktarot = $root.cktarot = (() => {
                 object.color = "";
                 object.zIndex = 0;
                 object.anchorPosition = options.enums === String ? "ANCHOR_POSITION_UNSPECIFIED" : 0;
+                object.fixedWidth = false;
+                object.fixedWidthPx = 0;
             }
             if (message.id != null && message.hasOwnProperty("id"))
                 object.id = message.id;
@@ -1550,6 +1592,10 @@ export const cktarot = $root.cktarot = (() => {
             }
             if (message.anchorPosition != null && message.hasOwnProperty("anchorPosition"))
                 object.anchorPosition = options.enums === String ? $root.cktarot.AnchorPosition[message.anchorPosition] === undefined ? message.anchorPosition : $root.cktarot.AnchorPosition[message.anchorPosition] : message.anchorPosition;
+            if (message.fixedWidth != null && message.hasOwnProperty("fixedWidth"))
+                object.fixedWidth = message.fixedWidth;
+            if (message.fixedWidthPx != null && message.hasOwnProperty("fixedWidthPx"))
+                object.fixedWidthPx = options.json && !isFinite(message.fixedWidthPx) ? String(message.fixedWidthPx) : message.fixedWidthPx;
             return object;
         };
 

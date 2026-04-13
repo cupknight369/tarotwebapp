@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import type { MergedThis, TextLabel, TextLabelAnchorPosition } from '../types/canvas.js';
 import {
+  clampFixedWidthPx,
   clampLabelFontSize,
   labelColorSchema,
   labelTextSchema,
@@ -16,6 +17,8 @@ Alpine.data('textLabelComponent', () => ({
     startDropX: number;
     startDropY: number;
   } | null,
+  resizingTextId: null as string | null,
+  textResizeStart: null as { startWidthPx: number; startDropX: number } | null,
   editingTextId: null as string | null,
   pendingAnchor: null as {
     textId: string;
@@ -48,6 +51,8 @@ Alpine.data('textLabelComponent', () => ({
       display: 'block',
       anchorCardId: null,
       anchorPosition: null,
+      fixedWidth: false,
+      fixedWidthPx: 0,
     };
     this.textLabels = [...this.textLabels, label];
     this.maxTextZIndex += 1;
@@ -79,7 +84,12 @@ Alpine.data('textLabelComponent', () => ({
   getTextLabelStyle(this: MergedThis, label: TextLabel): string {
     const pos = this.getTextLabelPosition(label);
     const vertical = label.anchorPosition === 'left' || label.anchorPosition === 'right';
-    const base = `left: ${pos.x}px; top: ${pos.y}px; z-index: ${label.zIndex}; cursor: ${label.cursor}; display: ${label.display}; font-size: ${label.fontSize}px; font-weight: ${label.fontWeight}; font-style: ${label.fontStyle}; text-decoration: ${label.textDecoration}; color: ${label.color};`;
+    const fixed = label.fixedWidth
+      ? ` box-sizing: border-box; width: ${clampFixedWidthPx(
+          label.fixedWidthPx > 0 ? label.fixedWidthPx : 240,
+        )}px;`
+      : '';
+    const base = `left: ${pos.x}px; top: ${pos.y}px; z-index: ${label.zIndex}; cursor: ${label.cursor}; display: ${label.display}; font-size: ${label.fontSize}px; font-weight: ${label.fontWeight}; font-style: ${label.fontStyle}; text-decoration: ${label.textDecoration}; color: ${label.color};${fixed}`;
     if (vertical && this.editingTextId !== label.id) {
       const transform =
         label.anchorPosition === 'left' ? ' transform: translateY(110%) rotate(180deg);' : '';
@@ -92,10 +102,13 @@ Alpine.data('textLabelComponent', () => ({
     const index = this.textLabels.findIndex((l) => l.id === id);
     if (index === -1) return;
     const current = this.textLabels[index];
-    const { fontSize, color, text, ...rest } = newProps;
+    const { fontSize, color, text, fixedWidthPx, ...rest } = newProps;
     const next: TextLabel = { ...current, ...rest };
     if (fontSize !== undefined) {
       next.fontSize = clampLabelFontSize(fontSize);
+    }
+    if (fixedWidthPx !== undefined) {
+      next.fixedWidthPx = clampFixedWidthPx(fixedWidthPx);
     }
     if (color !== undefined) {
       const parsed = labelColorSchema.safeParse(color);
@@ -132,5 +145,34 @@ Alpine.data('textLabelComponent', () => ({
 
   commitEditTextLabel() {
     this.editingTextId = null;
+  },
+
+  /**
+   * Turns fixed width on or off. When enabling, reuses stored width if valid; otherwise measures the label or uses a fallback.
+   * @param id - Text label id.
+   * @param enabled - Whether fixed width is active.
+   */
+  setTextLabelFixedWidthToggle(this: MergedThis, id: string, enabled: boolean): void {
+    if (!enabled) {
+      this.updateTextLabel(id, { fixedWidth: false });
+      return;
+    }
+    const label = this.textLabels.find((l) => l.id === id);
+    if (!label) return;
+    const minW = 40;
+    let px = label.fixedWidthPx;
+    if (!Number.isFinite(px) || px < minW) {
+      this.$nextTick(() => {
+        const el = document.querySelector(
+          `[data-text-id="${CSS.escape(id)}"]`,
+        ) as HTMLElement | null;
+        const measured =
+          el && el.offsetWidth > 0 ? clampFixedWidthPx(Math.ceil(el.offsetWidth)) : null;
+        const resolved = measured !== null ? measured : clampFixedWidthPx(240);
+        this.updateTextLabel(id, { fixedWidth: true, fixedWidthPx: resolved });
+      });
+      return;
+    }
+    this.updateTextLabel(id, { fixedWidth: true, fixedWidthPx: clampFixedWidthPx(px) });
   },
 }));

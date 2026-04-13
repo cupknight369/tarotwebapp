@@ -21,3 +21,16 @@ export function clampLabelFontSize(n: number): number {
   if (!Number.isFinite(n)) return 16;
   return Math.min(555, Math.round(n));
 }
+
+const FIXED_WIDTH_MIN = 40;
+const FIXED_WIDTH_MAX = 1200;
+
+/**
+ * Clamps label fixed width; non-finite values fall back to 240.
+ * @param n - Raw width in CSS pixels.
+ * @returns Clamped integer width.
+ */
+export function clampFixedWidthPx(n: number): number {
+  if (!Number.isFinite(n)) return 240;
+  return Math.max(FIXED_WIDTH_MIN, Math.min(FIXED_WIDTH_MAX, Math.round(n)));
+}

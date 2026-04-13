@@ -106,6 +106,8 @@ Alpine.data('stateComponent', () => ({
         zIndex: l.zIndex,
         anchorCardId: l.anchorCardId,
         anchorPosition: l.anchorPosition,
+        fixedWidth: l.fixedWidth,
+        fixedWidthPx: l.fixedWidthPx,
       })),
     };
   },
@@ -223,6 +225,8 @@ Alpine.data('stateComponent', () => ({
       display: 'block',
       anchorCardId: l.anchorCardId,
       anchorPosition: l.anchorPosition,
+      fixedWidth: l.fixedWidth ?? false,
+      fixedWidthPx: l.fixedWidthPx ?? 0,
     }));
     if (state.viewport) {
       this.scale = state.viewport.scale;

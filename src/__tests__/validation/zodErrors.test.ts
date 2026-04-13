@@ -13,27 +13,28 @@ describe('zodErrors.ts', () => {
     it('returns the first issue message when it is a non-empty string', () => {
       const parsed = z.string().min(5).safeParse('hi');
       expect(parsed.success).toBe(false);
+      if (parsed.success) throw new Error('expected parse failure');
       expect(zodFirstIssue(parsed.error)).toBe('String must contain at least 5 character(s)');
     });
 
     it('returns fallback when first issue message is empty', () => {
       const error = {
         issues: [{ code: z.ZodIssueCode.custom, path: [], message: '' }],
-      } as ZodError;
+      } as unknown as ZodError;
       expect(zodFirstIssue(error)).toBe('Invalid input');
     });
 
     it('returns fallback when first issue has no message', () => {
       const error = {
         issues: [{ code: z.ZodIssueCode.custom, path: [] }],
-      } as ZodError;
+      } as unknown as ZodError;
       expect(zodFirstIssue(error)).toBe('Invalid input');
     });
 
     it('returns fallback when first issue slot is empty (sparse issues)', () => {
       const issues: z.ZodIssue[] = [];
       issues.length = 1;
-      const error = { issues } as ZodError;
+      const error = { issues } as unknown as ZodError;
       expect(zodFirstIssue(error)).toBe('Invalid input');
     });
 
@@ -46,7 +47,7 @@ describe('zodErrors.ts', () => {
             message: 42 as unknown as string,
           },
         ],
-      } as ZodError;
+      } as unknown as ZodError;
       expect(zodFirstIssue(error)).toBe('Invalid input');
     });
   });

@@ -62,6 +62,8 @@ message TextLabel {
   sint32 z_index = 10;
   optional string anchor_card_id = 11;
   AnchorPosition anchor_position = 12;
+  bool fixed_width = 13;
+  double fixed_width_px = 14;
 }
 
 message SavedReadingState {

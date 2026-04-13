@@ -73,6 +73,8 @@ export type MergedThis = {
   maxTextZIndex: number;
   draggingTextId: string | null;
   textDragStart: { startX: number; startY: number; startDropX: number; startDropY: number } | null;
+  resizingTextId: string | null;
+  textResizeStart: { startWidthPx: number; startDropX: number } | null;
   editingTextId: string | null;
   pendingAnchor: { textId: string; cardId: string; screenX: number; screenY: number } | null;
 
@@ -164,6 +166,7 @@ export type MergedThis = {
   clearDragState(): void;
   cancelPendingAnchor(): void;
   commitEditTextLabel(): void;
+  setTextLabelFixedWidthToggle(id: string, enabled: boolean): void;
   deleteCard(cardId: string): void;
   deleteSelectedCards(): void;
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180'): void;
@@ -228,4 +231,7 @@ export interface TextLabel {
   display: string;
   anchorCardId: string | null;
   anchorPosition: TextLabelAnchorPosition | null;
+  fixedWidth: boolean;
+  /** Persisted even when fixedWidth is false so toggling restores the last width. */
+  fixedWidthPx: number;
 }

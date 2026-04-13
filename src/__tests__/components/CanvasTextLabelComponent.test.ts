@@ -62,6 +62,8 @@ function label(overrides: Partial<TextLabel> = {}): TextLabel {
     display: 'block',
     anchorCardId: null,
     anchorPosition: null,
+    fixedWidth: false,
+    fixedWidthPx: 0,
     ...overrides,
   };
 }
@@ -81,13 +83,11 @@ type TextLabelCtx = {
   getTextLabelStyle: (l: TextLabel) => string;
   updateTextLabel: (id: string, p: Partial<TextLabel>) => void;
   deleteTextLabel: (id: string) => void;
-  setTextLabelAnchor: (
-    textId: string,
-    cardId: string,
-    position: TextLabelAnchorPosition,
-  ) => void;
+  setTextLabelAnchor: (textId: string, cardId: string, position: TextLabelAnchorPosition) => void;
   cancelPendingAnchor: () => void;
   commitEditTextLabel: () => void;
+  setTextLabelFixedWidthToggle: (id: string, enabled: boolean) => void;
+  $nextTick: (cb?: () => void) => void;
   screenToContent: (sx: number, sy: number) => { x: number; y: number };
   draggableCards: DraggableCard[];
   dirty: boolean;
@@ -106,6 +106,9 @@ function mount(overrides: Partial<TextLabelCtx> = {}): TextLabelCtx {
   >;
   return {
     ...base,
+    $nextTick: (cb?: () => void) => {
+      cb?.();
+    },
     screenToContent: (sx, sy) => ({ x: sx + 1, y: sy + 2 }),
     draggableCards: [],
     dirty: false,
@@ -174,9 +177,7 @@ describe('textLabelComponent (CanvasTextLabelComponent.ts)', () => {
       anchorCardId: 'c1',
       anchorPosition: 'above',
     });
-    (
-      l as { anchorPosition: string }
-    ).anchorPosition = 'diagonal';
+    (l as { anchorPosition: string }).anchorPosition = 'diagonal';
     expect(ctx.getTextLabelPosition.call(ctx, l)).toEqual({ x: 1, y: 2 });
   });
 
@@ -306,5 +307,51 @@ describe('textLabelComponent (CanvasTextLabelComponent.ts)', () => {
     const ctx = mount({ editingTextId: 'edit-me' });
     ctx.commitEditTextLabel.call(ctx);
     expect(ctx.editingTextId).toBeNull();
+  });
+
+  it('getTextLabelStyle includes fixed width when fixedWidth is true', () => {
+    const ctx = mount();
+    const l = label({ fixedWidth: true, fixedWidthPx: 220 });
+    const s = ctx.getTextLabelStyle.call(ctx, l);
+    expect(s).toContain('box-sizing: border-box');
+    expect(s).toContain('width: 220px');
+  });
+
+  it('updateTextLabel clamps fixedWidthPx', () => {
+    const ctx = mount({ textLabels: [label({ id: 'a', fixedWidthPx: 100 })] });
+    ctx.updateTextLabel.call(ctx, 'a', { fixedWidthPx: 5000 });
+    expect(ctx.textLabels[0]?.fixedWidthPx).toBe(1200);
+    ctx.updateTextLabel.call(ctx, 'a', { fixedWidthPx: 3 });
+    expect(ctx.textLabels[0]?.fixedWidthPx).toBe(40);
+    ctx.updateTextLabel.call(ctx, 'a', { fixedWidthPx: Number.NaN });
+    expect(ctx.textLabels[0]?.fixedWidthPx).toBe(240);
+  });
+
+  it('setTextLabelFixedWidthToggle turns fixed width off without clearing stored px', () => {
+    const ctx = mount({
+      textLabels: [label({ id: 'a', fixedWidth: true, fixedWidthPx: 300 })],
+    });
+    ctx.setTextLabelFixedWidthToggle.call(ctx, 'a', false);
+    expect(ctx.textLabels[0]?.fixedWidth).toBe(false);
+    expect(ctx.textLabels[0]?.fixedWidthPx).toBe(300);
+  });
+
+  it('setTextLabelFixedWidthToggle reuses stored width when enabling', () => {
+    const ctx = mount({
+      textLabels: [label({ id: 'a', fixedWidth: false, fixedWidthPx: 180 })],
+    });
+    ctx.setTextLabelFixedWidthToggle.call(ctx, 'a', true);
+    expect(ctx.textLabels[0]?.fixedWidth).toBe(true);
+    expect(ctx.textLabels[0]?.fixedWidthPx).toBe(180);
+  });
+
+  it('setTextLabelFixedWidthToggle measures layout when enabling without stored width', () => {
+    const ctx = mount({
+      textLabels: [label({ id: 'a', fixedWidth: false, fixedWidthPx: 0 })],
+    });
+    vi.spyOn(document, 'querySelector').mockReturnValue({ offsetWidth: 92 } as HTMLElement);
+    ctx.setTextLabelFixedWidthToggle.call(ctx, 'a', true);
+    expect(ctx.textLabels[0]?.fixedWidth).toBe(true);
+    expect(ctx.textLabels[0]?.fixedWidthPx).toBe(92);
   });
 });

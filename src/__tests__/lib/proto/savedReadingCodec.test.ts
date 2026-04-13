@@ -7,6 +7,8 @@ import {
 } from '../../../lib/proto/savedReadingCodec.js';
 import type { SavedReadingState } from '../../../types/readingState.js';
 
+type SavedReadingStateDecodeInput = Parameters<typeof cktarot.SavedReadingState.decode>[0];
+
 function minimalState(overrides?: Partial<SavedReadingState>): SavedReadingState {
   return {
     viewport: { scale: 1, offsetX: 0, offsetY: 0 },
@@ -32,6 +34,8 @@ function baseTextLabel(
     zIndex: 0,
     anchorCardId: null,
     anchorPosition: null,
+    fixedWidth: false,
+    fixedWidthPx: 0,
     ...overrides,
   };
 }
@@ -81,6 +85,16 @@ describe('savedReadingCodec.ts', () => {
     });
     const bytes = encodeSavedReadingState(state);
     expect(decodeSavedReadingState(bytes)).toEqual(state);
+  });
+
+  it('round-trips text label fixed width fields', () => {
+    const state = minimalState({
+      textLabels: [
+        baseTextLabel({ id: 'w1', fixedWidth: true, fixedWidthPx: 333 }),
+        baseTextLabel({ id: 'w2', fixedWidth: false, fixedWidthPx: 400 }),
+      ],
+    });
+    expect(decodeSavedReadingState(encodeSavedReadingState(state))).toEqual(state);
   });
 
   it('round-trips minimal cards and labels (optional card fields omitted)', () => {
@@ -243,14 +257,16 @@ describe('savedReadingCodec.ts', () => {
     });
     const bytes = encodeSavedReadingState(state);
     const origDecode = cktarot.SavedReadingState.decode.bind(cktarot.SavedReadingState);
-    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce((u: Uint8Array) => {
-      const m = origDecode(u);
-      const c0 = m.cards?.[0];
-      if (c0) {
-        Object.assign(c0, { data: [9, 8, 7] });
-      }
-      return m;
-    });
+    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce(
+      (u: SavedReadingStateDecodeInput) => {
+        const m = origDecode(u);
+        const c0 = m.cards?.[0];
+        if (c0) {
+          Object.assign(c0, { data: [9, 8, 7] });
+        }
+        return m;
+      },
+    );
     const out = decodeSavedReadingState(bytes);
     expect(out.cards[0].data).toEqual(new Uint8Array([9, 8, 7]));
   });
@@ -273,14 +289,16 @@ describe('savedReadingCodec.ts', () => {
     });
     const bytes = encodeSavedReadingState(state);
     const origDecode = cktarot.SavedReadingState.decode.bind(cktarot.SavedReadingState);
-    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce((u: Uint8Array) => {
-      const m = origDecode(u);
-      const c0 = m.cards?.[0];
-      if (c0) {
-        Object.assign(c0, { censoredData: [1] });
-      }
-      return m;
-    });
+    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce(
+      (u: SavedReadingStateDecodeInput) => {
+        const m = origDecode(u);
+        const c0 = m.cards?.[0];
+        if (c0) {
+          Object.assign(c0, { censoredData: [1] });
+        }
+        return m;
+      },
+    );
     const out = decodeSavedReadingState(bytes);
     expect(out.cards[0].censored_data).toEqual(new Uint8Array([1]));
   });
@@ -288,18 +306,20 @@ describe('savedReadingCodec.ts', () => {
   it('applies viewport defaults when scale and offsets are nullish on decode', () => {
     const bytes = encodeSavedReadingState(minimalState());
     const origDecode = cktarot.SavedReadingState.decode.bind(cktarot.SavedReadingState);
-    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce((u: Uint8Array) => {
-      const m = origDecode(u);
-      const vp = m.viewport;
-      if (vp) {
-        Object.assign(vp, {
-          scale: undefined,
-          offsetX: undefined,
-          offsetY: undefined,
-        });
-      }
-      return m;
-    });
+    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce(
+      (u: SavedReadingStateDecodeInput) => {
+        const m = origDecode(u);
+        const vp = m.viewport;
+        if (vp) {
+          Object.assign(vp, {
+            scale: undefined,
+            offsetX: undefined,
+            offsetY: undefined,
+          });
+        }
+        return m;
+      },
+    );
     const out = decodeSavedReadingState(bytes);
     expect(out.viewport).toEqual({ scale: 1, offsetX: 0, offsetY: 0 });
   });
@@ -397,14 +417,16 @@ describe('savedReadingCodec.ts', () => {
   it('treats null cards and textLabels on decode as empty arrays', () => {
     const bytes = encodeSavedReadingState(minimalState());
     const origDecode = cktarot.SavedReadingState.decode.bind(cktarot.SavedReadingState);
-    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce((u: Uint8Array) => {
-      const m = origDecode(u);
-      Object.assign(m, {
-        cards: null,
-        textLabels: null,
-      });
-      return m;
-    });
+    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce(
+      (u: SavedReadingStateDecodeInput) => {
+        const m = origDecode(u);
+        Object.assign(m, {
+          cards: null,
+          textLabels: null,
+        });
+        return m;
+      },
+    );
     const out = decodeSavedReadingState(bytes);
     expect(out.cards).toEqual([]);
     expect(out.textLabels).toEqual([]);
@@ -429,14 +451,16 @@ describe('savedReadingCodec.ts', () => {
       }),
     );
     const origDecode = cktarot.SavedReadingState.decode.bind(cktarot.SavedReadingState);
-    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce((u: Uint8Array) => {
-      const m = origDecode(u);
-      const c0 = m.cards?.[0];
-      if (c0) {
-        c0.data = new Uint8Array(0);
-      }
-      return m;
-    });
+    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce(
+      (u: SavedReadingStateDecodeInput) => {
+        const m = origDecode(u);
+        const c0 = m.cards?.[0];
+        if (c0) {
+          c0.data = new Uint8Array(0);
+        }
+        return m;
+      },
+    );
     const out = decodeSavedReadingState(bytes);
     expect(out.cards[0]).not.toHaveProperty('data');
   });
@@ -460,14 +484,16 @@ describe('savedReadingCodec.ts', () => {
       }),
     );
     const origDecode = cktarot.SavedReadingState.decode.bind(cktarot.SavedReadingState);
-    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce((u: Uint8Array) => {
-      const m = origDecode(u);
-      const c0 = m.cards?.[0];
-      if (c0) {
-        c0.censoredData = new Uint8Array(0);
-      }
-      return m;
-    });
+    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce(
+      (u: SavedReadingStateDecodeInput) => {
+        const m = origDecode(u);
+        const c0 = m.cards?.[0];
+        if (c0) {
+          c0.censoredData = new Uint8Array(0);
+        }
+        return m;
+      },
+    );
     const out = decodeSavedReadingState(bytes);
     expect(out.cards[0]).not.toHaveProperty('censored_data');
   });
@@ -475,11 +501,13 @@ describe('savedReadingCodec.ts', () => {
   it('uses text label fallbacks when proto fields are undefined', () => {
     const bytes = encodeSavedReadingState(minimalState());
     const origDecode = cktarot.SavedReadingState.decode.bind(cktarot.SavedReadingState);
-    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce((u: Uint8Array) => {
-      const m = origDecode(u);
-      m.textLabels = [{} as cktarot.TextLabel];
-      return m;
-    });
+    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce(
+      (u: SavedReadingStateDecodeInput) => {
+        const m = origDecode(u);
+        m.textLabels = [{} as cktarot.TextLabel];
+        return m;
+      },
+    );
     const out = decodeSavedReadingState(bytes);
     expect(out.textLabels[0]).toEqual({
       id: '',
@@ -494,6 +522,8 @@ describe('savedReadingCodec.ts', () => {
       zIndex: 0,
       anchorCardId: null,
       anchorPosition: null,
+      fixedWidth: false,
+      fixedWidthPx: 0,
     });
   });
 
@@ -541,11 +571,13 @@ describe('savedReadingCodec.ts', () => {
   it('applies card fallbacks when proto omits id, deck, card, pose, and censor fields', () => {
     const bytes = encodeSavedReadingState(minimalState());
     const origDecode = cktarot.SavedReadingState.decode.bind(cktarot.SavedReadingState);
-    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce((u: Uint8Array) => {
-      const m = origDecode(u);
-      m.cards = [{} as cktarot.PlacedCard];
-      return m;
-    });
+    vi.spyOn(cktarot.SavedReadingState, 'decode').mockImplementationOnce(
+      (u: SavedReadingStateDecodeInput) => {
+        const m = origDecode(u);
+        m.cards = [{} as cktarot.PlacedCard];
+        return m;
+      },
+    );
     const out = decodeSavedReadingState(bytes);
     expect(out.cards[0]).toEqual({
       id: '',

@@ -8,7 +8,9 @@ import type { DraggableCard, MouseLikeEvent, MergedThis, TextLabel } from '../..
 import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCapture.js';
 
 const alpineStub = vi.hoisted(() =>
-  (globalThis as unknown as VitestGlobalWithAlpineDataCapture).__vitestCreateAlpineDataCapture('canvasComponent'),
+  (globalThis as unknown as VitestGlobalWithAlpineDataCapture).__vitestCreateAlpineDataCapture(
+    'canvasComponent',
+  ),
 );
 
 vi.mock('alpinejs', () => ({
@@ -31,11 +33,7 @@ function makeTouchList(touches: Touch[]): TouchList {
   } as unknown as TouchList;
 }
 
-function touch(
-  identifier: number,
-  clientX: number,
-  clientY: number,
-): Touch {
+function touch(identifier: number, clientX: number, clientY: number): Touch {
   return { identifier, clientX, clientY } as Touch;
 }
 
@@ -93,6 +91,8 @@ function mkLabel(id: string, anchor: string | null): TextLabel {
     display: 'block',
     anchorCardId: anchor,
     anchorPosition: anchor ? 'above' : null,
+    fixedWidth: false,
+    fixedWidthPx: 0,
   };
 }
 
@@ -165,6 +165,8 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
     maxTextZIndex: 0,
     draggingTextId: null as string | null,
     textDragStart: null as MergedThis['textDragStart'],
+    resizingTextId: null as string | null,
+    textResizeStart: null as MergedThis['textResizeStart'],
     draggingCard: null as HTMLElement | null,
     dragStart: null as MergedThis['dragStart'],
     selectedCardIds: [] as string[],
@@ -247,7 +249,13 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
 
   it('screenToContent returns zeros without viewport', () => {
     const c = mountCanvas();
-    expect(c.screenToContent.call({ viewport: null, offsetX: 0, offsetY: 0, scale: 1 } as MergedThis, 50, 60)).toEqual({
+    expect(
+      c.screenToContent.call(
+        { viewport: null, offsetX: 0, offsetY: 0, scale: 1 } as MergedThis,
+        50,
+        60,
+      ),
+    ).toEqual({
       x: 0,
       y: 0,
     });
@@ -299,7 +307,11 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
   it('centerViewport no-ops without viewport or content', () => {
     const c = mountCanvas();
     const before = { offsetX: 5, offsetY: 6 } as MergedThis;
-    c.centerViewport.call({ ...before, viewport: null, content: document.createElement('div') } as MergedThis);
+    c.centerViewport.call({
+      ...before,
+      viewport: null,
+      content: document.createElement('div'),
+    } as MergedThis);
     expect(before.offsetX).toBe(5);
   });
 
@@ -352,6 +364,8 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
       dragStart: { startCardX: 0, startCardY: 0, startDropX: 0, startDropY: 0 },
       draggingTextId: 't',
       textDragStart: { startX: 0, startY: 0, startDropX: 0, startDropY: 0 },
+      resizingTextId: 'r',
+      textResizeStart: { startWidthPx: 100, startDropX: 0 },
       selectionBox: { startX: 0, startY: 0, currentX: 1, currentY: 1 },
       selectionBoxStyle: 'x',
       groupDragOffsets: {},
@@ -360,6 +374,8 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     c.clearDragState.call(inst);
     expect(inst.isPanning).toBe(false);
     expect(inst.draggingCard).toBeNull();
+    expect(inst.resizingTextId).toBeNull();
+    expect(inst.textResizeStart).toBeNull();
     expect(inst.selectionBox).toBeNull();
     expect(vp.style.cursor).toBe('grab');
   });
@@ -382,13 +398,10 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
   });
 
   it('init wires DOM, shuffleDeck, listeners, and centers after rAF', () => {
-    vi.stubGlobal(
-      'requestAnimationFrame',
-      (cb: FrameRequestCallback) => {
-        cb(0);
-        return 0;
-      },
-    );
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
     const base = mountCanvas();
     const ctx = createMerged(base);
     const listeners: Record<string, EventListener> = {};
@@ -405,7 +418,9 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     spyElementFromPoint(ctx.viewport);
 
     expect(mockCallCount(mockFromCtx(ctx, 'shuffleDeck'))).toBeGreaterThan(0);
-    expect((window as unknown as { draggableZoneComponent: unknown }).draggableZoneComponent).toBe(ctx);
+    expect((window as unknown as { draggableZoneComponent: unknown }).draggableZoneComponent).toBe(
+      ctx,
+    );
     expect(ctx.dragContainer).toBe(dc);
     expect(listeners.touchstart).toBeDefined();
     expect(ctx.offsetX).toBe(-500);
@@ -509,6 +524,55 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     c.onMouseDown.call(ctx, ev);
     expect(ctx.draggingTextId).toBe('tl1');
     expect(ctx.textDragStart).not.toBeNull();
+  });
+
+  it('onMouseDown on text resize handle starts resize, not label drag', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.textLabels = [{ ...mkLabel('tl1', null), fixedWidth: true, fixedWidthPx: 200 }];
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-text-id', 'tl1');
+    const handle = document.createElement('div');
+    handle.setAttribute('data-text-resize', '');
+    wrap.append(handle);
+    const ev: MouseLikeEvent = {
+      clientX: 100,
+      clientY: 200,
+      target: handle,
+      ctrlKey: false,
+    };
+    c.onMouseDown.call(ctx, ev);
+    expect(ctx.draggingTextId).toBeNull();
+    expect(ctx.textDragStart).toBeNull();
+    expect(ctx.resizingTextId).toBe('tl1');
+    expect(ctx.textResizeStart).toMatchObject({ startWidthPx: 200, startDropX: 100 });
+  });
+
+  it('onMouseMove resizes fixed-width label when resizingTextId is set', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.resizingTextId = 't1';
+    ctx.textResizeStart = { startWidthPx: 100, startDropX: 100 };
+    ctx.textLabels = [{ ...mkLabel('t1', null), fixedWidth: true, fixedWidthPx: 100 }];
+    c.onMouseMove.call(ctx, { clientX: 200, clientY: 100, target: null });
+    expect(ctx.textLabels[0]?.fixedWidthPx).toBe(200);
+  });
+
+  it('onMouseUp clears text resize without pending anchor', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.resizingTextId = 't1';
+    ctx.textResizeStart = { startWidthPx: 200, startDropX: 0 };
+    ctx.textLabels = [{ ...mkLabel('t1', null), fixedWidth: true, fixedWidthPx: 200 }];
+    c.onMouseUp.call(ctx, {
+      clientX: 0,
+      clientY: 0,
+      target: null,
+      preventDefault: vi.fn(),
+    });
+    expect(ctx.resizingTextId).toBeNull();
+    expect(ctx.textResizeStart).toBeNull();
+    expect(ctx.pendingAnchor).toBeNull();
   });
 
   it('onMouseMove updates pan offset', () => {
@@ -637,9 +701,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     const el = document.createElement('div');
     el.id = 'a';
     ctx.draggableCards = [mkCard('a', 0, 0), mkCard('b', 20, 0)];
-    ctx.textLabels = [
-      { ...mkLabel('lbl', 'a'), x: 5, y: 5 },
-    ];
+    ctx.textLabels = [{ ...mkLabel('lbl', 'a'), x: 5, y: 5 }];
     ctx.selectedCardIds = ['a', 'b'];
     ctx.draggingCard = el;
     ctx.dragStart = { startCardX: 0, startCardY: 0, startDropX: 0, startDropY: 0 };

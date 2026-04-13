@@ -96,6 +96,8 @@ export function encodeSavedReadingState(state: SavedReadingState): Uint8Array {
     tl.zIndex = t.zIndex;
     if (t.anchorCardId !== null) tl.anchorCardId = t.anchorCardId;
     tl.anchorPosition = encodeAnchorPosition(t.anchorPosition);
+    tl.fixedWidth = t.fixedWidth;
+    tl.fixedWidthPx = t.fixedWidthPx;
     return tl;
   });
 
@@ -176,6 +178,8 @@ export function decodeSavedReadingState(bytes: Uint8Array): SavedReadingState {
       zIndex: t.zIndex ?? 0,
       anchorCardId: t.anchorCardId !== undefined && t.anchorCardId !== '' ? t.anchorCardId : null,
       anchorPosition: decodeAnchorPosition(Number(t.anchorPosition ?? 0)),
+      fixedWidth: Boolean(t.fixedWidth),
+      fixedWidthPx: t.fixedWidthPx ?? 0,
     })),
   };
   return out;

@@ -372,6 +372,12 @@ export namespace cktarot {
 
         /** TextLabel anchorPosition */
         anchorPosition?: (cktarot.AnchorPosition|null);
+
+        /** TextLabel fixedWidth */
+        fixedWidth?: (boolean|null);
+
+        /** TextLabel fixedWidthPx */
+        fixedWidthPx?: (number|null);
     }
 
     /** Represents a TextLabel. */
@@ -418,6 +424,12 @@ export namespace cktarot {
 
         /** TextLabel anchorPosition. */
         public anchorPosition: cktarot.AnchorPosition;
+
+        /** TextLabel fixedWidth. */
+        public fixedWidth: boolean;
+
+        /** TextLabel fixedWidthPx. */
+        public fixedWidthPx: number;
 
         /**
          * Creates a new TextLabel instance using the specified properties.

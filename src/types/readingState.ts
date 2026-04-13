@@ -38,6 +38,8 @@ export interface SavedReadingState {
     zIndex: number;
     anchorCardId: string | null;
     anchorPosition: 'above' | 'below' | 'left' | 'right' | null;
+    fixedWidth: boolean;
+    fixedWidthPx: number;
   }>;
 }
 

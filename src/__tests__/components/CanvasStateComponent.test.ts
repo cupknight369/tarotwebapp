@@ -121,6 +121,8 @@ function textLabel(overrides: Partial<TextLabel> = {}): TextLabel {
     display: 'block',
     anchorCardId: null,
     anchorPosition: null,
+    fixedWidth: false,
+    fixedWidthPx: 0,
     ...overrides,
   };
 }
@@ -329,7 +331,11 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     localDecksMocks.getLocalCardsByIds.mockResolvedValue(
       new Map([['cid-1', { imageBlobId: 'b1', censorImageBlobId: null as unknown as string }]]),
     );
-    localDecksMocks.getCardImageRow.mockResolvedValue({ blob, created_at: 't', mimeType: undefined });
+    localDecksMocks.getCardImageRow.mockResolvedValue({
+      blob,
+      created_at: 't',
+      mimeType: undefined,
+    });
     vi.spyOn(blob, 'arrayBuffer').mockResolvedValue(bytes.buffer);
 
     const ctx = createCtx({ draggableCards: [draggable()] });
@@ -927,6 +933,8 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
           zIndex: 5,
           anchorCardId: null,
           anchorPosition: 'right',
+          fixedWidth: true,
+          fixedWidthPx: 320,
         },
       ],
     });
@@ -934,6 +942,8 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     await ctx.deserializeState.call(ctx, state);
     expect(ctx.textLabels).toHaveLength(1);
     expect(ctx.textLabels[0]?.cursor).toBe('grab');
+    expect(ctx.textLabels[0]?.fixedWidth).toBe(true);
+    expect(ctx.textLabels[0]?.fixedWidthPx).toBe(320);
     expect(ctx.maxTextZIndex).toBe(5);
   });
 
@@ -988,9 +998,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   });
 
   it('createNewReading save failure after loaded uses default when error missing', async () => {
-    readingsMocks.saveLocalReading.mockResolvedValue(
-      { error: undefined } as unknown as { error: string },
-    );
+    readingsMocks.saveLocalReading.mockResolvedValue({ error: undefined } as unknown as {
+      error: string;
+    });
     const ctx = createCtx({ loadedReadingId: 'r1' });
     const p = ctx.createNewReading.call(ctx);
     await Promise.resolve();
@@ -1018,9 +1028,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   });
 
   it('createNewReading inputText save failure uses fallback when error missing', async () => {
-    readingsMocks.saveLocalReading.mockResolvedValue(
-      { error: undefined } as unknown as { error: string },
-    );
+    readingsMocks.saveLocalReading.mockResolvedValue({ error: undefined } as unknown as {
+      error: string;
+    });
     const ctx = createCtx({ dirty: true, loadedReadingId: null });
     const p = ctx.createNewReading.call(ctx);
     await Promise.resolve();
@@ -1177,9 +1187,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   });
 
   it('saveAndLoad failure uses default message when error missing', async () => {
-    readingsMocks.saveLocalReading.mockResolvedValue(
-      { error: undefined } as unknown as { error: string },
-    );
+    readingsMocks.saveLocalReading.mockResolvedValue({ error: undefined } as unknown as {
+      error: string;
+    });
     const ctx = createCtx({ loadedReadingId: 'cur' });
     await ctx.saveAndLoad.call(ctx, 'other');
     expect((alpineStub.rawStores.dialog as { title: string }).title).toContain(
@@ -1214,9 +1224,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   });
 
   it('handleSaveClick failure uses default message when error missing', async () => {
-    readingsMocks.saveLocalReading.mockResolvedValue(
-      { error: undefined } as unknown as { error: string },
-    );
+    readingsMocks.saveLocalReading.mockResolvedValue({ error: undefined } as unknown as {
+      error: string;
+    });
     const ctx = createCtx({ loadedReadingId: 'r' });
     ctx.handleSaveClick.call(ctx);
     await flushPromises();
@@ -1271,9 +1281,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   });
 
   it('triggerTitleDialog onSubmit failure uses fallback title when error missing', async () => {
-    readingsMocks.saveLocalReading.mockResolvedValue(
-      { error: undefined } as unknown as { error: string },
-    );
+    readingsMocks.saveLocalReading.mockResolvedValue({ error: undefined } as unknown as {
+      error: string;
+    });
     const ctx = createCtx({ saveAndLoadTargetId: 'tgt' });
     ctx.triggerTitleDialog.call(ctx);
     (alpineStub.rawStores.dialog as { onSubmitText: (t: string) => void }).onSubmitText('T');

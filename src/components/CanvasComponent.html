@@ -92,7 +92,8 @@
               <template x-for="label in textLabels" :key="label.id">
                 <div
                   :data-text-id="label.id"
-                  class="absolute select-none will-change-transform origin-top-left cursor-grab border-5 border-transparent hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em] w-max max-w-none whitespace-nowrap overflow-visible"
+                  class="absolute select-none will-change-transform origin-top-left cursor-grab border-5 border-transparent hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em] max-w-none overflow-visible"
+                  :class="label.fixedWidth ? 'whitespace-normal break-words' : 'w-max whitespace-nowrap'"
                   :style="getTextLabelStyle(label)"
                   @dblclick.stop="editingTextId = label.id"
                 >
@@ -144,6 +145,17 @@
                           @input="updateTextLabel(label.id, { color: $event.target.value })"
                           class="w-8 h-8 rounded border border-gray-600 cursor-pointer bg-gray-700"
                         />
+                        <label
+                          class="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            class="rounded border-gray-600 bg-gray-700"
+                            :checked="label.fixedWidth"
+                            @change="setTextLabelFixedWidthToggle(label.id, $event.target.checked)"
+                          />
+                          Fixed width
+                        </label>
                       </div>
                       <input
                         type="text"
@@ -154,6 +166,13 @@
                       />
                     </div>
                   </template>
+                  <div
+                    x-show="label.fixedWidth"
+                    x-cloak
+                    data-text-resize
+                    class="absolute top-0 bottom-0 right-0 w-2 z-20 cursor-ew-resize shrink-0 rounded-sm hover:bg-purple-500/40"
+                    @dblclick.stop
+                  ></div>
                 </div>
               </template>
               <div
