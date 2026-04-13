@@ -354,7 +354,12 @@ describe('decks.ts', () => {
     const cenBlob = new Blob([new Uint8Array([2])]);
     localMocks.getCardImageRow
       .mockResolvedValueOnce({ id: 'blob-main', blob: mainBlob, created_at: 't', title: 'm' })
-      .mockResolvedValueOnce({ id: 'cen-blob', blob: cenBlob, created_at: 't', title: 'censor.png' });
+      .mockResolvedValueOnce({
+        id: 'cen-blob',
+        blob: cenBlob,
+        created_at: 't',
+        title: 'censor.png',
+      });
     localMocks.getCachedObjectUrlForBlobId
       .mockReturnValueOnce(null)
       .mockReturnValueOnce(null)

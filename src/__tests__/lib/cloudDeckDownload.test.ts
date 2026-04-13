@@ -64,10 +64,7 @@ vi.mock('../../lib/localDecks.js', () => ({
 }));
 
 import { publicCardImageUrl } from '../../lib/cardImageUrls.js';
-import {
-  downloadCloudDeckToDevice,
-  downloadFailureMessage,
-} from '../../lib/cloudDeckDownload.js';
+import { downloadCloudDeckToDevice, downloadFailureMessage } from '../../lib/cloudDeckDownload.js';
 
 const deckId = 'catalog-deck-1';
 
@@ -109,15 +106,13 @@ describe('downloadFailureMessage', () => {
       operation: 't',
       message: 'Nothing',
     };
-    expect(
-      downloadFailureMessage({ kind: 'query', failure }),
-    ).toBe('Nothing was found for that request.');
+    expect(downloadFailureMessage({ kind: 'query', failure })).toBe(
+      'Nothing was found for that request.',
+    );
   });
 
   it('returns message for network, empty, and io kinds', () => {
-    expect(
-      downloadFailureMessage({ kind: 'network', message: 'offline' }),
-    ).toBe('offline');
+    expect(downloadFailureMessage({ kind: 'network', message: 'offline' })).toBe('offline');
     expect(downloadFailureMessage({ kind: 'empty', message: 'gone' })).toBe('gone');
     expect(downloadFailureMessage({ kind: 'io', message: 'disk' })).toBe('disk');
   });
@@ -140,11 +135,11 @@ describe('downloadCloudDeckToDevice', () => {
     localMocks.deleteLocalDeck.mockResolvedValue(undefined);
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(() =>
-        Promise.resolve(
-          okResponse(new Blob([new Uint8Array([1, 2])], { type: 'image/webp' })),
+      vi
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(okResponse(new Blob([new Uint8Array([1, 2])], { type: 'image/webp' }))),
         ),
-      ),
     );
   });
 
@@ -154,7 +149,14 @@ describe('downloadCloudDeckToDevice', () => {
 
   it('returns ok immediately when the deck already exists locally', async () => {
     localMocks.listLocalDecks.mockResolvedValue([
-      { id: deckId, title: 'L', description: null, created_at: '', modified_at: '', from_catalog: true },
+      {
+        id: deckId,
+        title: 'L',
+        description: null,
+        created_at: '',
+        modified_at: '',
+        from_catalog: true,
+      },
     ] as never);
     const r = await downloadCloudDeckToDevice(deckId);
     expect(r.ok).toBe(true);
@@ -180,10 +182,11 @@ describe('downloadCloudDeckToDevice', () => {
     supabaseState.deck = { data: null, error: null };
     const r = await downloadCloudDeckToDevice(deckId);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toEqual({
-      kind: 'empty',
-      message: 'Deck not found in catalog.',
-    });
+    if (!r.ok)
+      expect(r.error).toEqual({
+        kind: 'empty',
+        message: 'Deck not found in catalog.',
+      });
   });
 
   it('returns query error when card fetch fails', async () => {
@@ -236,9 +239,7 @@ describe('downloadCloudDeckToDevice', () => {
 
   it('downloads censored card images', async () => {
     supabaseState.card = { data: [cardWithCensor], error: null };
-    localMocks.putCardImage
-      .mockResolvedValueOnce('main-blob')
-      .mockResolvedValueOnce('censor-blob');
+    localMocks.putCardImage.mockResolvedValueOnce('main-blob').mockResolvedValueOnce('censor-blob');
     const r = await downloadCloudDeckToDevice(deckId);
     expect(r.ok).toBe(true);
     expect(publicCardImageUrl).toHaveBeenCalledWith('m17c.webp');

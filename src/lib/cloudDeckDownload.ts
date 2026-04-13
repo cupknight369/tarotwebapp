@@ -61,7 +61,10 @@ export async function downloadCloudDeckToDevice(
     .single();
 
   if (deckError) {
-    return err({ kind: 'query', failure: toQueryFailure(deckError, 'downloadCloudDeckToDevice.deck') });
+    return err({
+      kind: 'query',
+      failure: toQueryFailure(deckError, 'downloadCloudDeckToDevice.deck'),
+    });
   }
   if (!deckData) {
     return err({ kind: 'empty', message: 'Deck not found in catalog.' });
@@ -74,7 +77,10 @@ export async function downloadCloudDeckToDevice(
     .order('number', { ascending: true });
 
   if (cardError) {
-    return err({ kind: 'query', failure: toQueryFailure(cardError, 'downloadCloudDeckToDevice.cards') });
+    return err({
+      kind: 'query',
+      failure: toQueryFailure(cardError, 'downloadCloudDeckToDevice.cards'),
+    });
   }
   if (!cardRows?.length) {
     return err({ kind: 'empty', message: 'No cards in catalog for this deck.' });

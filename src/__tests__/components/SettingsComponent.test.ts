@@ -13,9 +13,9 @@ const backupMocks = vi.hoisted(() => ({
 }));
 
 const alpineBundle = vi.hoisted(() => {
-  const cap = (globalThis as unknown as VitestGlobalWithAlpineDataCapture).__vitestCreateAlpineDataCapture(
-    'settingsComponent',
-  );
+  const cap = (
+    globalThis as unknown as VitestGlobalWithAlpineDataCapture
+  ).__vitestCreateAlpineDataCapture('settingsComponent');
   return {
     cap,
     Alpine: {
@@ -295,12 +295,10 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
   it('startExport runs export, updates progress, and clears timer in finally', async () => {
     vi.useFakeTimers();
     const now = vi.spyOn(Date, 'now').mockReturnValue(1000);
-    backupMocks.exportLocalBackup.mockImplementation(
-      (onProgress?: (p: BackupProgress) => void) => {
-        onProgress?.({ phase: 'p', current: 1, total: 2 });
-        return Promise.resolve({ errors: [] });
-      },
-    );
+    backupMocks.exportLocalBackup.mockImplementation((onProgress?: (p: BackupProgress) => void) => {
+      onProgress?.({ phase: 'p', current: 1, total: 2 });
+      return Promise.resolve({ errors: [] });
+    });
     rawStores.settings = settingsState({ open: false });
     const ctx = mount();
     const p = ctx.startExport.call(ctx);

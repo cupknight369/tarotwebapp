@@ -43,5 +43,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     next(err);
     return;
   }
-  res.status(status).type('text/plain').send(status === 500 ? 'Internal Server Error' : message);
+  res
+    .status(status)
+    .type('text/plain')
+    .send(status === 500 ? 'Internal Server Error' : message);
 };

@@ -8,7 +8,9 @@ import type { DraggableCard, TarotCard, TextLabel } from '../../types/canvas.js'
 import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCapture.js';
 
 const alpineStub = vi.hoisted(() =>
-  (globalThis as unknown as VitestGlobalWithAlpineDataCapture).__vitestCreateAlpineDataCapture('cardComponent'),
+  (globalThis as unknown as VitestGlobalWithAlpineDataCapture).__vitestCreateAlpineDataCapture(
+    'cardComponent',
+  ),
 );
 
 vi.mock('alpinejs', () => ({

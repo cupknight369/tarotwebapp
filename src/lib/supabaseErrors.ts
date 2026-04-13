@@ -62,8 +62,7 @@ export function queryFailureMessage(f: QueryFailure): string {
  * @param e - Thrown value.
  */
 export function exceptionToQueryFailure(operation: string, e: unknown): QueryFailure {
-  const message =
-    e instanceof Error ? e.message : typeof e === 'string' ? e : 'Unexpected error.';
+  const message = e instanceof Error ? e.message : typeof e === 'string' ? e : 'Unexpected error.';
   return {
     kind: 'unknown',
     operation,

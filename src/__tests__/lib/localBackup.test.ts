@@ -42,11 +42,7 @@ vi.mock('../../proto/generated/bundle.js', () => ({
   cktarot: {},
 }));
 
-import {
-  backupFilename,
-  exportLocalBackup,
-  importLocalBackup,
-} from '../../lib/localBackup.js';
+import { backupFilename, exportLocalBackup, importLocalBackup } from '../../lib/localBackup.js';
 
 const deck: LocalDeckRow = {
   id: 'd1',
@@ -169,10 +165,7 @@ describe('localBackup.ts', () => {
 
   it('exportLocalBackup works without onProgress', async () => {
     stubDomDownload();
-    m.idbRequest
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    m.idbRequest.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     m.encodeCktarotBackup.mockResolvedValue(new Uint8Array());
     await expect(exportLocalBackup()).resolves.toEqual({ errors: [] });
   });

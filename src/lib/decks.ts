@@ -109,7 +109,9 @@ export async function listCatalogDeckOffers(): Promise<Result<CatalogDeckOffer[]
  * All IndexedDB decks (no network). Cloud badge uses persisted `from_catalog` only; run
  * {@link listCatalogDeckOffers} in the background to refresh flags after the catalog loads.
  */
-export async function listOnDeviceDeckEntries(): Promise<Result<OnDeviceDeckEntry[], QueryFailure>> {
+export async function listOnDeviceDeckEntries(): Promise<
+  Result<OnDeviceDeckEntry[], QueryFailure>
+> {
   const localRows = await listLocalDecks();
   const entries: OnDeviceDeckEntry[] = localRows.map((d) => ({
     id: d.id,

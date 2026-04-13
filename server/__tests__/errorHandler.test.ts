@@ -42,7 +42,7 @@ describe('asyncHandler', () => {
 
 describe('errorHandler', () => {
   it('sends HttpError status and message', () => {
-    // vi.spyOn(console, 'error').mockImplementation(() => {}) 
+    // vi.spyOn(console, 'error').mockImplementation(() => {})
     // replaces console.error with a no-op for this test so nothing is printed.
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const err = new HttpError('bad request', 400);

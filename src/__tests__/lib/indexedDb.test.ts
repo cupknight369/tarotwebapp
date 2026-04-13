@@ -175,10 +175,7 @@ describe('indexedDb.ts', () => {
   });
 
   it('openTarotDb rejects with fallback Error when open error is null', async () => {
-    vi.stubGlobal(
-      'indexedDB',
-      createFakeIndexedDB({ openFails: true, openError: null }),
-    );
+    vi.stubGlobal('indexedDB', createFakeIndexedDB({ openFails: true, openError: null }));
     const { openTarotDb } = await loadIndexedDbModule();
     await expect(openTarotDb()).rejects.toThrow('indexedDB.open failed');
   });

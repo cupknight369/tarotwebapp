@@ -17,10 +17,10 @@ const ctx = vi.hoisted(() => {
 
   function fakeDb(): IDBDatabase {
     const store = {
-      getAll: vi.fn(() => ({ t: 'storeGetAll' } as IdbPayload)),
-      get: vi.fn((key: string) => ({ t: 'get', key } as IdbPayload)),
-      put: vi.fn(() => ({ t: 'put' } as IdbPayload)),
-      delete: vi.fn((key: string) => ({ t: 'delete', key } as IdbPayload)),
+      getAll: vi.fn(() => ({ t: 'storeGetAll' }) as IdbPayload),
+      get: vi.fn((key: string) => ({ t: 'get', key }) as IdbPayload),
+      put: vi.fn(() => ({ t: 'put' }) as IdbPayload),
+      delete: vi.fn((key: string) => ({ t: 'delete', key }) as IdbPayload),
     };
     return {
       transaction: vi.fn(() => ({
@@ -169,7 +169,7 @@ describe('localReadings.ts', () => {
     await expect(loadLocalReading('e')).resolves.toMatchObject({ name: '' });
   });
 
-  it("loadLocalReading uses default name when row.name is null or undefined", async () => {
+  it('loadLocalReading uses default name when row.name is null or undefined', async () => {
     ctx.idbRequest.mockResolvedValueOnce({
       id: 'a',
       name: null as unknown as string,

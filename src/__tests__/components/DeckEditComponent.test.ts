@@ -362,10 +362,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     setFilesOnInput('deck-edit-add-main', [pngFile('main.png')]);
     setFilesOnInput('deck-edit-add-censor', [new File([], 'empty.png', { type: 'image/png' })]);
 
-    const afterAdd = [
-      tarot({ id: 'new-id', title: 'Added' }),
-      tarot({ id: 'second', title: 'B' }),
-    ];
+    const afterAdd = [tarot({ id: 'new-id', title: 'Added' }), tarot({ id: 'second', title: 'B' })];
     decksMocks.getCardsByDeckId.mockResolvedValue(ok(afterAdd));
 
     try {

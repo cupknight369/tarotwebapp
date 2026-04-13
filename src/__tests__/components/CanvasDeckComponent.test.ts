@@ -222,9 +222,7 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
 
   it('refreshDeckLists loads catalog async and handles catalog failure', async () => {
     const v1 = [onDevice('a', 'A')];
-    deckMocks.listOnDeviceDeckEntries
-      .mockResolvedValueOnce(ok(v1))
-      .mockResolvedValue(ok(v1));
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValueOnce(ok(v1)).mockResolvedValue(ok(v1));
     deckMocks.listCatalogDeckOffers.mockResolvedValueOnce(err(qf));
     const ctx = mountDeck();
     await ctx.refreshDeckLists.call(ctx);

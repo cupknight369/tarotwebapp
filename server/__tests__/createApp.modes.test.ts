@@ -25,7 +25,7 @@ describe('createApp production mode', () => {
     expect(res.text).toContain('fixture');
   });
 
-  // This assertion is loose on purpose: the test is mainly there to exercise 
+  // This assertion is loose on purpose: the test is mainly there to exercise
   // the branch where productionStaticRoot is omitted
   it('falls back to __dirname when productionStaticRoot is omitted', async () => {
     const app = await createApp('production');

@@ -21,11 +21,11 @@ const ctx = vi.hoisted(() => {
           ? ({ t: 'storeGetAll' } as IdbPayload)
           : ({ t: 'indexGetAll', deckId: args[0] as string } as IdbPayload),
       ),
-      get: vi.fn((key: string) => ({ t: 'get', key } as IdbPayload)),
-      put: vi.fn(() => ({ t: 'put' } as IdbPayload)),
-      delete: vi.fn((key: string) => ({ t: 'delete', key } as IdbPayload)),
+      get: vi.fn((key: string) => ({ t: 'get', key }) as IdbPayload),
+      put: vi.fn(() => ({ t: 'put' }) as IdbPayload),
+      delete: vi.fn((key: string) => ({ t: 'delete', key }) as IdbPayload),
       index: vi.fn(() => ({
-        getAll: vi.fn((deckId: string) => ({ t: 'indexGetAll', deckId } as IdbPayload)),
+        getAll: vi.fn((deckId: string) => ({ t: 'indexGetAll', deckId }) as IdbPayload),
       })),
     };
     return {
@@ -327,9 +327,7 @@ describe('localDecks.ts', () => {
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce([other]);
     await LD.deleteLocalCard('c1');
-    const deletes = ctx.idbRequest.mock.calls.filter(
-      (c) => (c[0] as IdbPayload).t === 'delete',
-    );
+    const deletes = ctx.idbRequest.mock.calls.filter((c) => (c[0] as IdbPayload).t === 'delete');
     expect(deletes).toHaveLength(1);
   });
 
@@ -372,9 +370,7 @@ describe('localDecks.ts', () => {
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(undefined);
     await LD.deleteLocalDeck('d1');
-    const deletes = ctx.idbRequest.mock.calls.filter(
-      (c) => (c[0] as IdbPayload).t === 'delete',
-    );
+    const deletes = ctx.idbRequest.mock.calls.filter((c) => (c[0] as IdbPayload).t === 'delete');
     expect(deletes.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -425,9 +421,9 @@ describe('localDecks.ts', () => {
 
   it('updateLocalCard throws when card missing', async () => {
     ctx.idbRequest.mockResolvedValue(undefined);
-    await expect(
-      LD.updateLocalCard({ cardId: 'x', title: 'T', number: 1 }),
-    ).rejects.toThrow('Card not found: x');
+    await expect(LD.updateLocalCard({ cardId: 'x', title: 'T', number: 1 })).rejects.toThrow(
+      'Card not found: x',
+    );
   });
 
   it('updateLocalCard updates title/number only', async () => {

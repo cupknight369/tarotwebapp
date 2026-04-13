@@ -124,10 +124,7 @@ describe('cardImageUrls', () => {
     });
     startCardImagePrefetch();
     await vi.waitFor(() => {
-      expect(logMocks.logDebug).toHaveBeenCalledWith(
-        'startCardImagePrefetch',
-        expect.any(Error),
-      );
+      expect(logMocks.logDebug).toHaveBeenCalledWith('startCardImagePrefetch', expect.any(Error));
     });
     const err = logMocks.logDebug.mock.calls[0]?.[1] as Error;
     expect(err.message).toBe('storage down');

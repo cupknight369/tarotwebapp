@@ -231,9 +231,7 @@ describe('backupCodec.ts', () => {
       bad.version = 999;
       const bytes = new Uint8Array(cktarot.CktarotBackup.encode(bad).finish());
       const { errors } = decodeCktarotBackup(bytes);
-      expect(errors).toEqual([
-        `Unsupported backup version (expected ${BACKUP_VERSION}, got 999).`,
-      ]);
+      expect(errors).toEqual([`Unsupported backup version (expected ${BACKUP_VERSION}, got 999).`]);
     });
 
     it('backupToDecks and backupToReadings use empty arrays when missing', () => {
@@ -355,9 +353,7 @@ describe('backupCodec.ts', () => {
     });
 
     it('uses explicit mimeType and censoredData with default censored mime', async () => {
-      vi.spyOn(globalThis.crypto, 'randomUUID')
-        .mockReturnValueOnce('m1')
-        .mockReturnValueOnce('c1');
+      vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValueOnce('m1').mockReturnValueOnce('c1');
       const errors: string[] = [];
       const c = new cktarot.CardRow();
       c.id = 'c2';
@@ -377,9 +373,7 @@ describe('backupCodec.ts', () => {
     });
 
     it('uses explicit censoredMimeType when set', async () => {
-      vi.spyOn(globalThis.crypto, 'randomUUID')
-        .mockReturnValueOnce('m2')
-        .mockReturnValueOnce('c2');
+      vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValueOnce('m2').mockReturnValueOnce('c2');
       const errors: string[] = [];
       const c = new cktarot.CardRow();
       c.id = 'c3';

@@ -69,9 +69,7 @@ describe('revokeTarotCardBlobUrls', () => {
   it('does not revoke censored blob URL when managed by deck cache', () => {
     const main = 'blob:http://localhost/free';
     const cached = 'blob:http://localhost/cached-cen';
-    localDecksMocks.isBlobUrlManagedByDeckCache.mockImplementation(
-      (u) => u === cached,
-    );
+    localDecksMocks.isBlobUrlManagedByDeckCache.mockImplementation((u) => u === cached);
     revokeTarotCardBlobUrls(tarot({ img: main, censoredImg: cached }));
     expect(revokeSpy).toHaveBeenCalledTimes(1);
     expect(revokeSpy).toHaveBeenCalledWith(main);
