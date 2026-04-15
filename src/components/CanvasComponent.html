@@ -19,6 +19,104 @@
           class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden"
         >
           <div
+            x-cloak
+            x-show="storageWarningVisible"
+            x-transition
+            class="absolute top-3 left-3 z-[10003] max-w-[min(92vw,24rem)] rounded-lg border border-amber-500/80 bg-gray-950/95 p-3 shadow-xl shadow-black/40 backdrop-blur-sm"
+            role="alert"
+            aria-live="polite"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-sm text-amber-100 pr-6 leading-snug">
+                Your browser storage has less than 20% remaining. You should export data in case
+                your browser tries to clear space: this happens automatically when your browser is
+                running out of storage space. You may be able to increase the storage space
+                available by following the suggestions listed in the 'additional info' dialog.
+              </p>
+              <button
+                type="button"
+                class="shrink-0 -mt-1 -mr-1 rounded p-1.5 text-amber-200/90 hover:bg-gray-800 hover:text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                aria-label="Dismiss storage warning"
+                @click="dismissStorageWarning()"
+              >
+                <span class="text-xl leading-none" aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-lg bg-amber-600 text-gray-950 text-sm font-semibold hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+                @click="exportFromStorageWarning()"
+              >
+                Export
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-lg border border-amber-500/60 bg-gray-900/80 text-amber-100 text-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                @click="openStorageAdditionalInfo()"
+              >
+                additional info
+              </button>
+            </div>
+          </div>
+
+          <div
+            x-cloak
+            x-show="storageAdditionalInfoOpen"
+            x-transition
+            class="fixed inset-0 z-[10005] flex items-center justify-center bg-gray-900/85 p-4"
+            @click.self="closeStorageAdditionalInfo()"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="storage-additional-info-title"
+          >
+            <div
+              class="relative max-w-lg w-full rounded-lg border border-gray-600 bg-gray-800 p-5 shadow-xl"
+            >
+              <button
+                type="button"
+                class="absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+                aria-label="Close additional info"
+                @click="closeStorageAdditionalInfo()"
+              >
+                <span class="text-xl leading-none">×</span>
+              </button>
+              <h2
+                id="storage-additional-info-title"
+                class="text-lg font-bold text-gray-100 pr-8 mb-3"
+              >
+                Reducing eviction risk
+              </h2>
+              <ul class="list-disc pl-5 space-y-2 text-sm text-gray-300">
+                <li>
+                  Keep free disk space on your device; browsers may reclaim storage when the system
+                  is low on space.
+                </li>
+                <li>
+                  Avoid relying on private/incognito windows for data you need to keep—site data is
+                  often cleared when those sessions end.
+                </li>
+                <li>
+                  In your browser settings, review site data usage for this site and remove other
+                  large or unused origins if you need more room.
+                </li>
+                <li>
+                  Use this app periodically and export backups regularly so a cleanup does not catch
+                  you without a copy.
+                </li>
+                <li>
+                  Where your browser offers “persistent storage” or similar for this site, enable it
+                  so the browser is less likely to treat your data as disposable.
+                </li>
+              </ul>
+              <p class="mt-4 text-xs text-gray-500">
+                Details vary by browser and device; see your browser’s help for storage and site
+                data.
+              </p>
+            </div>
+          </div>
+
+          <div
             x-show="$store.settings.showDeckTitleOnCanvas && ($store.activeDeckTitle || '').length > 0"
             x-cloak
             class="pointer-events-none absolute bottom-3 left-3 z-[9998] max-w-[min(85vw,22rem)] rounded-lg border border-gray-700/80 bg-gray-900/90 px-3 py-2 shadow-lg backdrop-blur-sm"

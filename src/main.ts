@@ -80,6 +80,7 @@ void (async () => {
   startCardImagePrefetch();
   initSettingsStore();
   Alpine.start();
+  window.dispatchEvent(new CustomEvent('cktarot-check-storage-warning'));
   try {
     await bootstrapDeck();
   } catch (e) {

@@ -78,6 +78,10 @@ export type MergedThis = {
   editingTextId: string | null;
   pendingAnchor: { textId: string; cardId: string; screenX: number; screenY: number } | null;
 
+  storageWarningVisible: boolean;
+  storageAdditionalInfoOpen: boolean;
+  _storageWarningStartupListener: (() => void) | null;
+
   activeTouchId: number | null;
   touchStartPos: { clientX: number; clientY: number; target: EventTarget | null } | null;
   longPressTimerId: ReturnType<typeof setTimeout> | null;
@@ -172,6 +176,12 @@ export type MergedThis = {
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180'): void;
   onContextMenu(event: MouseLikeEvent): void;
   closeContextMenu(): void;
+
+  runStartupStorageWarningCheck(): Promise<void>;
+  dismissStorageWarning(): void;
+  openStorageAdditionalInfo(): void;
+  closeStorageAdditionalInfo(): void;
+  exportFromStorageWarning(): void;
 
   // ScaleComponent props & methods
   scale: number;

@@ -21,7 +21,14 @@ vi.mock('../../lib/cardBlobUrls.js', () => ({
   revokeTarotCardBlobUrls: vi.fn(),
 }));
 
+const openSettingsExportConfirmMock = vi.hoisted(() => vi.fn());
+
+vi.mock('../../lib/openSettingsExportConfirm.js', () => ({
+  openSettingsExportConfirm: openSettingsExportConfirmMock,
+}));
+
 import { revokeTarotCardBlobUrls } from '../../lib/cardBlobUrls.js';
+import { STORAGE_WARNING_DISMISSED_SESSION_KEY } from '../../lib/storageWarning.js';
 import '../../components/CanvasComponent.js';
 
 function makeTouchList(touches: Touch[]): TouchList {
@@ -197,6 +204,9 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
       cardId: null as string | null,
       textId: null as string | null,
     },
+    storageWarningVisible: b.storageWarningVisible,
+    storageAdditionalInfoOpen: b.storageAdditionalInfoOpen,
+    _storageWarningStartupListener: b._storageWarningStartupListener,
     groupDragOffsets: null as MergedThis['groupDragOffsets'],
     updateTextLabel(id: string, props: Partial<TextLabel>) {
       const i = ctx.textLabels.findIndex((l) => l.id === id);
@@ -231,7 +241,13 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
 describe('canvasComponent (CanvasComponent.ts)', () => {
   beforeEach(() => {
     vi.mocked(revokeTarotCardBlobUrls).mockClear();
+    openSettingsExportConfirmMock.mockClear();
     delete (window as unknown as { draggableZoneComponent?: unknown }).draggableZoneComponent;
+    try {
+      sessionStorage.clear();
+    } catch {
+      // ignore
+    }
   });
 
   afterEach(() => {
@@ -412,8 +428,12 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     dc.id = 'draggable-container';
     document.body.append(dc);
     vi.spyOn(document, 'querySelector').mockReturnValue(dc);
+    const winAddSpy = vi.spyOn(window, 'addEventListener');
 
     base.init.call(ctx);
+
+    expect(winAddSpy).toHaveBeenCalledWith('cktarot-check-storage-warning', expect.any(Function));
+    winAddSpy.mockRestore();
 
     spyElementFromPoint(ctx.viewport);
 
@@ -1127,5 +1147,81 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
       target: ctx.viewport!,
     } as MouseLikeEvent);
     expect(ctx.contextMenu.open).toBe(true);
+  });
+
+  it('runStartupStorageWarningCheck shows warning when remaining storage is below 20%', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn().mockResolvedValue({ usage: 85, quota: 100 }),
+      },
+    });
+    const c = mountCanvas();
+    const ctx = createMerged();
+    await c.runStartupStorageWarningCheck.call(ctx);
+    expect(ctx.storageWarningVisible).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('runStartupStorageWarningCheck does not show when at least 20% remains', async () => {
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn().mockResolvedValue({ usage: 80, quota: 100 }),
+      },
+    });
+    const c = mountCanvas();
+    const ctx = createMerged();
+    await c.runStartupStorageWarningCheck.call(ctx);
+    expect(ctx.storageWarningVisible).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
+  it('runStartupStorageWarningCheck no-ops when dismissed this session', async () => {
+    sessionStorage.setItem(STORAGE_WARNING_DISMISSED_SESSION_KEY, '1');
+    const estimate = vi.fn().mockResolvedValue({ usage: 99, quota: 100 });
+    vi.stubGlobal('navigator', {
+      storage: { estimate },
+    });
+    const c = mountCanvas();
+    const ctx = createMerged();
+    await c.runStartupStorageWarningCheck.call(ctx);
+    expect(ctx.storageWarningVisible).toBe(false);
+    expect(estimate).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('runStartupStorageWarningCheck no-ops when storage estimate is unavailable', async () => {
+    vi.stubGlobal('navigator', { storage: {} });
+    const c = mountCanvas();
+    const ctx = createMerged();
+    await c.runStartupStorageWarningCheck.call(ctx);
+    expect(ctx.storageWarningVisible).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
+  it('dismissStorageWarning persists session flag and closes panels', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.storageWarningVisible = true;
+    ctx.storageAdditionalInfoOpen = true;
+    c.dismissStorageWarning.call(ctx);
+    expect(sessionStorage.getItem(STORAGE_WARNING_DISMISSED_SESSION_KEY)).toBe('1');
+    expect(ctx.storageWarningVisible).toBe(false);
+    expect(ctx.storageAdditionalInfoOpen).toBe(false);
+  });
+
+  it('openStorageAdditionalInfo and closeStorageAdditionalInfo toggle modal flag', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    c.openStorageAdditionalInfo.call(ctx);
+    expect(ctx.storageAdditionalInfoOpen).toBe(true);
+    c.closeStorageAdditionalInfo.call(ctx);
+    expect(ctx.storageAdditionalInfoOpen).toBe(false);
+  });
+
+  it('exportFromStorageWarning delegates to openSettingsExportConfirm', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    c.exportFromStorageWarning.call(ctx);
+    expect(openSettingsExportConfirmMock).toHaveBeenCalledTimes(1);
   });
 });

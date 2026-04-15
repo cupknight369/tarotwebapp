@@ -1,6 +1,12 @@
 import { MouseLikeEvent, MergedThis } from '../types/canvas.js';
 import Alpine from 'alpinejs';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
+import { openSettingsExportConfirm } from '../lib/openSettingsExportConfirm.js';
+import {
+  dismissStorageWarningForSession,
+  isRemainingStorageBelowFraction,
+  isStorageWarningDismissedThisSession,
+} from '../lib/storageWarning.js';
 import { clampFixedWidthPx } from '../validation/canvasLabel.js';
 
 Alpine.data('canvasComponent', () => ({
@@ -29,6 +35,11 @@ Alpine.data('canvasComponent', () => ({
     cardId: null as string | null,
     textId: null as string | null,
   },
+
+  /** Low browser storage (IndexedDB / quota) warning banner on the canvas. */
+  storageWarningVisible: false,
+  storageAdditionalInfoOpen: false,
+  _storageWarningStartupListener: null as (() => void) | null,
 
   activeTouchId: null as number | null,
   touchStartPos: null as { clientX: number; clientY: number; target: EventTarget | null } | null,
@@ -267,6 +278,11 @@ Alpine.data('canvasComponent', () => ({
     });
     this.viewport.addEventListener('touchend', (ev: TouchEvent) => this.onTouchEnd(ev));
     this.viewport.addEventListener('touchcancel', (ev: TouchEvent) => this.onTouchCancel(ev));
+
+    this._storageWarningStartupListener = () => {
+      void this.runStartupStorageWarningCheck();
+    };
+    window.addEventListener('cktarot-check-storage-warning', this._storageWarningStartupListener);
   },
 
   onMouseDown(this: MergedThis, event: MouseLikeEvent) {
@@ -618,5 +634,31 @@ Alpine.data('canvasComponent', () => ({
     this.contextMenu.open = false;
     this.contextMenu.cardId = null;
     this.contextMenu.textId = null;
+  },
+
+  async runStartupStorageWarningCheck(this: MergedThis) {
+    if (isStorageWarningDismissedThisSession()) return;
+    const low = await isRemainingStorageBelowFraction(0.2);
+    if (low) {
+      this.storageWarningVisible = true;
+    }
+  },
+
+  dismissStorageWarning(this: MergedThis) {
+    dismissStorageWarningForSession();
+    this.storageWarningVisible = false;
+    this.storageAdditionalInfoOpen = false;
+  },
+
+  openStorageAdditionalInfo(this: MergedThis) {
+    this.storageAdditionalInfoOpen = true;
+  },
+
+  closeStorageAdditionalInfo(this: MergedThis) {
+    this.storageAdditionalInfoOpen = false;
+  },
+
+  exportFromStorageWarning(this: MergedThis) {
+    openSettingsExportConfirm();
   },
 }));
