@@ -177,6 +177,20 @@ export async function deleteLocalCard(cardId: string): Promise<void> {
   await maybeDeleteBlob(row.censorImageBlobId);
 }
 
+/**
+ * Deletes multiple local deck cards. Duplicate ids and blank strings are ignored.
+ *
+ * @param cardIds - Card row ids to remove; each id is passed to {@link deleteLocalCard}.
+ * @returns Resolves when every id has been processed (missing ids are no-ops).
+ */
+export async function deleteLocalCards(cardIds: readonly string[]): Promise<void> {
+  const unique = [...new Set(cardIds.map((id) => id.trim()).filter(Boolean))];
+  if (unique.length === 0) return;
+  for (const id of unique) {
+    await deleteLocalCard(id);
+  }
+}
+
 export async function deleteLocalDeck(deckId: string): Promise<void> {
   const cards = await listLocalCardsByDeckId(deckId);
   for (const c of cards) {

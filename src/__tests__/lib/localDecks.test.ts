@@ -351,6 +351,17 @@ describe('localDecks.ts', () => {
     expect(ctx.idbRequest).toHaveBeenCalled();
   });
 
+  it('deleteLocalCards does nothing when cardIds is empty', async () => {
+    await LD.deleteLocalCards([]);
+    expect(ctx.openTarotDb).not.toHaveBeenCalled();
+  });
+
+  it('deleteLocalCards dedupes ids and skips blank strings', async () => {
+    ctx.idbRequest.mockResolvedValue(undefined);
+    await LD.deleteLocalCards(['a', 'a', 'b', '', '  ', 'b']);
+    expect(ctx.openTarotDb).toHaveBeenCalledTimes(2);
+  });
+
   it('deleteLocalDeck deletes cards then deck', async () => {
     const card: LocalCardRow = {
       id: 'c1',

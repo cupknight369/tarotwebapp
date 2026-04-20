@@ -2,7 +2,12 @@ import Alpine from 'alpinejs';
 import { getCardsByDeckId } from '../lib/decks.js';
 import { logError } from '../lib/logError.js';
 import { queryFailureMessage } from '../lib/supabaseErrors.js';
-import { addCardToLocalDeck, listLocalCardsByDeckId, updateLocalCard } from '../lib/localDecks.js';
+import {
+  addCardToLocalDeck,
+  deleteLocalCards,
+  listLocalCardsByDeckId,
+  updateLocalCard,
+} from '../lib/localDecks.js';
 import type { TarotCard } from '../types/canvas.js';
 import { addLocalCardFormSchema, saveLocalCardFormSchema } from '../validation/decks.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
@@ -37,9 +42,10 @@ Alpine.data('deckEditComponent', () => ({
   loading: false,
   saveError: null as string | null,
   addError: null as string | null,
+  deleteError: null as string | null,
   loadError: null as string | null,
   formMode: 'edit' as FormMode,
-  selectedCardId: null as string | null,
+  selectedCardIds: [] as string[],
   editTitle: '',
   editNumber: 1,
   clearCensor: false,
@@ -76,7 +82,7 @@ Alpine.data('deckEditComponent', () => ({
 
   startAddMode() {
     this.formMode = 'add';
-    this.selectedCardId = null;
+    this.selectedCardIds = [];
     this.addError = null;
     this.newCardTitle = '';
     this.newCardNumber = 1;
@@ -92,7 +98,7 @@ Alpine.data('deckEditComponent', () => ({
       this.selectCard(this.cards[0].id);
     } else {
       this.formMode = 'add';
-      this.selectedCardId = null;
+      this.selectedCardIds = [];
       this.newCardTitle = '';
       this.newCardNumber = 1;
     }
@@ -106,6 +112,7 @@ Alpine.data('deckEditComponent', () => ({
     this.open = true;
     this.saveError = null;
     this.addError = null;
+    this.deleteError = null;
     this.loadError = null;
     this.formMode = 'edit';
     this.loading = true;
@@ -114,7 +121,7 @@ Alpine.data('deckEditComponent', () => ({
       this.localEmpty = localRows.length === 0;
       if (this.localEmpty) {
         this.cards = [];
-        this.selectedCardId = null;
+        this.selectedCardIds = [];
         this.resetForm();
         this.formMode = 'add';
         this.newCardTitle = '';
@@ -127,7 +134,7 @@ Alpine.data('deckEditComponent', () => ({
         logError('deckEdit.onOpen.getCardsByDeckId', cardsRes.error);
         this.loadError = queryFailureMessage(cardsRes.error);
         this.cards = [];
-        this.selectedCardId = null;
+        this.selectedCardIds = [];
         return;
       }
       this.cards = cardsRes.value;
@@ -144,9 +151,10 @@ Alpine.data('deckEditComponent', () => ({
     this.deckTitle = '';
     this.cards = [];
     this.localEmpty = false;
-    this.selectedCardId = null;
+    this.selectedCardIds = [];
     this.saveError = null;
     this.addError = null;
+    this.deleteError = null;
     this.loadError = null;
     this.formMode = 'edit';
     this.newCardTitle = '';
@@ -155,20 +163,111 @@ Alpine.data('deckEditComponent', () => ({
     this.clearAddFileInputs();
   },
 
+  syncEditFormFromSingleSelection() {
+    if (this.selectedCardIds.length !== 1) {
+      this.resetForm();
+      this.clearCensor = false;
+      return;
+    }
+    const id = this.selectedCardIds[0];
+    this.clearCensor = false;
+    this.clearFileInputs();
+    const card = this.cards.find((c) => c.id === id);
+    if (!card) {
+      this.editTitle = '';
+      this.editNumber = 1;
+      return;
+    }
+    this.editTitle = card.title;
+    this.editNumber = card.num;
+  },
+
+  onGridCardClick(id: string, event: MouseEvent) {
+    if (event.shiftKey && this.selectedCardIds.length > 0) {
+      const idx = this.selectedCardIds.indexOf(id);
+      if (idx >= 0) {
+        this.selectedCardIds = this.selectedCardIds.filter((x) => x !== id);
+      } else {
+        this.selectedCardIds = [...this.selectedCardIds, id];
+      }
+      this.formMode = 'edit';
+      this.syncEditFormFromSingleSelection();
+      return;
+    }
+    this.selectCard(id);
+  },
+
   selectCard(id: string | null) {
     if (!id) {
-      this.selectedCardId = null;
+      this.selectedCardIds = [];
       this.resetForm();
       return;
     }
     this.formMode = 'edit';
-    this.selectedCardId = id;
-    this.clearCensor = false;
-    this.clearFileInputs();
-    const card = this.cards.find((c) => c.id === id);
-    if (!card) return;
-    this.editTitle = card.title;
-    this.editNumber = card.num;
+    this.selectedCardIds = [id];
+    this.syncEditFormFromSingleSelection();
+  },
+
+  async confirmAndDeleteSelectedCards() {
+    if (!this.deckId || this.selectedCardIds.length === 0) return;
+    const n = this.selectedCardIds.length;
+    const title =
+      n === 1 ? 'Delete this card from the deck?' : `Delete these ${n} cards from the deck?`;
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'confirm',
+        title,
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        cancelLabelVisible: true,
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+    this.deleteError = null;
+    const deckId = this.deckId;
+    const ids = [...this.selectedCardIds];
+    try {
+      await deleteLocalCards(ids);
+    } catch (e) {
+      this.deleteError = e instanceof Error ? e.message : 'Could not delete card(s)';
+      return;
+    }
+    const cardsRes = await getCardsByDeckId(deckId);
+    if (!cardsRes.ok) {
+      logError('deckEdit.confirmAndDeleteSelectedCards.getCardsByDeckId', cardsRes.error);
+      this.deleteError = queryFailureMessage(cardsRes.error);
+      return;
+    }
+    const localRows = await listLocalCardsByDeckId(deckId);
+    this.localEmpty = localRows.length === 0;
+    if (this.localEmpty) {
+      this.cards = [];
+      this.selectedCardIds = [];
+      this.resetForm();
+      this.formMode = 'add';
+      this.newCardTitle = '';
+      this.newCardNumber = 1;
+      this.clearAddFileInputs();
+    } else {
+      this.cards = cardsRes.value;
+      const remaining = new Set(this.cards.map((c) => c.id));
+      const stillSelected = this.selectedCardIds.filter((x) => remaining.has(x));
+      if (stillSelected.length === 1) {
+        this.selectCard(stillSelected[0]);
+      } else if (stillSelected.length > 1) {
+        this.selectedCardIds = stillSelected;
+        this.syncEditFormFromSingleSelection();
+      } else {
+        this.selectCard(this.cards[0]?.id ?? null);
+      }
+    }
+    const activeId = Alpine.store('activeDeckId') as string;
+    if (activeId === deckId) {
+      Alpine.store('shuffledCards', this.cards);
+    }
   },
 
   async submitAddCard() {
@@ -222,7 +321,13 @@ Alpine.data('deckEditComponent', () => ({
   },
 
   async saveCard() {
-    if (!this.deckId || !this.selectedCardId || this.localEmpty || this.formMode !== 'edit') return;
+    if (
+      !this.deckId ||
+      this.selectedCardIds.length !== 1 ||
+      this.localEmpty ||
+      this.formMode !== 'edit'
+    )
+      return;
     const mainInput = document.getElementById('deck-edit-main') as HTMLInputElement | null;
     const censorInput = document.getElementById('deck-edit-censor') as HTMLInputElement | null;
     const mainFile = mainInput?.files?.[0];
@@ -243,7 +348,7 @@ Alpine.data('deckEditComponent', () => ({
     const censorForUpload = censorFile && censorFile.size > 0 ? censorFile : null;
     try {
       await updateLocalCard({
-        cardId: this.selectedCardId,
+        cardId: this.selectedCardIds[0],
         title,
         number: n,
         mainImageFile: mainForUpload,
@@ -256,7 +361,7 @@ Alpine.data('deckEditComponent', () => ({
     }
     this.clearFileInputs();
     this.clearCensor = false;
-    const sel = this.selectedCardId;
+    const sel = this.selectedCardIds[0];
     const cardsRes = await getCardsByDeckId(this.deckId);
     if (!cardsRes.ok) {
       logError('deckEdit.saveCard.getCardsByDeckId', cardsRes.error);

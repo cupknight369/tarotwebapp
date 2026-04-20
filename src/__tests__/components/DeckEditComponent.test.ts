@@ -22,6 +22,7 @@ const localMocks = vi.hoisted(() => ({
   listLocalCardsByDeckId: vi.fn(),
   addCardToLocalDeck: vi.fn(),
   updateLocalCard: vi.fn(),
+  deleteLocalCards: vi.fn(),
 }));
 
 const alpineCapture = vi.hoisted(() =>
@@ -50,6 +51,7 @@ vi.mock('../../lib/localDecks.js', () => ({
   listLocalCardsByDeckId: localMocks.listLocalCardsByDeckId,
   addCardToLocalDeck: localMocks.addCardToLocalDeck,
   updateLocalCard: localMocks.updateLocalCard,
+  deleteLocalCards: localMocks.deleteLocalCards,
 }));
 
 import '../../components/DeckEditComponent.js';
@@ -100,9 +102,10 @@ type DeckEditCtx = {
   loading: boolean;
   saveError: string | null;
   addError: string | null;
+  deleteError: string | null;
   loadError: string | null;
   formMode: 'edit' | 'add';
-  selectedCardId: string | null;
+  selectedCardIds: string[];
   editTitle: string;
   editNumber: number;
   clearCensor: boolean;
@@ -117,6 +120,9 @@ type DeckEditCtx = {
   onOpen: (detail: { deckId?: string; deckTitle?: string }) => Promise<void>;
   close: () => void;
   selectCard: (id: string | null) => void;
+  onGridCardClick: (id: string, event: MouseEvent) => void;
+  syncEditFormFromSingleSelection: () => void;
+  confirmAndDeleteSelectedCards: () => Promise<void>;
   submitAddCard: () => Promise<void>;
   saveCard: () => Promise<void>;
 };
@@ -139,6 +145,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     decksMocks.getCardsByDeckId.mockResolvedValue(ok([tarot()]));
     localMocks.addCardToLocalDeck.mockResolvedValue({ id: 'new-id' });
     localMocks.updateLocalCard.mockResolvedValue(undefined);
+    localMocks.deleteLocalCards.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -205,14 +212,14 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
   it('startAddMode switches to add and clears add state', () => {
     const ctx = mount();
     ctx.formMode = 'edit';
-    ctx.selectedCardId = 'x';
+    ctx.selectedCardIds = ['x'];
     ctx.addError = 'e';
     ctx.newCardTitle = 'old';
     ctx.newCardNumber = 99;
     setFilesOnInput('deck-edit-add-main', [pngFile('f.png')]);
     ctx.startAddMode.call(ctx);
     expect(ctx.formMode).toBe('add');
-    expect(ctx.selectedCardId).toBeNull();
+    expect(ctx.selectedCardIds).toEqual([]);
     expect(ctx.addError).toBeNull();
     expect(ctx.newCardTitle).toBe('');
     expect(ctx.newCardNumber).toBe(1);
@@ -222,10 +229,10 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     const ctx = mount();
     ctx.cards = [tarot({ id: 'a' }), tarot({ id: 'b', title: 'B', num: 2 })];
     ctx.formMode = 'add';
-    ctx.selectedCardId = null;
+    ctx.selectedCardIds = [];
     ctx.cancelAddMode.call(ctx);
     expect(ctx.formMode).toBe('edit');
-    expect(ctx.selectedCardId).toBe('a');
+    expect(ctx.selectedCardIds).toEqual(['a']);
     expect(ctx.editTitle).toBe('Star');
   });
 
@@ -236,7 +243,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     ctx.newCardTitle = 'x';
     ctx.cancelAddMode.call(ctx);
     expect(ctx.formMode).toBe('add');
-    expect(ctx.selectedCardId).toBeNull();
+    expect(ctx.selectedCardIds).toEqual([]);
     expect(ctx.newCardTitle).toBe('');
   });
 
@@ -281,7 +288,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     const ctx = mount();
     await ctx.onOpen.call(ctx, { deckId: 'd1', deckTitle: 'T' });
     expect(ctx.cards).toHaveLength(1);
-    expect(ctx.selectedCardId).toBe('card-1');
+    expect(ctx.selectedCardIds).toEqual(['card-1']);
     expect(ctx.editTitle).toBe('Star');
     expect(ctx.formMode).toBe('edit');
     expect(ctx.loading).toBe(false);
@@ -297,17 +304,18 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     expect(ctx.open).toBe(false);
     expect(ctx.deckId).toBeNull();
     expect(ctx.cards).toEqual([]);
-    expect(ctx.selectedCardId).toBeNull();
+    expect(ctx.selectedCardIds).toEqual([]);
     expect(ctx.saveError).toBeNull();
+    expect(ctx.deleteError).toBeNull();
     expect(ctx.formMode).toBe('edit');
   });
 
   it('selectCard with null clears selection and resets form', () => {
     const ctx = mount();
-    ctx.selectedCardId = 'x';
+    ctx.selectedCardIds = ['x'];
     ctx.editTitle = 'keep';
     ctx.selectCard.call(ctx, null);
-    expect(ctx.selectedCardId).toBeNull();
+    expect(ctx.selectedCardIds).toEqual([]);
     expect(ctx.editTitle).toBe('');
   });
 
@@ -316,7 +324,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     ctx.cards = [tarot({ id: 'only' })];
     ctx.editTitle = '';
     ctx.selectCard.call(ctx, 'missing');
-    expect(ctx.selectedCardId).toBe('missing');
+    expect(ctx.selectedCardIds).toEqual(['missing']);
     expect(ctx.editTitle).toBe('');
   });
 
@@ -327,6 +335,145 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     expect(ctx.editTitle).toBe('Moon');
     expect(ctx.editNumber).toBe(7);
     expect(ctx.formMode).toBe('edit');
+  });
+
+  it('onGridCardClick with shift adds to selection', () => {
+    const ctx = mount();
+    ctx.cards = [tarot({ id: 'a', title: 'A', num: 1 }), tarot({ id: 'b', title: 'B', num: 2 })];
+    ctx.formMode = 'edit';
+    ctx.selectedCardIds = ['a'];
+    ctx.onGridCardClick.call(ctx, 'b', new MouseEvent('click', { shiftKey: true }));
+    expect(ctx.selectedCardIds).toEqual(['a', 'b']);
+  });
+
+  it('onGridCardClick with shift removes when already selected', () => {
+    const ctx = mount();
+    ctx.cards = [tarot({ id: 'a' }), tarot({ id: 'b' })];
+    ctx.selectedCardIds = ['a', 'b'];
+    ctx.formMode = 'edit';
+    ctx.onGridCardClick.call(ctx, 'a', new MouseEvent('click', { shiftKey: true }));
+    expect(ctx.selectedCardIds).toEqual(['b']);
+  });
+
+  it('onGridCardClick without shift replaces selection', () => {
+    const ctx = mount();
+    ctx.cards = [tarot({ id: 'a' }), tarot({ id: 'b', title: 'B', num: 2 })];
+    ctx.selectedCardIds = ['a'];
+    ctx.formMode = 'edit';
+    ctx.onGridCardClick.call(ctx, 'b', new MouseEvent('click', { shiftKey: false }));
+    expect(ctx.selectedCardIds).toEqual(['b']);
+    expect(ctx.editTitle).toBe('B');
+  });
+
+  it('confirmAndDeleteSelectedCards returns when cancelled', async () => {
+    const ctx = mount();
+    ctx.deckId = 'd1';
+    ctx.selectedCardIds = ['c1'];
+    ctx.cards = [tarot({ id: 'c1' })];
+    const p = ctx.confirmAndDeleteSelectedCards.call(ctx);
+    const dlg = alpineCapture.rawStores.dialog as {
+      open: boolean;
+      onCancel?: () => void;
+    };
+    expect(dlg.open).toBe(true);
+    dlg.onCancel?.();
+    await p;
+    expect(localMocks.deleteLocalCards).not.toHaveBeenCalled();
+  });
+
+  it('confirmAndDeleteSelectedCards deletes and refreshes one card', async () => {
+    const ctx = mount();
+    ctx.deckId = 'd1';
+    ctx.selectedCardIds = ['old'];
+    ctx.cards = [tarot({ id: 'old' }), tarot({ id: 'keep' })];
+    const remaining = [tarot({ id: 'keep' })];
+    decksMocks.getCardsByDeckId.mockResolvedValue(ok(remaining));
+    localMocks.listLocalCardsByDeckId.mockResolvedValue([{ id: 'row' } as never]);
+
+    const p = ctx.confirmAndDeleteSelectedCards.call(ctx);
+    const dlg = alpineCapture.rawStores.dialog as { onConfirm?: () => void };
+    dlg.onConfirm?.();
+    await p;
+
+    expect(localMocks.deleteLocalCards).toHaveBeenCalledWith(['old']);
+    expect(ctx.cards).toEqual(remaining);
+    expect(ctx.selectedCardIds).toEqual(['keep']);
+  });
+
+  it('confirmAndDeleteSelectedCards deletes multiple ids', async () => {
+    const ctx = mount();
+    ctx.deckId = 'd1';
+    ctx.selectedCardIds = ['x', 'y'];
+    ctx.cards = [tarot({ id: 'x' }), tarot({ id: 'y' }), tarot({ id: 'z' })];
+    const remaining = [tarot({ id: 'z' })];
+    decksMocks.getCardsByDeckId.mockResolvedValue(ok(remaining));
+    localMocks.listLocalCardsByDeckId.mockResolvedValue([{ id: 'row' } as never]);
+
+    const p = ctx.confirmAndDeleteSelectedCards.call(ctx);
+    (alpineCapture.rawStores.dialog as { onConfirm?: () => void }).onConfirm?.();
+    await p;
+
+    expect(localMocks.deleteLocalCards).toHaveBeenCalledWith(['x', 'y']);
+    expect(ctx.selectedCardIds).toEqual(['z']);
+  });
+
+  it('confirmAndDeleteSelectedCards updates shuffledCards when active deck matches', async () => {
+    alpineCapture.rawStores.activeDeckId = 'd1';
+    const ctx = mount();
+    ctx.deckId = 'd1';
+    ctx.selectedCardIds = ['old'];
+    ctx.cards = [tarot({ id: 'old' }), tarot({ id: 'keep' })];
+    const remaining = [tarot({ id: 'keep' })];
+    decksMocks.getCardsByDeckId.mockResolvedValue(ok(remaining));
+    localMocks.listLocalCardsByDeckId.mockResolvedValue([{ id: 'row' } as never]);
+
+    const p = ctx.confirmAndDeleteSelectedCards.call(ctx);
+    (alpineCapture.rawStores.dialog as { onConfirm?: () => void }).onConfirm?.();
+    await p;
+
+    expect(alpineCapture.rawStores.shuffledCards).toEqual(remaining);
+  });
+
+  it('confirmAndDeleteSelectedCards sets deleteError when deleteLocalCards throws', async () => {
+    localMocks.deleteLocalCards.mockRejectedValueOnce(new Error('idb'));
+    const ctx = mount();
+    ctx.deckId = 'd1';
+    ctx.selectedCardIds = ['c1'];
+    const p = ctx.confirmAndDeleteSelectedCards.call(ctx);
+    (alpineCapture.rawStores.dialog as { onConfirm?: () => void }).onConfirm?.();
+    await p;
+    expect(ctx.deleteError).toBe('idb');
+    expect(decksMocks.getCardsByDeckId).not.toHaveBeenCalled();
+  });
+
+  it('confirmAndDeleteSelectedCards sets deleteError when refresh fails', async () => {
+    decksMocks.getCardsByDeckId.mockResolvedValue(err(qf));
+    const ctx = mount();
+    ctx.deckId = 'd1';
+    ctx.selectedCardIds = ['c1'];
+    const p = ctx.confirmAndDeleteSelectedCards.call(ctx);
+    (alpineCapture.rawStores.dialog as { onConfirm?: () => void }).onConfirm?.();
+    await p;
+    expect(ctx.deleteError).toBe('query-bad');
+    expect(logMocks.logError).toHaveBeenCalled();
+  });
+
+  it('confirmAndDeleteSelectedCards enters add mode when last local card removed', async () => {
+    const ctx = mount();
+    ctx.deckId = 'd1';
+    ctx.selectedCardIds = ['only'];
+    ctx.cards = [tarot({ id: 'only' })];
+    decksMocks.getCardsByDeckId.mockResolvedValue(ok([]));
+    localMocks.listLocalCardsByDeckId.mockResolvedValue([]);
+
+    const p = ctx.confirmAndDeleteSelectedCards.call(ctx);
+    (alpineCapture.rawStores.dialog as { onConfirm?: () => void }).onConfirm?.();
+    await p;
+
+    expect(ctx.localEmpty).toBe(true);
+    expect(ctx.formMode).toBe('add');
+    expect(ctx.cards).toEqual([]);
+    expect(ctx.selectedCardIds).toEqual([]);
   });
 
   it('submitAddCard returns when deckId missing', async () => {
@@ -378,7 +525,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
       );
       expect(ctx.cards).toEqual(afterAdd);
       expect(ctx.formMode).toBe('edit');
-      expect(ctx.selectedCardId).toBe('new-id');
+      expect(ctx.selectedCardIds).toEqual(['new-id']);
       expect(ctx.addError).toBeNull();
       const shuffled = alpineCapture.rawStores.shuffledCards as TarotCard[];
       expect(shuffled).toHaveLength(2);
@@ -426,13 +573,13 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
   it('saveCard returns when prerequisites missing', async () => {
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = null;
+    ctx.selectedCardIds = [];
     ctx.localEmpty = false;
     ctx.formMode = 'edit';
     await ctx.saveCard.call(ctx);
     expect(localMocks.updateLocalCard).not.toHaveBeenCalled();
 
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.localEmpty = true;
     await ctx.saveCard.call(ctx);
     expect(localMocks.updateLocalCard).not.toHaveBeenCalled();
@@ -441,12 +588,17 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     ctx.formMode = 'add';
     await ctx.saveCard.call(ctx);
     expect(localMocks.updateLocalCard).not.toHaveBeenCalled();
+
+    ctx.formMode = 'edit';
+    ctx.selectedCardIds = ['a', 'b'];
+    await ctx.saveCard.call(ctx);
+    expect(localMocks.updateLocalCard).not.toHaveBeenCalled();
   });
 
   it('saveCard sets saveError on validation failure', async () => {
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.localEmpty = false;
     ctx.formMode = 'edit';
     ctx.editTitle = '   ';
@@ -458,7 +610,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
   it('saveCard calls updateLocalCard and refreshes on success', async () => {
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.editTitle = 'Renamed';
     ctx.editNumber = 4;
     ctx.clearCensor = false;
@@ -484,7 +636,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
   it('saveCard passes censor clear and null censor file when clearCensor', async () => {
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.editTitle = 'T';
     ctx.editNumber = 1;
     ctx.clearCensor = true;
@@ -503,7 +655,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     localMocks.updateLocalCard.mockRejectedValue(new Error('disk full'));
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.editTitle = 'T';
     ctx.editNumber = 1;
     await ctx.saveCard.call(ctx);
@@ -513,7 +665,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
   it('saveCard sets saveError when refresh fails after successful save', async () => {
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.editTitle = 'T';
     ctx.editNumber = 1;
     decksMocks.getCardsByDeckId.mockResolvedValue(err(qf));
@@ -526,7 +678,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     localMocks.updateLocalCard.mockRejectedValue(404);
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.editTitle = 'T';
     ctx.editNumber = 1;
     await ctx.saveCard.call(ctx);
@@ -555,7 +707,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     alpineCapture.rawStores.shuffledCards = [tarot({ id: 'keep' })];
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.editTitle = 'T';
     ctx.editNumber = 1;
     decksMocks.getCardsByDeckId.mockResolvedValue(ok([tarot({ id: 'c1' })]));
@@ -570,7 +722,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     const ctx = mount();
     await ctx.onOpen.call(ctx, { deckId: 'd1' });
     expect(ctx.cards).toEqual([]);
-    expect(ctx.selectedCardId).toBeNull();
+    expect(ctx.selectedCardIds).toEqual([]);
     expect(ctx.loading).toBe(false);
   });
 
@@ -612,7 +764,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     setFilesOnInput('deck-edit-censor', [cenF]);
     const ctx = mount();
     ctx.deckId = 'd1';
-    ctx.selectedCardId = 'c1';
+    ctx.selectedCardIds = ['c1'];
     ctx.editTitle = 'T';
     ctx.editNumber = 1;
     ctx.clearCensor = false;

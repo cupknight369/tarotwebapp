@@ -34,9 +34,17 @@
           >
             Add card
           </button>
+          <button
+            type="button"
+            class="rounded bg-gray-700 px-2 py-1 text-xs text-red-300 hover:bg-gray-600 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="selectedCardIds.length === 0"
+            @click="confirmAndDeleteSelectedCards()"
+            x-text="selectedCardIds.length > 1 ? 'Delete cards' : 'Delete card'"
+          ></button>
         </div>
         <p class="mt-3 text-sm text-gray-400" x-show="loading">Loading…</p>
         <p class="mt-3 text-sm text-red-400" x-show="loadError" x-text="loadError"></p>
+        <p class="mt-3 text-sm text-red-400" x-show="deleteError" x-text="deleteError"></p>
         <p class="mt-3 text-sm text-amber-400/90" x-show="open && !loading && localEmpty">
           No cards on this device for this deck yet. Use the form on the right to add a card.
         </p>
@@ -48,8 +56,8 @@
             <button
               type="button"
               class="flex flex-col items-stretch rounded-lg border-2 p-2 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-              :class="selectedCardId === c.id && formMode === 'edit' ? 'border-purple-500 bg-gray-700/80' : 'border-gray-600 bg-gray-700/40 hover:border-gray-500'"
-              @click="selectCard(c.id)"
+              :class="selectedCardIds.includes(c.id) && formMode === 'edit' ? 'border-purple-500 bg-gray-700/80' : 'border-gray-600 bg-gray-700/40 hover:border-gray-500'"
+              @click="onGridCardClick(c.id, $event)"
             >
               <img
                 :src="c.img"
@@ -78,12 +86,20 @@
         class="flex w-full shrink-0 flex-col border-gray-700 p-4 pt-12 md:w-[min(100%,22rem)] md:border-l md:pt-4"
       >
         <p class="text-sm font-medium text-gray-300" x-show="formMode === 'add'">Add card</p>
-        <p class="text-sm font-medium text-gray-300" x-show="formMode === 'edit' && selectedCardId">
+        <p
+          class="text-sm font-medium text-gray-300"
+          x-show="formMode === 'edit' && selectedCardIds.length === 1"
+        >
           Edit card
         </p>
         <p
           class="text-sm font-medium text-gray-300"
-          x-show="formMode === 'edit' && !selectedCardId && !localEmpty"
+          x-show="formMode === 'edit' && selectedCardIds.length > 1"
+          x-text="selectedCardIds.length + ' cards selected'"
+        ></p>
+        <p
+          class="text-sm font-medium text-gray-300"
+          x-show="formMode === 'edit' && selectedCardIds.length === 0 && !localEmpty"
         >
           Card
         </p>
@@ -152,7 +168,10 @@
           </div>
         </div>
 
-        <div x-show="formMode === 'edit' && selectedCardId" class="mt-4 flex flex-col gap-3">
+        <div
+          x-show="formMode === 'edit' && selectedCardIds.length === 1"
+          class="mt-4 flex flex-col gap-3"
+        >
           <div>
             <label class="block text-xs text-gray-400">Title</label>
             <input
@@ -218,7 +237,7 @@
 
         <p
           class="mt-4 text-sm text-gray-500"
-          x-show="!loading && formMode === 'edit' && !selectedCardId && !localEmpty"
+          x-show="!loading && formMode === 'edit' && selectedCardIds.length === 0 && !localEmpty"
         >
           Select a card in the grid, or use Add card to create one.
         </p>
