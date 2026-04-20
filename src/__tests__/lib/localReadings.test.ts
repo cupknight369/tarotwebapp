@@ -47,6 +47,7 @@ import {
   deleteLocalReading,
   listLocalReadings,
   loadLocalReading,
+  renameLocalReading,
   saveLocalReading,
 } from '../../lib/localReadings.js';
 
@@ -268,6 +269,49 @@ describe('localReadings.ts', () => {
     ctx.idbRequest.mockRejectedValue('x');
     const r = await saveLocalReading(emptyState, 'x');
     expect(r).toEqual({ error: 'Failed to save locally' });
+  });
+
+  it('renameLocalReading rejects empty and whitespace-only names', async () => {
+    await expect(renameLocalReading('a', '')).resolves.toEqual({ error: 'Title cannot be empty' });
+    await expect(renameLocalReading('a', '   ')).resolves.toEqual({
+      error: 'Title cannot be empty',
+    });
+    expect(ctx.idbRequest).not.toHaveBeenCalled();
+  });
+
+  it('renameLocalReading returns error when reading is missing', async () => {
+    ctx.idbRequest.mockResolvedValueOnce(undefined);
+    await expect(renameLocalReading('missing', 'Hi')).resolves.toEqual({
+      error: 'Reading not found',
+    });
+    expect(ctx.idbRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it('renameLocalReading trims name, preserves state, updates updated_at', async () => {
+    const existing: LocalReadingRow = {
+      id: 'rid',
+      name: 'Old',
+      state: new Uint8Array([1, 2, 3]),
+      updated_at: '2020-01-01T00:00:00.000Z',
+    };
+    ctx.idbRequest.mockResolvedValueOnce(existing).mockResolvedValueOnce(undefined);
+    await expect(renameLocalReading('rid', '  New  ')).resolves.toEqual({
+      updated_at: '2024-03-15T10:00:00.000Z',
+    });
+    expect(ctx.encodeSavedReadingState).not.toHaveBeenCalled();
+    expect(ctx.decodeSavedReadingState).not.toHaveBeenCalled();
+    expect(ctx.idbRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('renameLocalReading returns error when idb throws', async () => {
+    const existing: LocalReadingRow = {
+      id: 'r',
+      name: 'O',
+      state: new Uint8Array(),
+      updated_at: 'u',
+    };
+    ctx.idbRequest.mockResolvedValueOnce(existing).mockRejectedValueOnce(new Error('put fail'));
+    await expect(renameLocalReading('r', 'X')).resolves.toEqual({ error: 'put fail' });
   });
 
   it('deleteLocalReading deletes by id', async () => {

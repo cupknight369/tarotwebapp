@@ -26,6 +26,8 @@ Alpine.data('stateComponent', () => ({
   loadedReadingId: null as string | null,
   loadModalOpen: false,
   loadModalConfirmingForId: null as string | null,
+  loadModalEditingReadingId: null as string | null,
+  loadModalEditingTitle: '',
   localSavedReadings: [] as { id: string; name: string; updated_at: string }[],
   saveAndLoadTargetId: null as string | null,
   readingSaveFlashVisible: false,
@@ -336,15 +338,19 @@ Alpine.data('stateComponent', () => ({
     this.loadedReadingId = id;
   },
 
-  async openLoadModal(): Promise<void> {
+  async openLoadModal(this: MergedThis): Promise<void> {
+    this.loadModalEditingReadingId = null;
+    this.loadModalEditingTitle = '';
     this.loadModalOpen = true;
     this.loadModalConfirmingForId = null;
     this.localSavedReadings = await localReadingsLib.listLocalReadings();
   },
 
-  closeLoadModal(): void {
+  closeLoadModal(this: MergedThis): void {
     this.loadModalOpen = false;
     this.loadModalConfirmingForId = null;
+    this.loadModalEditingReadingId = null;
+    this.loadModalEditingTitle = '';
   },
 
   async onSelectReadingToLoad(this: MergedThis, id: string): Promise<void> {
@@ -424,8 +430,42 @@ Alpine.data('stateComponent', () => ({
     this.closeLoadModal();
   },
 
-  cancelLoadConfirm(): void {
+  cancelLoadConfirm(this: MergedThis): void {
     this.loadModalConfirmingForId = null;
+    this.loadModalEditingReadingId = null;
+    this.loadModalEditingTitle = '';
+  },
+
+  startLoadModalTitleEdit(this: MergedThis, reading: { id: string; name: string }): void {
+    this.loadModalEditingReadingId = reading.id;
+    this.loadModalEditingTitle = reading.name ?? '';
+  },
+
+  async commitLoadModalTitleEdit(this: MergedThis): Promise<void> {
+    const id = this.loadModalEditingReadingId;
+    if (!id) return;
+    const trimmed = this.loadModalEditingTitle.trim();
+    if (trimmed.length === 0) return;
+    const result = await localReadingsLib.renameLocalReading(id, trimmed);
+    if ('error' in result) {
+      openSaveFailureDialog(result.error);
+      return;
+    }
+    const idx = this.localSavedReadings.findIndex((x) => x.id === id);
+    if (idx !== -1) {
+      this.localSavedReadings[idx] = {
+        ...this.localSavedReadings[idx],
+        name: trimmed,
+        updated_at: result.updated_at,
+      };
+    }
+    this.loadModalEditingReadingId = null;
+    this.loadModalEditingTitle = '';
+  },
+
+  cancelLoadModalTitleEdit(this: MergedThis): void {
+    this.loadModalEditingReadingId = null;
+    this.loadModalEditingTitle = '';
   },
 
   async deleteReading(this: MergedThis, id: string): Promise<void> {
@@ -443,6 +483,10 @@ Alpine.data('stateComponent', () => ({
     if (!confirmed) return;
     await localReadingsLib.deleteLocalReading(id);
     this.localSavedReadings = this.localSavedReadings.filter((r) => r.id !== id);
+    if (this.loadModalEditingReadingId === id) {
+      this.loadModalEditingReadingId = null;
+      this.loadModalEditingTitle = '';
+    }
     if (this.loadedReadingId === id) {
       this.loadedReadingId = null;
     }

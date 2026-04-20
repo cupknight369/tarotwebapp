@@ -65,6 +65,44 @@ export async function saveLocalReading(
   }
 }
 
+/**
+ * Renames a saved reading without re-encoding canvas state.
+ *
+ * @param id - Reading id in IndexedDB.
+ * @param name - New title; leading/trailing whitespace is trimmed. Must be non-empty after trim.
+ * @returns The new `updated_at` timestamp on success.
+ */
+export async function renameLocalReading(
+  id: string,
+  name: string,
+): Promise<{ updated_at: string } | { error: string }> {
+  const trimmed = name.trim();
+  if (trimmed.length === 0) {
+    return { error: 'Title cannot be empty' };
+  }
+  try {
+    const db = await openTarotDb();
+    const rtx = db.transaction(STORE_READINGS, 'readonly');
+    const row = (await idbRequest(rtx.objectStore(STORE_READINGS).get(id))) as
+      | LocalReadingRow
+      | undefined;
+    if (!row) {
+      return { error: 'Reading not found' };
+    }
+    const now = new Date().toISOString();
+    const updated: LocalReadingRow = {
+      ...row,
+      name: trimmed,
+      updated_at: now,
+    };
+    const wtx = db.transaction(STORE_READINGS, 'readwrite');
+    await idbRequest(wtx.objectStore(STORE_READINGS).put(updated));
+    return { updated_at: now };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Failed to rename reading' };
+  }
+}
+
 export async function deleteLocalReading(id: string): Promise<{ error?: string }> {
   const db = await openTarotDb();
   const tx = db.transaction(STORE_READINGS, 'readwrite');

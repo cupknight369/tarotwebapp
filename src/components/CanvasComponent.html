@@ -712,21 +712,59 @@
                   <template x-for="r in localSavedReadings" :key="r.id">
                     <div
                       class="flex items-center justify-between gap-2 py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700"
+                      @click.outside="loadModalEditingReadingId === r.id && cancelLoadModalTitleEdit()"
                     >
+                      <div class="flex flex-1 min-w-0 items-center gap-1">
+                        <template x-if="loadModalEditingReadingId !== r.id">
+                          <div class="flex flex-1 min-w-0 items-center gap-1">
+                            <button
+                              type="button"
+                              class="flex-1 min-w-0 text-left text-gray-200 hover:text-white cursor-pointer"
+                              @click="onSelectReadingToLoad(r.id)"
+                            >
+                              <span x-text="r.name || 'Untitled Reading'"></span>
+                              <span
+                                class="text-sm text-gray-400 ml-2"
+                                x-text="new Date(r.updated_at).toLocaleDateString()"
+                              ></span>
+                            </button>
+                            <button
+                              type="button"
+                              class="shrink-0 px-2 py-1 rounded text-gray-400 hover:text-white hover:bg-gray-600 cursor-pointer"
+                              aria-label="Edit title"
+                              title="Edit title"
+                              @click.stop="startLoadModalTitleEdit(r)"
+                            >
+                              ✏
+                            </button>
+                          </div>
+                        </template>
+                        <template x-if="loadModalEditingReadingId === r.id">
+                          <div class="flex flex-1 min-w-0 items-center gap-2">
+                            <input
+                              type="text"
+                              x-ref="loadModalTitleInput"
+                              x-model="loadModalEditingTitle"
+                              x-init="$nextTick(() => $el.focus())"
+                              class="flex-1 min-w-0 px-2 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200 text-sm"
+                              @keydown.enter.prevent="commitLoadModalTitleEdit()"
+                              @keydown.escape.prevent="cancelLoadModalTitleEdit()"
+                            />
+                            <button
+                              type="button"
+                              class="shrink-0 px-2 py-1 rounded text-green-400 hover:bg-gray-600 cursor-pointer"
+                              aria-label="Save title"
+                              title="Save title"
+                              @click.stop="commitLoadModalTitleEdit()"
+                            >
+                              ✓
+                            </button>
+                          </div>
+                        </template>
+                      </div>
                       <button
                         type="button"
-                        class="flex-1 text-left text-gray-200 hover:text-white cursor-pointer"
-                        @click="onSelectReadingToLoad(r.id)"
-                      >
-                        <span x-text="r.name || 'Untitled Reading'"></span>
-                        <span
-                          class="text-sm text-gray-400 ml-2"
-                          x-text="new Date(r.updated_at).toLocaleDateString()"
-                        ></span>
-                      </button>
-                      <button
-                        type="button"
-                        class="px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
+                        class="shrink-0 px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
                         @click.stop="deleteReading(r.id)"
                         title="Delete"
                       >

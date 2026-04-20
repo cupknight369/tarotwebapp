@@ -35,6 +35,8 @@ export type MergedThis = {
   dirty: boolean;
   loadModalOpen: boolean;
   loadModalConfirmingForId: string | null;
+  loadModalEditingReadingId: string | null;
+  loadModalEditingTitle: string;
   localSavedReadings: { id: string; name: string; updated_at: string }[];
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
@@ -148,6 +150,9 @@ export type MergedThis = {
   triggerTitleDialog(): void;
   discardAndLoad(id: string): Promise<void>;
   cancelLoadConfirm(): void;
+  startLoadModalTitleEdit(reading: { id: string; name: string; updated_at: string }): void;
+  commitLoadModalTitleEdit(): Promise<void>;
+  cancelLoadModalTitleEdit(): void;
   deleteReading(id: string): Promise<void>;
   addCardToCanvas(card: TarotCard): void;
   generateCardId(): string;

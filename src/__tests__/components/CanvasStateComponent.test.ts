@@ -15,6 +15,7 @@ const readingsMocks = vi.hoisted(() => ({
   saveLocalReading: vi.fn(),
   loadLocalReading: vi.fn(),
   listLocalReadings: vi.fn(),
+  renameLocalReading: vi.fn(),
   deleteLocalReading: vi.fn(),
 }));
 
@@ -46,6 +47,7 @@ vi.mock('../../lib/localReadings.js', () => ({
   saveLocalReading: readingsMocks.saveLocalReading,
   loadLocalReading: readingsMocks.loadLocalReading,
   listLocalReadings: readingsMocks.listLocalReadings,
+  renameLocalReading: readingsMocks.renameLocalReading,
   deleteLocalReading: readingsMocks.deleteLocalReading,
 }));
 
@@ -132,6 +134,8 @@ type StateCtx = {
   loadedReadingId: string | null;
   loadModalOpen: boolean;
   loadModalConfirmingForId: string | null;
+  loadModalEditingReadingId: string | null;
+  loadModalEditingTitle: string;
   localSavedReadings: { id: string; name: string; updated_at: string }[];
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
@@ -161,7 +165,12 @@ type StateCtx = {
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
+  startLoadModalTitleEdit: (reading: { id: string; name: string; updated_at: string }) => void;
+  commitLoadModalTitleEdit: () => Promise<void>;
+  cancelLoadModalTitleEdit: () => void;
   deleteReading: (id: string) => Promise<void>;
+  $nextTick: (cb?: () => void) => void;
+  $refs: Record<string, HTMLElement>;
 };
 
 function mountFactory(): Omit<
@@ -200,6 +209,10 @@ function createCtx(overrides: Partial<StateCtx> = {}): StateCtx {
     editingTextId: null,
     shuffleDeck: vi.fn(),
     clearCanvas: vi.fn(),
+    $nextTick: (cb?: () => void) => {
+      cb?.();
+    },
+    $refs: {},
     ...overrides,
   };
 }
@@ -228,6 +241,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     readingsMocks.saveLocalReading.mockResolvedValue({ id: 'saved-id' });
     readingsMocks.loadLocalReading.mockResolvedValue(null);
     readingsMocks.listLocalReadings.mockResolvedValue([]);
+    readingsMocks.renameLocalReading.mockResolvedValue({ updated_at: '2024-03-15T10:00:00.000Z' });
     readingsMocks.deleteLocalReading.mockResolvedValue({});
     createObjectURLSpy = vi.fn(() => 'blob:unit-test');
     vi.stubGlobal('URL', {
@@ -1137,10 +1151,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
 
   it('openLoadModal and closeLoadModal manage flags', async () => {
     readingsMocks.listLocalReadings.mockResolvedValue([{ id: '1', name: 'A', updated_at: 't' }]);
-    const ctx = createCtx();
+    const ctx = createCtx({
+      loadModalEditingReadingId: 'stale',
+      loadModalEditingTitle: 'draft',
+    });
     await ctx.openLoadModal.call(ctx);
     expect(ctx.loadModalOpen).toBe(true);
     expect(ctx.localSavedReadings).toHaveLength(1);
+    expect(ctx.loadModalEditingReadingId).toBeNull();
+    expect(ctx.loadModalEditingTitle).toBe('');
     ctx.closeLoadModal.call(ctx);
     expect(ctx.loadModalOpen).toBe(false);
     expect(ctx.loadModalConfirmingForId).toBeNull();
@@ -1311,10 +1330,81 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     expect(ctx.loadModalOpen).toBe(false);
   });
 
-  it('cancelLoadConfirm clears confirming id', () => {
-    const ctx = createCtx({ loadModalConfirmingForId: 'q' });
+  it('cancelLoadConfirm clears confirming id and title edit state', () => {
+    const ctx = createCtx({
+      loadModalConfirmingForId: 'q',
+      loadModalEditingReadingId: 'e',
+      loadModalEditingTitle: 'x',
+    });
     ctx.cancelLoadConfirm.call(ctx);
     expect(ctx.loadModalConfirmingForId).toBeNull();
+    expect(ctx.loadModalEditingReadingId).toBeNull();
+    expect(ctx.loadModalEditingTitle).toBe('');
+  });
+
+  it('commitLoadModalTitleEdit does not call rename when trimmed title is empty', async () => {
+    const ctx = createCtx({
+      loadModalEditingReadingId: '1',
+      loadModalEditingTitle: '   ',
+      localSavedReadings: [{ id: '1', name: 'A', updated_at: 't' }],
+    });
+    await ctx.commitLoadModalTitleEdit.call(ctx);
+    expect(readingsMocks.renameLocalReading).not.toHaveBeenCalled();
+  });
+
+  it('commitLoadModalTitleEdit updates list and clears editing on success', async () => {
+    readingsMocks.renameLocalReading.mockResolvedValue({ updated_at: 'new-ts' });
+    const ctx = createCtx({
+      loadModalEditingReadingId: '1',
+      loadModalEditingTitle: '  Hi  ',
+      localSavedReadings: [{ id: '1', name: 'A', updated_at: 'old' }],
+    });
+    await ctx.commitLoadModalTitleEdit.call(ctx);
+    expect(readingsMocks.renameLocalReading).toHaveBeenCalledWith('1', 'Hi');
+    expect(ctx.localSavedReadings[0]).toEqual({ id: '1', name: 'Hi', updated_at: 'new-ts' });
+    expect(ctx.loadModalEditingReadingId).toBeNull();
+    expect(ctx.loadModalEditingTitle).toBe('');
+  });
+
+  it('commitLoadModalTitleEdit opens failure dialog when rename fails', async () => {
+    readingsMocks.renameLocalReading.mockResolvedValue({ error: 'eek' });
+    const ctx = createCtx({
+      loadModalEditingReadingId: '1',
+      loadModalEditingTitle: 'Ok',
+      localSavedReadings: [{ id: '1', name: 'A', updated_at: 't' }],
+    });
+    await ctx.commitLoadModalTitleEdit.call(ctx);
+    expect((alpineStub.rawStores.dialog as { title: string }).title).toContain('eek');
+    expect(ctx.loadModalEditingReadingId).toBe('1');
+  });
+
+  it('cancelLoadModalTitleEdit clears editing without renaming', () => {
+    const ctx = createCtx({
+      loadModalEditingReadingId: '1',
+      loadModalEditingTitle: 'x',
+    });
+    ctx.cancelLoadModalTitleEdit.call(ctx);
+    expect(readingsMocks.renameLocalReading).not.toHaveBeenCalled();
+    expect(ctx.loadModalEditingReadingId).toBeNull();
+    expect(ctx.loadModalEditingTitle).toBe('');
+  });
+
+  it('startLoadModalTitleEdit sets draft title state', () => {
+    const ctx = createCtx();
+    ctx.startLoadModalTitleEdit.call(ctx, { id: 'a', name: 'N', updated_at: 'u' });
+    expect(ctx.loadModalEditingReadingId).toBe('a');
+    expect(ctx.loadModalEditingTitle).toBe('N');
+  });
+
+  it('closeLoadModal clears title edit state', () => {
+    const ctx = createCtx({
+      loadModalOpen: true,
+      loadModalEditingReadingId: '1',
+      loadModalEditingTitle: 'draft',
+    });
+    ctx.closeLoadModal.call(ctx);
+    expect(ctx.loadModalEditingReadingId).toBeNull();
+    expect(ctx.loadModalEditingTitle).toBe('');
   });
 
   it('deleteReading aborts when user cancels', async () => {
@@ -1357,6 +1447,20 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     await p;
     expect(ctx.loadedReadingId).toBe('a');
     expect(ctx.localSavedReadings).toEqual([{ id: 'a', name: 'A', updated_at: 't' }]);
+  });
+
+  it('deleteReading clears title edit state when deleting the edited reading', async () => {
+    const ctx = createCtx({
+      localSavedReadings: [{ id: 'a', name: 'A', updated_at: 't' }],
+      loadModalEditingReadingId: 'a',
+      loadModalEditingTitle: 'edit',
+    });
+    const p = ctx.deleteReading.call(ctx, 'a');
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(ctx.loadModalEditingReadingId).toBeNull();
+    expect(ctx.loadModalEditingTitle).toBe('');
   });
 });
 
