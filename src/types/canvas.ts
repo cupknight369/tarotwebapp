@@ -71,6 +71,15 @@ export type MergedThis = {
     textId: string | null;
   };
 
+  drawByName: {
+    screenX: number;
+    screenY: number;
+    query: string;
+    highlightIndex: number;
+  } | null;
+  /** Top title matches for the draw-by-name picker (derived from store + query). */
+  drawByNameMatches(): TarotCard[];
+
   textLabels: TextLabel[];
   maxTextZIndex: number;
   draggingTextId: string | null;
@@ -181,6 +190,12 @@ export type MergedThis = {
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180'): void;
   onContextMenu(event: MouseLikeEvent): void;
   closeContextMenu(): void;
+  openDrawByNameFromContextMenu(): void;
+  onDrawByNameQueryInput(value: string): void;
+  moveDrawByNameHighlight(delta: 1 | -1): void;
+  onDrawByNameKeydown(event: KeyboardEvent): void;
+  confirmDrawByNameSelection(card?: TarotCard): void;
+  cancelDrawByName(): void;
 
   runStartupStorageWarningCheck(): Promise<void>;
   dismissStorageWarning(): void;

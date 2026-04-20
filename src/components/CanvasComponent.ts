@@ -1,6 +1,7 @@
-import { MouseLikeEvent, MergedThis } from '../types/canvas.js';
+import { MouseLikeEvent, MergedThis, TarotCard } from '../types/canvas.js';
 import Alpine from 'alpinejs';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
+import { searchDeckCardsByTitle } from '../lib/searchDeckCardsByTitle.js';
 import { openSettingsExportConfirm } from '../lib/openSettingsExportConfirm.js';
 import {
   dismissStorageWarningForSession,
@@ -34,6 +35,23 @@ Alpine.data('canvasComponent', () => ({
     y: 0,
     cardId: null as string | null,
     textId: null as string | null,
+  },
+
+  drawByName: null as null | {
+    screenX: number;
+    screenY: number;
+    query: string;
+    highlightIndex: number;
+  },
+
+  drawByNameMatches(this: MergedThis): TarotCard[] {
+    if (!this.drawByName) {
+      return [];
+    }
+    return searchDeckCardsByTitle(
+      Alpine.store('shuffledCards') as TarotCard[],
+      this.drawByName.query,
+    );
   },
 
   /** Low browser storage (IndexedDB / quota) warning banner on the canvas. */
@@ -555,6 +573,7 @@ Alpine.data('canvasComponent', () => ({
     this.textResizeStart = null;
     this.editingTextId = null;
     this.pendingAnchor = null;
+    this.drawByName = null;
     this.dirty = true;
     this.scale = 1;
 
@@ -634,6 +653,107 @@ Alpine.data('canvasComponent', () => ({
     this.contextMenu.open = false;
     this.contextMenu.cardId = null;
     this.contextMenu.textId = null;
+  },
+
+  openDrawByNameFromContextMenu(this: MergedThis) {
+    const { x, y } = this.contextMenu;
+    this.drawByName = {
+      screenX: x,
+      screenY: y,
+      query: '',
+      highlightIndex: 0,
+    };
+    this.closeContextMenu();
+    this.$nextTick(() => {
+      const el = this.$refs.drawByNameInput as HTMLInputElement | undefined;
+      el?.focus();
+    });
+  },
+
+  onDrawByNameQueryInput(this: MergedThis, value: string) {
+    if (!this.drawByName) {
+      return;
+    }
+    const matches = searchDeckCardsByTitle(Alpine.store('shuffledCards') as TarotCard[], value);
+    let highlightIndex = this.drawByName.highlightIndex;
+    if (matches.length === 0) {
+      highlightIndex = 0;
+    } else {
+      const maxIdx = Math.min(matches.length - 1, 2);
+      highlightIndex = Math.min(highlightIndex, maxIdx);
+    }
+    this.drawByName = {
+      ...this.drawByName,
+      query: value,
+      highlightIndex,
+    };
+  },
+
+  moveDrawByNameHighlight(this: MergedThis, delta: 1 | -1) {
+    if (!this.drawByName) {
+      return;
+    }
+    const matches = this.drawByNameMatches();
+    const n = matches.length;
+    if (n === 0) {
+      return;
+    }
+    const idx = (this.drawByName.highlightIndex + delta + n) % n;
+    this.drawByName = { ...this.drawByName, highlightIndex: idx };
+  },
+
+  onDrawByNameKeydown(this: MergedThis, event: KeyboardEvent) {
+    if (!this.drawByName) {
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.moveDrawByNameHighlight(1);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.moveDrawByNameHighlight(-1);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.confirmDrawByNameSelection();
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelDrawByName();
+    }
+  },
+
+  confirmDrawByNameSelection(this: MergedThis, card?: TarotCard) {
+    const picker = this.drawByName;
+    if (!picker) {
+      return;
+    }
+    const matches = this.drawByNameMatches();
+    let chosen: TarotCard | undefined = card;
+    if (!chosen) {
+      if (matches.length === 0) {
+        return;
+      }
+      const idx = Math.min(Math.max(0, picker.highlightIndex), matches.length - 1);
+      chosen = matches[idx];
+    }
+    const sx = picker.screenX;
+    const sy = picker.screenY;
+    this.drawByName = null;
+    this.$nextTick(() => {
+      const { x, y } = this.screenToContent(sx, sy);
+      this.addCardToCanvas(chosen!);
+      const last = this.draggableCards[this.draggableCards.length - 1];
+      this.updateItem(last.id, { x, y });
+    });
+  },
+
+  cancelDrawByName(this: MergedThis) {
+    this.drawByName = null;
   },
 
   async runStartupStorageWarningCheck(this: MergedThis) {

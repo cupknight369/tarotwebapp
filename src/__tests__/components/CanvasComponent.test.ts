@@ -4,7 +4,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { DraggableCard, MouseLikeEvent, MergedThis, TextLabel } from '../../types/canvas.js';
+import type {
+  DraggableCard,
+  MouseLikeEvent,
+  MergedThis,
+  TarotCard,
+  TextLabel,
+} from '../../types/canvas.js';
 import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCapture.js';
 
 const alpineStub = vi.hoisted(() =>
@@ -204,6 +210,7 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
       cardId: null as string | null,
       textId: null as string | null,
     },
+    drawByName: null as MergedThis['drawByName'],
     storageWarningVisible: b.storageWarningVisible,
     storageAdditionalInfoOpen: b.storageAdditionalInfoOpen,
     _storageWarningStartupListener: b._storageWarningStartupListener,
@@ -403,14 +410,80 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     ctx.textLabels = [mkLabel('l1', null)];
     ctx.maxZIndex = 5;
     ctx.dirty = false;
+    ctx.drawByName = {
+      screenX: 0,
+      screenY: 0,
+      query: 'x',
+      highlightIndex: 0,
+    };
     const cv = vi.spyOn(ctx, 'centerViewport');
     ctx.clearCanvas.call(ctx);
     expect(revokeTarotCardBlobUrls).toHaveBeenCalledWith(blobCard);
     expect(ctx.draggableCards).toHaveLength(0);
     expect(ctx.textLabels).toHaveLength(0);
+    expect(ctx.drawByName).toBeNull();
     expect(ctx.scale).toBe(1);
     expect(ctx.dirty).toBe(true);
     expect(cv.mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it('openDrawByNameFromContextMenu opens picker at menu coords and closes context menu', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.contextMenu = { open: true, x: 12, y: 34, cardId: null, textId: null };
+    ctx.$nextTick = ((fn: () => void) => {
+      fn();
+    }) as MergedThis['$nextTick'];
+    ctx.$refs = {};
+    c.openDrawByNameFromContextMenu.call(ctx);
+    expect(ctx.contextMenu.open).toBe(false);
+    expect(ctx.drawByName).toEqual({
+      screenX: 12,
+      screenY: 34,
+      query: '',
+      highlightIndex: 0,
+    });
+  });
+
+  it('confirmDrawByNameSelection clears picker, adds card, and positions at screenToContent', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    alpineStub.rawStores.shuffledCards = [
+      { id: 'cid', deckId: 'd', title: 'Star', num: 1, img: 'x' },
+    ];
+    ctx.drawByName = {
+      screenX: 100,
+      screenY: 200,
+      query: 'Sta',
+      highlightIndex: 0,
+    };
+    ctx.$nextTick = ((fn: () => void) => {
+      fn();
+    }) as MergedThis['$nextTick'];
+    ctx.addCardToCanvas = vi.fn((card: TarotCard) => {
+      ctx.draggableCards = [
+        ...ctx.draggableCards,
+        {
+          id: 'placed-1',
+          card,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          zIndex: 1,
+          opacity: 1,
+          cursor: 'grab',
+          display: 'block',
+        },
+      ];
+    });
+    c.confirmDrawByNameSelection.call(ctx);
+    expect(ctx.drawByName).toBeNull();
+    expect(ctx.addCardToCanvas).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'cid', title: 'Star' }),
+    );
+    const placed = ctx.draggableCards[ctx.draggableCards.length - 1];
+    expect(placed.x).toBe(100);
+    expect(placed.y).toBe(200);
   });
 
   it('init wires DOM, shuffleDeck, listeners, and centers after rAF', () => {

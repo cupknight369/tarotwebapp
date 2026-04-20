@@ -357,11 +357,49 @@
               <button
                 type="button"
                 class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+                @click="openDrawByNameFromContextMenu()"
+              >
+                Draw by name
+              </button>
+              <button
+                type="button"
+                class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
                 @click="addTextAt(contextMenu.x, contextMenu.y); closeContextMenu()"
               >
                 Add text
               </button>
             </div>
+          </div>
+
+          <div
+            x-show="drawByName"
+            x-cloak
+            @click.outside="cancelDrawByName()"
+            class="fixed z-[10002] flex min-w-[220px] flex-col gap-1 rounded border border-gray-600 bg-gray-800 p-2 shadow-lg"
+            :style="drawByName ? `left: ${drawByName.screenX}px; top: ${drawByName.screenY}px` : 'display: none;'"
+          >
+            <input
+              type="text"
+              x-ref="drawByNameInput"
+              class="w-full rounded border border-gray-600 bg-gray-900 px-2 py-1 text-sm text-gray-100 placeholder:text-gray-500 focus:border-purple-500 focus:outline-none"
+              placeholder="Search cards…"
+              :value="drawByName ? drawByName.query : ''"
+              @input="onDrawByNameQueryInput($event.target.value)"
+              @keydown="onDrawByNameKeydown($event)"
+            />
+            <ul class="max-h-36 overflow-y-auto rounded border border-gray-700">
+              <template x-for="(card, index) in drawByNameMatches()" :key="card.id + '-' + index">
+                <li>
+                  <button
+                    type="button"
+                    class="w-full px-2 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 focus:outline-none"
+                    :class="drawByName && index === drawByName.highlightIndex ? 'bg-gray-600' : ''"
+                    @click="confirmDrawByNameSelection(card)"
+                    x-text="card.title"
+                  ></button>
+                </li>
+              </template>
+            </ul>
           </div>
 
           <div
