@@ -1,7 +1,12 @@
 <div x-data="scaleComponent">
   <div x-data="cardComponent">
     <div x-data="textLabelComponent">
-      <div x-data="stateComponent" @keydown.window.ctrl.s="handleSaveShortcut($event)" class="relative">
+      <div
+        x-data="stateComponent"
+        @keydown.window.ctrl.s="handleSaveShortcut($event)"
+        @keydown.window.ctrl.d="handleDrawCardShortcut($event)"
+        class="relative"
+      >
         <div
           x-cloak
           x-show="readingSaveFlashVisible"

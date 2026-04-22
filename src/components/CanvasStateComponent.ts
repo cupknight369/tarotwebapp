@@ -32,6 +32,7 @@ Alpine.data('stateComponent', () => ({
   saveAndLoadTargetId: null as string | null,
   readingSaveFlashVisible: false,
   _readingSaveFlashTimer: null as ReturnType<typeof setTimeout> | null,
+  _ctrlDLastDrawAtMs: null as number | null,
 
   showReadingSaveFlash(this: MergedThis): void {
     if (this._readingSaveFlashTimer !== null) {
@@ -405,6 +406,45 @@ Alpine.data('stateComponent', () => ({
     }
     event.preventDefault();
     this.handleSaveClick();
+  },
+
+  handleDrawCardShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    if (event.repeat && this._ctrlDLastDrawAtMs !== null) {
+      const elapsed = Date.now() - this._ctrlDLastDrawAtMs;
+      if (elapsed < 1000) {
+        event.preventDefault();
+        return;
+      }
+    }
+    event.preventDefault();
+    const canvas = window.draggableZoneComponent;
+    if (!canvas) {
+      return;
+    }
+    if (canvas.contextMenu.open) {
+      canvas.drawCardAt(canvas.contextMenu.x, canvas.contextMenu.y);
+      this._ctrlDLastDrawAtMs = Date.now();
+      return;
+    }
+    if (canvas.lastPointerScreenX !== null && canvas.lastPointerScreenY !== null) {
+      canvas.drawCardAt(canvas.lastPointerScreenX, canvas.lastPointerScreenY);
+      this._ctrlDLastDrawAtMs = Date.now();
+      return;
+    }
+    if (!canvas.viewport) {
+      return;
+    }
+    const rect = canvas.viewport.getBoundingClientRect();
+    canvas.drawCardAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    this._ctrlDLastDrawAtMs = Date.now();
   },
 
   triggerTitleDialog(this: MergedThis): void {

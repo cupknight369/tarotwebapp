@@ -41,6 +41,7 @@ export type MergedThis = {
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
   _readingSaveFlashTimer: ReturnType<typeof setTimeout> | null;
+  _ctrlDLastDrawAtMs: number | null;
   dragStart: {
     startCardX: number;
     startCardY: number;
@@ -62,6 +63,8 @@ export type MergedThis = {
   viewport: HTMLDivElement | null;
   content: HTMLDivElement | null;
   emptyCanvasMessage: HTMLDivElement | null;
+  lastPointerScreenX: number | null;
+  lastPointerScreenY: number | null;
 
   contextMenu: {
     open: boolean;
@@ -156,6 +159,7 @@ export type MergedThis = {
   saveAndLoad(id: string): Promise<void>;
   handleSaveClick(): void;
   handleSaveShortcut(event: KeyboardEvent): void;
+  handleDrawCardShortcut(event: KeyboardEvent): void;
   showReadingSaveFlash(): void;
   triggerTitleDialog(): void;
   discardAndLoad(id: string): Promise<void>;

@@ -28,6 +28,8 @@ Alpine.data('canvasComponent', () => ({
   viewport: null as HTMLDivElement | null,
   content: null as HTMLDivElement | null,
   emptyCanvasMessage: null as HTMLDivElement | null,
+  lastPointerScreenX: null as number | null,
+  lastPointerScreenY: null as number | null,
 
   contextMenu: {
     open: false,
@@ -144,6 +146,8 @@ Alpine.data('canvasComponent', () => ({
       e.preventDefault();
 
       const touch = e.touches[0];
+      this.lastPointerScreenX = touch.clientX;
+      this.lastPointerScreenY = touch.clientY;
       this.activeTouchId = touch.identifier;
       const target = document.elementFromPoint(touch.clientX, touch.clientY);
       this.touchStartPos = { clientX: touch.clientX, clientY: touch.clientY, target };
@@ -171,6 +175,8 @@ Alpine.data('canvasComponent', () => ({
       if (this.pinchStartDistance <= 0) return;
       const t1 = e.touches[0];
       const t2 = e.touches[1];
+      this.lastPointerScreenX = (t1.clientX + t2.clientX) / 2;
+      this.lastPointerScreenY = (t1.clientY + t2.clientY) / 2;
       const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       const centerX = (t1.clientX + t2.clientX) / 2;
       const centerY = (t1.clientY + t2.clientY) / 2;
@@ -189,6 +195,8 @@ Alpine.data('canvasComponent', () => ({
     if (e.touches.length === 1) {
       const touch = this.activeTouchId !== null ? this.getTouchById(e, this.activeTouchId) : null;
       if (!touch || !this.touchStartPos) return;
+      this.lastPointerScreenX = touch.clientX;
+      this.lastPointerScreenY = touch.clientY;
 
       if (this.longPressTimerId) {
         clearTimeout(this.longPressTimerId);
@@ -304,6 +312,8 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onMouseDown(this: MergedThis, event: MouseLikeEvent) {
+    this.lastPointerScreenX = event.clientX;
+    this.lastPointerScreenY = event.clientY;
     const target = event.target as HTMLElement;
     const resizeHit = target.closest('[data-text-resize]');
     if (resizeHit) {
@@ -393,6 +403,8 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onMouseMove(this: MergedThis, e: MouseLikeEvent) {
+    this.lastPointerScreenX = e.clientX;
+    this.lastPointerScreenY = e.clientY;
     if (this.selectionBox) {
       const { x, y } = this.screenToContent(e.clientX, e.clientY);
       this.selectionBox = { ...this.selectionBox, currentX: x, currentY: y };
@@ -595,6 +607,8 @@ Alpine.data('canvasComponent', () => ({
   },
 
   onContextMenu(this: MergedThis, event: MouseLikeEvent) {
+    this.lastPointerScreenX = event.clientX;
+    this.lastPointerScreenY = event.clientY;
     const target = event.target as HTMLElement;
     const textEl = target.closest('[data-text-id]');
     const textId = textEl ? textEl.getAttribute('data-text-id') : null;

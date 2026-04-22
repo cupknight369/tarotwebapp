@@ -140,6 +140,7 @@ type StateCtx = {
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
   _readingSaveFlashTimer: ReturnType<typeof setTimeout> | null;
+  _ctrlDLastDrawAtMs: number | null;
   draggableCards: DraggableCard[];
   textLabels: TextLabel[];
   scale: number;
@@ -149,8 +150,11 @@ type StateCtx = {
   maxTextZIndex: number;
   selectedCardIds: string[];
   editingTextId: string | null;
+  viewport: HTMLDivElement | null;
+  contextMenu: { open: boolean; x: number; y: number; cardId: string | null; textId: string | null };
   shuffleDeck: ReturnType<typeof vi.fn>;
   clearCanvas: ReturnType<typeof vi.fn>;
+  drawCardAt: ReturnType<typeof vi.fn>;
   showReadingSaveFlash: () => void;
   serializeState: () => Promise<SavedReadingState>;
   deserializeState: (s: SavedReadingState) => Promise<void>;
@@ -163,6 +167,7 @@ type StateCtx = {
   saveAndLoad: (id: string) => Promise<void>;
   handleSaveClick: () => void;
   handleSaveShortcut: (event: KeyboardEvent) => void;
+  handleDrawCardShortcut: (event: KeyboardEvent) => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
@@ -210,6 +215,7 @@ function createCtx(overrides: Partial<StateCtx> = {}): StateCtx {
     editingTextId: null,
     shuffleDeck: vi.fn(),
     clearCanvas: vi.fn(),
+    drawCardAt: vi.fn(),
     $nextTick: (cb?: () => void) => {
       cb?.();
     },
@@ -250,9 +256,11 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       createObjectURL: createObjectURLSpy,
       revokeObjectURL: vi.fn(),
     });
+    window.draggableZoneComponent = undefined;
   });
 
   afterEach(() => {
+    window.draggableZoneComponent = undefined;
     vi.unstubAllGlobals();
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -1287,6 +1295,86 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     ctx.handleSaveShortcut.call(ctx, event);
     expect(preventDefault).not.toHaveBeenCalled();
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('handleDrawCardShortcut uses context menu coordinates when open', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const drawCardAt = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      drawCardAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawCardShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(drawCardAt).toHaveBeenCalledWith(120, 240);
+  });
+
+  it('handleDrawCardShortcut uses last pointer location when context menu is closed', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const drawCardAt = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      drawCardAt,
+      lastPointerScreenX: 333,
+      lastPointerScreenY: 444,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawCardShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(drawCardAt).toHaveBeenCalledWith(333, 444);
+  });
+
+  it('handleDrawCardShortcut throttles repeated keydown to once per second', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(10_000);
+    const ctx = createCtx();
+    const drawCardAt = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      drawCardAt,
+      lastPointerScreenX: 100,
+      lastPointerScreenY: 200,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+
+    const first = {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+      repeat: false,
+    } as unknown as KeyboardEvent;
+    ctx.handleDrawCardShortcut.call(ctx, first);
+    expect(drawCardAt).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(10_500);
+    const heldTooSoon = {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+      repeat: true,
+    } as unknown as KeyboardEvent;
+    ctx.handleDrawCardShortcut.call(ctx, heldTooSoon);
+    expect(drawCardAt).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(11_100);
+    const heldAfterOneSecond = {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+      repeat: true,
+    } as unknown as KeyboardEvent;
+    ctx.handleDrawCardShortcut.call(ctx, heldAfterOneSecond);
+    expect(drawCardAt).toHaveBeenCalledTimes(2);
   });
 
   it('triggerTitleDialog save success skips load when no deferred target', async () => {
