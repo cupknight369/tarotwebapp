@@ -160,6 +160,7 @@ export type MergedThis = {
   handleSaveClick(): void;
   handleSaveShortcut(event: KeyboardEvent): void;
   handleDrawCardShortcut(event: KeyboardEvent): void;
+  handleDrawByNameShortcut(event: KeyboardEvent): void;
   showReadingSaveFlash(): void;
   triggerTitleDialog(): void;
   discardAndLoad(id: string): Promise<void>;
@@ -195,6 +196,7 @@ export type MergedThis = {
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180'): void;
   onContextMenu(event: MouseLikeEvent): void;
   closeContextMenu(): void;
+  openDrawByNameAt(screenX: number, screenY: number): void;
   openDrawByNameFromContextMenu(): void;
   onDrawByNameQueryInput(value: string): void;
   moveDrawByNameHighlight(delta: 1 | -1): void;

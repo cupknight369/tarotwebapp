@@ -168,6 +168,7 @@ type StateCtx = {
   handleSaveClick: () => void;
   handleSaveShortcut: (event: KeyboardEvent) => void;
   handleDrawCardShortcut: (event: KeyboardEvent) => void;
+  handleDrawByNameShortcut: (event: KeyboardEvent) => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
@@ -1375,6 +1376,52 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent;
     ctx.handleDrawCardShortcut.call(ctx, heldAfterOneSecond);
     expect(drawCardAt).toHaveBeenCalledTimes(2);
+  });
+
+  it('handleDrawByNameShortcut opens at context menu when open', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const openDrawByNameFromContextMenu = vi.fn();
+    const openDrawByNameAt = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      openDrawByNameFromContextMenu,
+      openDrawByNameAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawByNameShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(openDrawByNameFromContextMenu).toHaveBeenCalledTimes(1);
+    expect(openDrawByNameAt).not.toHaveBeenCalled();
+  });
+
+  it('handleDrawByNameShortcut opens at last pointer when context menu is closed', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const openDrawByNameFromContextMenu = vi.fn();
+    const openDrawByNameAt = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 120, y: 240, cardId: null, textId: null },
+      openDrawByNameFromContextMenu,
+      openDrawByNameAt,
+      lastPointerScreenX: 333,
+      lastPointerScreenY: 444,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawByNameShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(openDrawByNameFromContextMenu).not.toHaveBeenCalled();
+    expect(openDrawByNameAt).toHaveBeenCalledWith(333, 444);
   });
 
   it('triggerTitleDialog save success skips load when no deferred target', async () => {

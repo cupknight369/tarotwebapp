@@ -669,19 +669,23 @@ Alpine.data('canvasComponent', () => ({
     this.contextMenu.textId = null;
   },
 
-  openDrawByNameFromContextMenu(this: MergedThis) {
-    const { x, y } = this.contextMenu;
+  openDrawByNameAt(this: MergedThis, screenX: number, screenY: number) {
     this.drawByName = {
-      screenX: x,
-      screenY: y,
+      screenX,
+      screenY,
       query: '',
       highlightIndex: 0,
     };
-    this.closeContextMenu();
     this.$nextTick(() => {
       const el = this.$refs.drawByNameInput as HTMLInputElement | undefined;
       el?.focus();
     });
+  },
+
+  openDrawByNameFromContextMenu(this: MergedThis) {
+    const { x, y } = this.contextMenu;
+    this.openDrawByNameAt(x, y);
+    this.closeContextMenu();
   },
 
   onDrawByNameQueryInput(this: MergedThis, value: string) {
