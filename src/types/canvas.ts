@@ -155,6 +155,7 @@ export type MergedThis = {
   onSelectReadingToLoad(id: string): Promise<void>;
   saveAndLoad(id: string): Promise<void>;
   handleSaveClick(): void;
+  handleSaveShortcut(event: KeyboardEvent): void;
   showReadingSaveFlash(): void;
   triggerTitleDialog(): void;
   discardAndLoad(id: string): Promise<void>;

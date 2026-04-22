@@ -394,6 +394,19 @@ Alpine.data('stateComponent', () => ({
     this.triggerTitleDialog();
   },
 
+  handleSaveShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    this.handleSaveClick();
+  },
+
   triggerTitleDialog(this: MergedThis): void {
     Alpine.store('dialog', {
       open: true,

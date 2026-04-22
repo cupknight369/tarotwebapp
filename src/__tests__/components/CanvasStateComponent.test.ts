@@ -162,6 +162,7 @@ type StateCtx = {
   onSelectReadingToLoad: (id: string) => Promise<void>;
   saveAndLoad: (id: string) => Promise<void>;
   handleSaveClick: () => void;
+  handleSaveShortcut: (event: KeyboardEvent) => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
@@ -1259,6 +1260,33 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     const spy = vi.spyOn(ctx, 'triggerTitleDialog');
     ctx.handleSaveClick.call(ctx);
     expect(spy).toHaveBeenCalled();
+  });
+
+  it('handleSaveShortcut triggers save click and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const saveSpy = vi.spyOn(ctx, 'handleSaveClick');
+    ctx.handleSaveShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleSaveShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const input = document.createElement('input');
+    const event = {
+      target: input,
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const saveSpy = vi.spyOn(ctx, 'handleSaveClick');
+    ctx.handleSaveShortcut.call(ctx, event);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(saveSpy).not.toHaveBeenCalled();
   });
 
   it('triggerTitleDialog save success skips load when no deferred target', async () => {
