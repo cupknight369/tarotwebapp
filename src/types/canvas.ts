@@ -161,6 +161,7 @@ export type MergedThis = {
   handleSaveShortcut(event: KeyboardEvent): void;
   handleDrawCardShortcut(event: KeyboardEvent): void;
   handleDrawByNameShortcut(event: KeyboardEvent): void;
+  handleAddTextShortcut(event: KeyboardEvent): void;
   showReadingSaveFlash(): void;
   triggerTitleDialog(): void;
   discardAndLoad(id: string): Promise<void>;

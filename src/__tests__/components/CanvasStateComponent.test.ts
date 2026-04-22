@@ -169,6 +169,7 @@ type StateCtx = {
   handleSaveShortcut: (event: KeyboardEvent) => void;
   handleDrawCardShortcut: (event: KeyboardEvent) => void;
   handleDrawByNameShortcut: (event: KeyboardEvent) => void;
+  handleAddTextShortcut: (event: KeyboardEvent) => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
@@ -1422,6 +1423,46 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(openDrawByNameFromContextMenu).not.toHaveBeenCalled();
     expect(openDrawByNameAt).toHaveBeenCalledWith(333, 444);
+  });
+
+  it('handleAddTextShortcut uses context menu coordinates when open', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const addTextAt = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      addTextAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleAddTextShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(addTextAt).toHaveBeenCalledWith(120, 240);
+  });
+
+  it('handleAddTextShortcut uses last pointer location when context menu is closed', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const addTextAt = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      addTextAt,
+      lastPointerScreenX: 333,
+      lastPointerScreenY: 444,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleAddTextShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(addTextAt).toHaveBeenCalledWith(333, 444);
   });
 
   it('triggerTitleDialog save success skips load when no deferred target', async () => {

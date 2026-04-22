@@ -476,6 +476,35 @@ Alpine.data('stateComponent', () => ({
     canvas.openDrawByNameAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
   },
 
+  handleAddTextShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    const canvas = window.draggableZoneComponent;
+    if (!canvas) {
+      return;
+    }
+    if (canvas.contextMenu.open) {
+      canvas.addTextAt(canvas.contextMenu.x, canvas.contextMenu.y);
+      return;
+    }
+    if (canvas.lastPointerScreenX !== null && canvas.lastPointerScreenY !== null) {
+      canvas.addTextAt(canvas.lastPointerScreenX, canvas.lastPointerScreenY);
+      return;
+    }
+    if (!canvas.viewport) {
+      return;
+    }
+    const rect = canvas.viewport.getBoundingClientRect();
+    canvas.addTextAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  },
+
   triggerTitleDialog(this: MergedThis): void {
     Alpine.store('dialog', {
       open: true,
