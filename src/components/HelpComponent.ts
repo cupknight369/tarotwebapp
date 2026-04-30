@@ -4,6 +4,7 @@ interface HelpComponentState {
   open: boolean;
   onOpen: () => void;
   close: () => void;
+  openWelcomeInfo: () => void;
 }
 
 Alpine.data(
@@ -18,6 +19,11 @@ Alpine.data(
 
       close() {
         this.open = false;
+      },
+
+      openWelcomeInfo() {
+        this.close();
+        window.dispatchEvent(new CustomEvent('open-welcome'));
       },
     }) as HelpComponentState,
 );

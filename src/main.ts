@@ -22,6 +22,7 @@ import './components/CanvasDeckComponent';
 import './components/DialogComponent';
 import './components/SettingsComponent';
 import './components/HelpComponent';
+import './components/WelcomeComponent';
 import './components/AuthComponent';
 import './components/DeckEditComponent';
 
@@ -81,6 +82,7 @@ void (async () => {
   startCardImagePrefetch();
   initSettingsStore();
   Alpine.start();
+  window.dispatchEvent(new CustomEvent('check-first-time-welcome'));
   window.dispatchEvent(new CustomEvent('cktarot-check-storage-warning'));
   try {
     await bootstrapDeck();

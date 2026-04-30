@@ -23,6 +23,7 @@ type HelpCtx = {
   open: boolean;
   onOpen: () => void;
   close: () => void;
+  openWelcomeInfo: () => void;
 };
 
 function mount(): HelpCtx {
@@ -60,8 +61,18 @@ describe('helpComponent (HelpComponent.ts)', () => {
     expect(ctx.open).toBe(false);
   });
 
+  it('openWelcomeInfo closes help and dispatches open-welcome', () => {
+    const ctx = mount();
+    ctx.open = true;
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    ctx.openWelcomeInfo.call(ctx);
+    expect(ctx.open).toBe(false);
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'open-welcome' }));
+  });
+
   it('help modal markup includes core section headings', async () => {
     const html = await readFile('src/components/HelpComponent.html', 'utf-8');
+    expect(html).toContain('Open Welcome');
     expect(html).toContain('Draw Cards');
     expect(html).toContain('Deck Management');
     expect(html).toContain('Save, Load, and New Reading');

@@ -105,6 +105,7 @@ vi.mock('../components/CanvasDeckComponent', () => ({}));
 vi.mock('../components/DialogComponent', () => ({}));
 vi.mock('../components/SettingsComponent', () => ({}));
 vi.mock('../components/HelpComponent', () => ({}));
+vi.mock('../components/WelcomeComponent', () => ({}));
 vi.mock('../components/AuthComponent', () => ({}));
 vi.mock('../components/DeckEditComponent', () => ({}));
 

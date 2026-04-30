@@ -1,0 +1,83 @@
+<div
+  x-cloak
+  x-data="welcomeComponent"
+  @check-first-time-welcome.window="openIfFirstTime()"
+  @open-welcome.window="onOpen()"
+  @keydown.window.escape="open && close()"
+  x-show="open"
+  x-transition
+  class="fixed inset-0 z-[10002] flex items-center justify-center bg-gray-900/80 p-4"
+  @click.self="close()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="welcome-title"
+>
+  <div
+    class="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-gray-700 bg-gray-800 p-6 shadow-xl"
+  >
+    <button
+      type="button"
+      class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+      aria-label="Close"
+      @click="close()"
+    >
+      <span class="text-xl leading-none">×</span>
+    </button>
+
+    <h2 id="welcome-title" class="mb-5 pr-8 text-2xl font-bold text-gray-100">Welcome</h2>
+
+    <div class="space-y-4 text-sm leading-relaxed text-gray-200">
+      <p>
+        This tarot application is intended to act as a journal. It allows you to save readings with
+        custom titles so that you can look back on them later. All of your cards and text will be
+        saved in the exact location you left them in - no need to keep up with photos of card
+        spreads or describe a physical reading through text (unless you want to).
+      </p>
+
+      <p>
+        You could even use this application to mirror a real-life reading that was preformed! It can
+        act as a digital copy of a real meaningful moment in life.
+      </p>
+
+      <p>
+        There are no limits to how you can utilize this application - it was designed to be
+        extremely flexible. You can even create your own custom decks with your own images.
+      </p>
+
+      <p>
+        All information is saved on your device locally. This app does not collect or store your
+        information. You don't even need to create an account to use it.
+      </p>
+
+      <p>
+        The only reason you would need an account is if you want to purchase any custom decks from
+        the cloud store. There you will find custom designed decks from other users of this
+        marketplace. The minimum amount of data necessary to complete a transaction and store a
+        record of your purchase will be collected for this purpose.
+      </p>
+
+      <section class="pt-1">
+        <h3 class="text-base font-semibold text-gray-100">Quick Notes</h3>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-gray-300">
+          <li>
+            <strong>Local saves:</strong> Readings, labels, and deck data stay on this device.
+          </li>
+          <li>
+            <strong>Storage remaining:</strong> Open `⚙` App Settings and check \"IndexedDB storage
+            (estimate)\".
+          </li>
+          <li>
+            <strong>Low-storage warning:</strong> A warning appears on canvas when less than 20%
+            storage remains.
+          </li>
+          <li>
+            <strong>Export/Import:</strong> In `⚙` App Settings, use export/import backup buttons.
+          </li>
+          <li>
+            <strong>Function descriptions:</strong> Open `?` Help for concise feature guidance.
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
