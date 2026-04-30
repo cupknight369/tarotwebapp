@@ -46,7 +46,10 @@
     </template>
 
     <template x-if="$store.dialog.type === 'input'">
-      <div x-init="initInputValue()">
+      <div
+        x-init="initInputValue(); $nextTick(() => { $refs.inputNumberField?.focus(); })"
+        x-effect="if ($store.dialog.open && $store.dialog.type === 'input') { $nextTick(() => { $refs.inputNumberField?.focus(); }); }"
+      >
         <p
           id="dialog-title"
           class="text-xl font-bold text-gray-200 pr-8 mb-4"
@@ -54,6 +57,7 @@
         ></p>
         <input
           type="number"
+          x-ref="inputNumberField"
           x-model="inputValue"
           :min="$store.dialog.inputMin"
           :max="$store.dialog.inputMax"
@@ -65,7 +69,7 @@
           x-show="inputError"
           x-text="inputError"
         ></p>
-        <div class="flex gap-3 justify-end">
+        <div class="mt-4 flex gap-3 justify-end">
           <button
             type="button"
             class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
