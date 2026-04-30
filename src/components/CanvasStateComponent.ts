@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import type { MergedThis, TarotCard } from '../types/canvas.js';
 import type { SavedReadingState } from '../types/readingState.js';
+import type { DialogStoreState } from '../types/dialog.js';
 import * as localReadingsLib from '../lib/localReadings.js';
 import { getCardsByIds } from '../lib/decks.js';
 import { logError } from '../lib/logError.js';
@@ -503,6 +504,48 @@ Alpine.data('stateComponent', () => ({
     }
     const rect = canvas.viewport.getBoundingClientRect();
     canvas.addTextAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  },
+
+  handleEscapeShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const dialogStore = Alpine.store('dialog') as DialogStoreState | undefined;
+    if (dialogStore?.open) {
+      event.preventDefault();
+      dialogStore.onCancel?.();
+      dialogStore.open = false;
+      return;
+    }
+
+    const settingsStore = Alpine.store('settings') as { open?: boolean } | undefined;
+    if (settingsStore?.open) {
+      event.preventDefault();
+      settingsStore.open = false;
+      return;
+    }
+
+    const canvas = window.draggableZoneComponent;
+    if (canvas?.deckModalOpen) {
+      event.preventDefault();
+      canvas.closeDeckModal();
+      return;
+    }
+
+    if (canvas?.storageAdditionalInfoOpen) {
+      event.preventDefault();
+      canvas.closeStorageAdditionalInfo();
+      return;
+    }
+
+    if (this.loadModalEditingReadingId) {
+      event.preventDefault();
+      this.cancelLoadModalTitleEdit();
+      return;
+    }
+
+    if (this.loadModalOpen) {
+      event.preventDefault();
+      this.closeLoadModal();
+      return;
+    }
   },
 
   triggerTitleDialog(this: MergedThis): void {

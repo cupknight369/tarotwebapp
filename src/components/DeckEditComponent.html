@@ -1,4 +1,8 @@
-<div x-data="deckEditComponent" @open-deck-edit.window="onOpen($event.detail)">
+<div
+  x-data="deckEditComponent"
+  @open-deck-edit.window="onOpen($event.detail)"
+  @keydown.window.escape="open && close()"
+>
   <div
     x-cloak
     x-show="open"

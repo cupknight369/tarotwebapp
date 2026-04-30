@@ -7,6 +7,7 @@
         @keydown.window.ctrl.d="handleDrawCardShortcut($event)"
         @keydown.window.ctrl.n="handleDrawByNameShortcut($event)"
         @keydown.window.ctrl.t="handleAddTextShortcut($event)"
+        @keydown.window.escape="handleEscapeShortcut($event)"
         class="relative"
       >
         <div
@@ -456,7 +457,11 @@
             </button>
           </div>
 
-          <div x-data="deckComponent" class="absolute top-1 right-2 z-[9999]">
+          <div
+            x-data="deckComponent"
+            @keydown.window.escape="deckModalOpen && closeDeckModal()"
+            class="absolute top-1 right-2 z-[9999]"
+          >
             <div class="flex items-center gap-1">
               <span
                 x-show="showShuffledConfirmation"
