@@ -38,7 +38,7 @@ Alpine.data('textLabelComponent', () => ({
     const { x, y } = this.screenToContent(screenX, screenY);
     const label: TextLabel = {
       id: this.generateTextId(),
-      text: 'Double Click To Edit',
+      text: 'Edit Text',
       x,
       y,
       fontSize: 16,
@@ -55,6 +55,9 @@ Alpine.data('textLabelComponent', () => ({
       fixedWidthPx: 0,
     };
     this.textLabels = [...this.textLabels, label];
+    this.$nextTick(() => {
+      this.editingTextId = label.id;
+    });
     this.maxTextZIndex += 1;
     this.dirty = true;
   },

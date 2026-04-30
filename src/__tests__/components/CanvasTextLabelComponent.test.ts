@@ -132,9 +132,10 @@ describe('textLabelComponent (CanvasTextLabelComponent.ts)', () => {
     const ctx = mount({ maxTextZIndex: 3, textLabels: [] });
     ctx.addTextAt.call(ctx, 100, 200);
     expect(ctx.textLabels).toHaveLength(1);
+    expect(ctx.editingTextId).toBe(ctx.textLabels[0]?.id ?? null);
     expect(ctx.textLabels[0]?.x).toBe(101);
     expect(ctx.textLabels[0]?.y).toBe(202);
-    expect(ctx.textLabels[0]?.text).toBe('Double Click To Edit');
+    expect(ctx.textLabels[0]?.text).toBe('Edit Text');
     expect(ctx.textLabels[0]?.zIndex).toBe(4);
     expect(ctx.maxTextZIndex).toBe(4);
     expect(ctx.dirty).toBe(true);
