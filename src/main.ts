@@ -21,6 +21,7 @@ import './components/CanvasStateComponent';
 import './components/CanvasDeckComponent';
 import './components/DialogComponent';
 import './components/SettingsComponent';
+import './components/HelpComponent';
 import './components/AuthComponent';
 import './components/DeckEditComponent';
 

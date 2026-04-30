@@ -559,6 +559,15 @@
               >
                 ⚙
               </button>
+              <button
+                type="button"
+                class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+                aria-label="Help"
+                title="Help"
+                @click="$dispatch('open-help')"
+              >
+                ?
+              </button>
             </div>
 
             <!-- Deck picker modal (deckComponent: tabs On this device | Store) -->

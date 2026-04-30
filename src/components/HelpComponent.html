@@ -1,0 +1,129 @@
+<div
+  x-cloak
+  x-data="helpComponent"
+  @open-help.window="onOpen()"
+  @keydown.window.escape="open && close()"
+  x-show="open"
+  x-transition
+  class="fixed inset-0 z-[10001] flex items-center justify-center bg-gray-900/80 p-4"
+  @click.self="close()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="help-title"
+>
+  <div
+    class="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-gray-700 bg-gray-800 p-6 shadow-xl"
+  >
+    <button
+      type="button"
+      class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+      aria-label="Close"
+      @click="close()"
+    >
+      <span class="text-xl leading-none">×</span>
+    </button>
+
+    <p id="help-title" class="mb-6 pr-8 text-2xl font-bold text-gray-100">Help</p>
+
+    <div class="space-y-5 text-sm text-gray-200">
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Draw Cards</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Add cards from the active deck onto the canvas.</li>
+          <li>
+            <strong>How to use:</strong> Use `1` for single draw, `N` for random multiple, and `#`
+            for draw-by-index.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Canvas Navigation</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Move around and inspect large layouts.</li>
+          <li>
+            <strong>How to use:</strong> Drag empty canvas space to pan, and use the mouse wheel or
+            pinch gesture to zoom.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Context Menu and Selection</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Perform quick actions on cards, text, and canvas.</li>
+          <li>
+            <strong>How to use:</strong> Right-click to open actions; hold Ctrl and drag to
+            box-select cards for group operations.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Text Labels</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Annotate card layouts with custom notes.</li>
+          <li>
+            <strong>How to use:</strong> Add text from canvas menu/shortcut, then drag, style,
+            resize, and anchor labels to cards.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Deck Management</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Switch decks and manage deck content on-device.</li>
+          <li>
+            <strong>How to use:</strong> Use `🎴` to open deck picker tabs, download/remove decks,
+            create decks, or open deck editor.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Save, Load, and New Reading</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Persist your layout and move between reading sessions.</li>
+          <li>
+            <strong>How to use:</strong> Use `💾` to save, `📂` to load/edit/delete saved readings,
+            and `✨` to start a new reading.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Clear Canvas</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Remove all cards and text from the current canvas.</li>
+          <li>
+            <strong>How to use:</strong> Click `🧹` and confirm to clear everything from the active
+            session.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Settings and Backup</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Configure display options and safeguard local data.</li>
+          <li>
+            <strong>How to use:</strong> Click `⚙` to toggle settings and run export/import backup
+            workflows.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-semibold text-gray-100">Keyboard Shortcuts</h2>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
+          <li><strong>Purpose:</strong> Speed up common actions.</li>
+          <li>
+            <strong>How to use:</strong> Use `Ctrl+S` save, `Ctrl+D` draw card, `Ctrl+N` draw by
+            name, `Ctrl+T` add text, and `Esc` close open modals/dialogs.
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
