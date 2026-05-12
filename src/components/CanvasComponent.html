@@ -576,11 +576,11 @@
               x-cloak
               x-show="deckModalOpen"
               x-transition
-              class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"
+              class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80 px-4 py-6 sm:py-8"
               @click.outside="closeDeckModal()"
             >
               <div
-                class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col"
+                class="relative flex h-[min(90dvh,calc(100dvh-4rem))] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-lg border border-gray-700 bg-gray-800 p-6 shadow-xl"
               >
                 <button
                   type="button"
