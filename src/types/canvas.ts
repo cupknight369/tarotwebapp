@@ -139,8 +139,11 @@ export type MergedThis = {
   deckModalTab: DeckModalTab;
   catalogOffers: CatalogDeckOffer[];
   onDeviceDecks: OnDeviceDeckEntry[];
+  deckSearchQuery: string;
   newLocalDeckTitle: string;
   newLocalDeckTitleError: string;
+  filteredOnDeviceDecks(): OnDeviceDeckEntry[];
+  filteredCatalogOffers(): CatalogDeckOffer[];
   setDeckModalTab(tab: DeckModalTab): void;
   refreshDeckLists(): Promise<void>;
   openDeckModal(): Promise<void>;

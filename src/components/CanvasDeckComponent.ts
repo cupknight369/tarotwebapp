@@ -39,17 +39,38 @@ function persistDeckModalTab(tab: DeckModalTab): void {
   }
 }
 
+/**
+ * @param query - Raw search string from the deck modal (title-only match).
+ * @param title - Deck title to test.
+ * @returns True when `query` is empty/whitespace or when `title` contains the trimmed query,
+ *   case-insensitively.
+ */
+function deckTitleMatchesSearch(query: string, title: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (q === '') return true;
+  return title.toLowerCase().includes(q);
+}
+
 Alpine.data('deckComponent', () => ({
   deckModalOpen: false,
   deckModalTab: 'onDevice' as DeckModalTab,
   catalogOffers: [] as CatalogDeckOffer[],
   onDeviceDecks: [] as OnDeviceDeckEntry[],
+  deckSearchQuery: '',
   newLocalDeckTitle: '',
   newLocalDeckTitleError: '',
 
   setDeckModalTab(this: MergedThis, tab: DeckModalTab) {
     this.deckModalTab = tab;
     persistDeckModalTab(tab);
+  },
+
+  filteredOnDeviceDecks(this: MergedThis): OnDeviceDeckEntry[] {
+    return this.onDeviceDecks.filter((d) => deckTitleMatchesSearch(this.deckSearchQuery, d.title));
+  },
+
+  filteredCatalogOffers(this: MergedThis): CatalogDeckOffer[] {
+    return this.catalogOffers.filter((c) => deckTitleMatchesSearch(this.deckSearchQuery, c.title));
   },
 
   async refreshDeckLists(this: MergedThis) {
@@ -78,6 +99,7 @@ Alpine.data('deckComponent', () => ({
 
   async openDeckModal(this: MergedThis) {
     this.deckModalOpen = true;
+    this.deckSearchQuery = '';
     this.newLocalDeckTitleError = '';
     this.deckModalTab = readDeckModalTab();
     await this.refreshDeckLists();

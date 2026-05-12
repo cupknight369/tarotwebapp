@@ -92,19 +92,24 @@ const sampleCard: TarotCard = {
   img: 'a.webp',
 };
 
-function onDevice(id: string, title: string): OnDeviceDeckEntry {
+function onDevice(id: string, title: string, description: string | null = null): OnDeviceDeckEntry {
   return {
     id,
     title,
-    description: null,
+    description,
     created_at: '2024-01-01',
     modified_at: '2024-01-01',
     fromCatalog: false,
   };
 }
 
-function catalogOffer(id: string, title: string, installed = false): CatalogDeckOffer {
-  return { id, title, description: null, installed };
+function catalogOffer(
+  id: string,
+  title: string,
+  installed = false,
+  description: string | null = null,
+): CatalogDeckOffer {
+  return { id, title, description, installed };
 }
 
 type DeckCtx = {
@@ -112,10 +117,13 @@ type DeckCtx = {
   deckModalTab: 'onDevice' | 'store';
   catalogOffers: CatalogDeckOffer[];
   onDeviceDecks: OnDeviceDeckEntry[];
+  deckSearchQuery: string;
   newLocalDeckTitle: string;
   newLocalDeckTitleError: string;
   shuffleDeck: ReturnType<typeof vi.fn>;
   setDeckModalTab: (tab: 'onDevice' | 'store') => void;
+  filteredOnDeviceDecks: () => OnDeviceDeckEntry[];
+  filteredCatalogOffers: () => CatalogDeckOffer[];
   openDeckModal: () => Promise<void>;
   closeDeckModal: () => void;
   refreshDeckLists: () => Promise<void>;
@@ -183,10 +191,12 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     localStorage.setItem(DECK_MODAL_TAB_KEY, 'store');
     const ctx = mountDeck();
     ctx.newLocalDeckTitleError = 'x';
+    ctx.deckSearchQuery = 'prior';
     await ctx.openDeckModal.call(ctx);
     expect(ctx.deckModalOpen).toBe(true);
     expect(ctx.deckModalTab).toBe('store');
     expect(ctx.newLocalDeckTitleError).toBe('');
+    expect(ctx.deckSearchQuery).toBe('');
   });
 
   it('openDeckModal defaults tab when localStorage is invalid', async () => {
@@ -210,6 +220,63 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     ctx.deckModalOpen = true;
     ctx.closeDeckModal.call(ctx);
     expect(ctx.deckModalOpen).toBe(false);
+  });
+
+  it('filteredOnDeviceDecks returns all decks when search is blank', () => {
+    const ctx = mountDeck();
+    const decks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta')];
+    ctx.onDeviceDecks = decks;
+    ctx.deckSearchQuery = '   ';
+    expect(ctx.filteredOnDeviceDecks.call(ctx)).toEqual(decks);
+  });
+
+  it('filteredOnDeviceDecks matches title case-insensitively', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Foo Bar'), onDevice('b', 'Other')];
+    ctx.deckSearchQuery = 'FOO';
+    expect(ctx.filteredOnDeviceDecks.call(ctx)).toEqual([onDevice('a', 'Foo Bar')]);
+  });
+
+  it('filteredOnDeviceDecks does not match description text', () => {
+    const ctx = mountDeck();
+    const onlyInDesc = onDevice('x', 'Short title', 'unique catalog blurb');
+    ctx.onDeviceDecks = [onlyInDesc];
+    ctx.deckSearchQuery = 'unique catalog';
+    expect(ctx.filteredOnDeviceDecks.call(ctx)).toEqual([]);
+  });
+
+  it('filteredOnDeviceDecks returns empty when no title matches', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'One'), onDevice('b', 'Two')];
+    ctx.deckSearchQuery = 'zzz';
+    expect(ctx.filteredOnDeviceDecks.call(ctx)).toEqual([]);
+  });
+
+  it('filteredCatalogOffers returns all offers when search is blank', () => {
+    const ctx = mountDeck();
+    const offers = [catalogOffer('c1', 'Cat'), catalogOffer('c2', 'Dog')];
+    ctx.catalogOffers = offers;
+    ctx.deckSearchQuery = '';
+    expect(ctx.filteredCatalogOffers.call(ctx)).toEqual(offers);
+  });
+
+  it('filteredCatalogOffers matches title only', () => {
+    const ctx = mountDeck();
+    ctx.catalogOffers = [
+      catalogOffer('c1', 'Rider Waite', false, 'Classic tarot deck'),
+      catalogOffer('c2', 'Thoth', true, 'Crowley'),
+    ];
+    ctx.deckSearchQuery = 'rider';
+    expect(ctx.filteredCatalogOffers.call(ctx)).toEqual([
+      catalogOffer('c1', 'Rider Waite', false, 'Classic tarot deck'),
+    ]);
+  });
+
+  it('filteredCatalogOffers does not match description text', () => {
+    const ctx = mountDeck();
+    ctx.catalogOffers = [catalogOffer('c1', 'Short', false, 'only here in description')];
+    ctx.deckSearchQuery = 'only here';
+    expect(ctx.filteredCatalogOffers.call(ctx)).toEqual([]);
   });
 
   it('refreshDeckLists logs and shows dialog when on-device list fails', async () => {
