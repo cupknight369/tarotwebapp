@@ -111,6 +111,8 @@ type DeckEditCtx = {
   clearCensor: boolean;
   newCardTitle: string;
   newCardNumber: number;
+  cardSearchQuery: string;
+  filteredDeckEditCards: () => TarotCard[];
   clearFileInputs: () => void;
   clearAddFileInputs: () => void;
   onClearCensorChange: () => void;
@@ -294,10 +296,58 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     expect(ctx.loading).toBe(false);
   });
 
+  it('onOpen clears cardSearchQuery', async () => {
+    const ctx = mount();
+    ctx.cardSearchQuery = '  moon  ';
+    await ctx.onOpen.call(ctx, { deckId: 'd1', deckTitle: 'T' });
+    expect(ctx.cardSearchQuery).toBe('');
+  });
+
+  it('filteredDeckEditCards returns all cards when query is blank or whitespace', () => {
+    const ctx = mount();
+    ctx.cards = [
+      tarot({ id: 'a', title: 'Moon', num: 2 }),
+      tarot({ id: 'b', title: 'Sun', num: 17 }),
+    ];
+    ctx.cardSearchQuery = '';
+    expect(ctx.filteredDeckEditCards.call(ctx)).toHaveLength(2);
+    ctx.cardSearchQuery = '   ';
+    expect(ctx.filteredDeckEditCards.call(ctx)).toHaveLength(2);
+  });
+
+  it('filteredDeckEditCards matches title case-insensitively', () => {
+    const ctx = mount();
+    ctx.cards = [
+      tarot({ id: 'a', title: 'The Moon', num: 1 }),
+      tarot({ id: 'b', title: 'Sun', num: 2 }),
+    ];
+    ctx.cardSearchQuery = 'moon';
+    expect(ctx.filteredDeckEditCards.call(ctx).map((c) => c.id)).toEqual(['a']);
+    ctx.cardSearchQuery = 'THE MOON';
+    expect(ctx.filteredDeckEditCards.call(ctx).map((c) => c.id)).toEqual(['a']);
+  });
+
+  it('filteredDeckEditCards matches card number as substring', () => {
+    const ctx = mount();
+    ctx.cards = [tarot({ id: 'a', title: 'A', num: 3 }), tarot({ id: 'b', title: 'B', num: 17 })];
+    ctx.cardSearchQuery = '17';
+    expect(ctx.filteredDeckEditCards.call(ctx).map((c) => c.id)).toEqual(['b']);
+    ctx.cardSearchQuery = '7';
+    expect(ctx.filteredDeckEditCards.call(ctx).map((c) => c.id)).toEqual(['b']);
+  });
+
+  it('filteredDeckEditCards returns empty when nothing matches', () => {
+    const ctx = mount();
+    ctx.cards = [tarot({ id: 'a', title: 'Moon', num: 1 })];
+    ctx.cardSearchQuery = 'xyz';
+    expect(ctx.filteredDeckEditCards.call(ctx)).toEqual([]);
+  });
+
   it('close resets all panel state', async () => {
     const ctx = mount();
     await ctx.onOpen.call(ctx, { deckId: 'd1' });
     ctx.editTitle = 'x';
+    ctx.cardSearchQuery = 'filter-me';
     ctx.open = true;
     setFilesOnInput('deck-edit-main', [pngFile('f.png')]);
     ctx.close.call(ctx);
@@ -308,6 +358,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     expect(ctx.saveError).toBeNull();
     expect(ctx.deleteError).toBeNull();
     expect(ctx.formMode).toBe('edit');
+    expect(ctx.cardSearchQuery).toBe('');
   });
 
   it('selectCard with null clears selection and resets form', () => {

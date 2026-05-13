@@ -23,7 +23,7 @@
       </button>
 
       <div
-        class="min-h-0 flex-1 border-b border-gray-700 p-4 pt-12 md:border-b-0 md:border-r md:pt-4"
+        class="flex min-h-0 flex-1 flex-col border-b border-gray-700 p-4 pt-12 md:border-b-0 md:border-r md:pt-4"
       >
         <p class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Edit deck cards</p>
         <p
@@ -54,35 +54,55 @@
         </p>
         <div
           x-show="open && !loading && !localEmpty"
-          class="mt-4 grid max-h-[min(58vh,560px)] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-3"
+          class="mt-4 flex min-h-0 flex-1 flex-col gap-3"
         >
-          <template x-for="c in cards" :key="c.id">
-            <button
-              type="button"
-              class="flex flex-col items-stretch rounded-lg border-2 p-2 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-              :class="selectedCardIds.includes(c.id) && formMode === 'edit' ? 'border-purple-500 bg-gray-700/80' : 'border-gray-600 bg-gray-700/40 hover:border-gray-500'"
-              @click="onGridCardClick(c.id, $event)"
-            >
-              <img
-                :src="c.img"
-                :alt="c.title"
-                class="mx-auto block h-auto max-h-32 w-full max-w-[120px] rounded object-contain shadow"
-              />
-              <div x-show="c.censoredImg" class="mt-1 flex flex-col gap-0.5">
-                <span class="text-[9px] uppercase tracking-wide text-gray-500">Censor</span>
+          <div class="shrink-0">
+            <input
+              id="deck-edit-card-search"
+              type="text"
+              x-model="cardSearchQuery"
+              placeholder="Search cards…"
+              autocomplete="off"
+              class="mt-1 w-full rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200 focus:border-transparent focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+          <p
+            class="shrink-0 text-sm text-gray-400"
+            x-show="cards.length > 0 && filteredDeckEditCards().length === 0"
+          >
+            No cards match your search.
+          </p>
+          <div
+            class="grid min-h-0 max-h-[min(58vh,560px)] flex-1 grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-3"
+          >
+            <template x-for="c in filteredDeckEditCards()" :key="c.id">
+              <button
+                type="button"
+                class="flex flex-col items-stretch rounded-lg border-2 p-2 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                :class="selectedCardIds.includes(c.id) && formMode === 'edit' ? 'border-purple-500 bg-gray-700/80' : 'border-gray-600 bg-gray-700/40 hover:border-gray-500'"
+                @click="onGridCardClick(c.id, $event)"
+              >
                 <img
-                  :src="c.censoredImg"
-                  alt=""
-                  class="mx-auto block h-auto max-h-20 w-full max-w-[120px] rounded object-contain opacity-90 ring-1 ring-gray-600"
+                  :src="c.img"
+                  :alt="c.title"
+                  class="mx-auto block h-auto max-h-32 w-full max-w-[120px] rounded object-contain shadow"
                 />
-              </div>
-              <span
-                class="mt-2 line-clamp-2 text-xs font-medium text-gray-200"
-                x-text="c.title"
-              ></span>
-              <span class="text-[10px] text-gray-500">#<span x-text="c.num"></span></span>
-            </button>
-          </template>
+                <div x-show="c.censoredImg" class="mt-1 flex flex-col gap-0.5">
+                  <span class="text-[9px] uppercase tracking-wide text-gray-500">Censor</span>
+                  <img
+                    :src="c.censoredImg"
+                    alt=""
+                    class="mx-auto block h-auto max-h-20 w-full max-w-[120px] rounded object-contain opacity-90 ring-1 ring-gray-600"
+                  />
+                </div>
+                <span
+                  class="mt-2 line-clamp-2 text-xs font-medium text-gray-200"
+                  x-text="c.title"
+                ></span>
+                <span class="text-[10px] text-gray-500">#<span x-text="c.num"></span></span>
+              </button>
+            </template>
+          </div>
         </div>
       </div>
 

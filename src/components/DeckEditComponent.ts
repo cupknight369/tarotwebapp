@@ -16,6 +16,20 @@ type OpenDeckEditDetail = { deckId?: string; deckTitle?: string };
 
 type FormMode = 'edit' | 'add';
 
+/**
+ * @param query - Raw search string from the deck edit modal.
+ * @param card - Card title and number to test.
+ * @returns True when `query` is empty/whitespace, or when title contains the trimmed query
+ *   case-insensitively, or when `String(card.num)` contains the trimmed query as a substring.
+ */
+function cardMatchesDeckEditSearch(query: string, card: { title: string; num: number }): boolean {
+  const raw = query.trim();
+  if (raw === '') return true;
+  const q = raw.toLowerCase();
+  if (card.title.toLowerCase().includes(q)) return true;
+  return String(card.num).includes(raw);
+}
+
 function cryptoRandomInt(len: number): number {
   const buf = new Uint32Array(1);
   crypto.getRandomValues(buf);
@@ -51,6 +65,11 @@ Alpine.data('deckEditComponent', () => ({
   clearCensor: false,
   newCardTitle: '',
   newCardNumber: 1,
+  cardSearchQuery: '',
+
+  filteredDeckEditCards(): TarotCard[] {
+    return this.cards.filter((c) => cardMatchesDeckEditSearch(this.cardSearchQuery, c));
+  },
 
   clearFileInputs() {
     const main = document.getElementById('deck-edit-main') as HTMLInputElement | null;
@@ -114,6 +133,7 @@ Alpine.data('deckEditComponent', () => ({
     this.addError = null;
     this.deleteError = null;
     this.loadError = null;
+    this.cardSearchQuery = '';
     this.formMode = 'edit';
     this.loading = true;
     try {
@@ -159,6 +179,7 @@ Alpine.data('deckEditComponent', () => ({
     this.formMode = 'edit';
     this.newCardTitle = '';
     this.newCardNumber = 1;
+    this.cardSearchQuery = '';
     this.resetForm();
     this.clearAddFileInputs();
   },
