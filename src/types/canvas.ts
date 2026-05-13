@@ -37,6 +37,7 @@ export type MergedThis = {
   loadModalConfirmingForId: string | null;
   loadModalEditingReadingId: string | null;
   loadModalEditingTitle: string;
+  loadModalSearchQuery: string;
   localSavedReadings: { id: string; name: string; updated_at: string }[];
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
@@ -157,6 +158,7 @@ export type MergedThis = {
   saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }>;
   loadReadingById(id: string): Promise<void>;
   openLoadModal(): Promise<void>;
+  filteredLoadModalReadings(): { id: string; name: string; updated_at: string }[];
   closeLoadModal(): void;
   onSelectReadingToLoad(id: string): Promise<void>;
   saveAndLoad(id: string): Promise<void>;

@@ -22,6 +22,19 @@ function openSaveFailureDialog(message: string): void {
   });
 }
 
+/**
+ * @param query - Raw search string from the load modal (title-only match).
+ * @param name - Stored reading name; empty/whitespace uses the same label as the UI.
+ * @returns True when `query` is empty/whitespace or when the display title contains the trimmed
+ *   query, case-insensitively.
+ */
+function savedReadingTitleMatchesSearch(query: string, name: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (q === '') return true;
+  const displayTitle = name.trim() === '' ? 'Untitled Reading' : name;
+  return displayTitle.toLowerCase().includes(q);
+}
+
 Alpine.data('stateComponent', () => ({
   dirty: false,
   loadedReadingId: null as string | null,
@@ -29,6 +42,7 @@ Alpine.data('stateComponent', () => ({
   loadModalConfirmingForId: null as string | null,
   loadModalEditingReadingId: null as string | null,
   loadModalEditingTitle: '',
+  loadModalSearchQuery: '',
   localSavedReadings: [] as { id: string; name: string; updated_at: string }[],
   saveAndLoadTargetId: null as string | null,
   readingSaveFlashVisible: false,
@@ -343,9 +357,16 @@ Alpine.data('stateComponent', () => ({
   async openLoadModal(this: MergedThis): Promise<void> {
     this.loadModalEditingReadingId = null;
     this.loadModalEditingTitle = '';
+    this.loadModalSearchQuery = '';
     this.loadModalOpen = true;
     this.loadModalConfirmingForId = null;
     this.localSavedReadings = await localReadingsLib.listLocalReadings();
+  },
+
+  filteredLoadModalReadings(this: MergedThis): { id: string; name: string; updated_at: string }[] {
+    return this.localSavedReadings.filter((r) =>
+      savedReadingTitleMatchesSearch(this.loadModalSearchQuery, r.name),
+    );
   },
 
   closeLoadModal(this: MergedThis): void {

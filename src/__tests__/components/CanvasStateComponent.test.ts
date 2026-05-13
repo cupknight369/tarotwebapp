@@ -136,6 +136,7 @@ type StateCtx = {
   loadModalConfirmingForId: string | null;
   loadModalEditingReadingId: string | null;
   loadModalEditingTitle: string;
+  loadModalSearchQuery: string;
   localSavedReadings: { id: string; name: string; updated_at: string }[];
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
@@ -151,7 +152,13 @@ type StateCtx = {
   selectedCardIds: string[];
   editingTextId: string | null;
   viewport: HTMLDivElement | null;
-  contextMenu: { open: boolean; x: number; y: number; cardId: string | null; textId: string | null };
+  contextMenu: {
+    open: boolean;
+    x: number;
+    y: number;
+    cardId: string | null;
+    textId: string | null;
+  };
   shuffleDeck: ReturnType<typeof vi.fn>;
   clearCanvas: ReturnType<typeof vi.fn>;
   drawCardAt: ReturnType<typeof vi.fn>;
@@ -162,6 +169,7 @@ type StateCtx = {
   saveCurrentReading: (name?: string) => Promise<{ ok: boolean; error?: string }>;
   loadReadingById: (id: string) => Promise<void>;
   openLoadModal: () => Promise<void>;
+  filteredLoadModalReadings: () => { id: string; name: string; updated_at: string }[];
   closeLoadModal: () => void;
   onSelectReadingToLoad: (id: string) => Promise<void>;
   saveAndLoad: (id: string) => Promise<void>;
@@ -1165,15 +1173,64 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     const ctx = createCtx({
       loadModalEditingReadingId: 'stale',
       loadModalEditingTitle: 'draft',
+      loadModalSearchQuery: 'stale filter',
     });
     await ctx.openLoadModal.call(ctx);
     expect(ctx.loadModalOpen).toBe(true);
     expect(ctx.localSavedReadings).toHaveLength(1);
     expect(ctx.loadModalEditingReadingId).toBeNull();
     expect(ctx.loadModalEditingTitle).toBe('');
+    expect(ctx.loadModalSearchQuery).toBe('');
     ctx.closeLoadModal.call(ctx);
     expect(ctx.loadModalOpen).toBe(false);
     expect(ctx.loadModalConfirmingForId).toBeNull();
+  });
+
+  describe('filteredLoadModalReadings', () => {
+    it('returns all readings when search is blank or whitespace', () => {
+      const list = [
+        { id: '1', name: 'Alpha', updated_at: 't1' },
+        { id: '2', name: 'Beta', updated_at: 't2' },
+      ];
+      const ctx = createCtx({ localSavedReadings: list, loadModalSearchQuery: '' });
+      expect(ctx.filteredLoadModalReadings.call(ctx)).toEqual(list);
+      ctx.loadModalSearchQuery = '   ';
+      expect(ctx.filteredLoadModalReadings.call(ctx)).toEqual(list);
+    });
+
+    it('matches title case-insensitively by substring', () => {
+      const ctx = createCtx({
+        localSavedReadings: [
+          { id: '1', name: 'Foo Bar', updated_at: 't' },
+          { id: '2', name: 'Other', updated_at: 't' },
+        ],
+        loadModalSearchQuery: 'FOO',
+      });
+      expect(ctx.filteredLoadModalReadings.call(ctx)).toEqual([
+        { id: '1', name: 'Foo Bar', updated_at: 't' },
+      ]);
+    });
+
+    it('returns empty when no title matches', () => {
+      const ctx = createCtx({
+        localSavedReadings: [{ id: '1', name: 'Alpha', updated_at: 't' }],
+        loadModalSearchQuery: 'zzz',
+      });
+      expect(ctx.filteredLoadModalReadings.call(ctx)).toEqual([]);
+    });
+
+    it('matches empty name against Untitled Reading label', () => {
+      const ctx = createCtx({
+        localSavedReadings: [
+          { id: '1', name: '', updated_at: 't' },
+          { id: '2', name: 'Named', updated_at: 't' },
+        ],
+        loadModalSearchQuery: 'untitled',
+      });
+      expect(ctx.filteredLoadModalReadings.call(ctx)).toEqual([
+        { id: '1', name: '', updated_at: 't' },
+      ]);
+    });
   });
 
   it('onSelectReadingToLoad defers when dirty', async () => {
