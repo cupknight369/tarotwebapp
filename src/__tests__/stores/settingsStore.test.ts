@@ -78,10 +78,15 @@ describe('settingsStore.ts', () => {
       open: false,
       censored: false,
       showDeckTitleOnCanvas: true,
+      showCorrespondenceThumbnailsOnCanvas: false,
     });
     expect(setItemMock).toHaveBeenCalledWith(
       STORAGE_KEY,
-      JSON.stringify({ censored: false, showDeckTitleOnCanvas: true }),
+      JSON.stringify({
+        censored: false,
+        showDeckTitleOnCanvas: true,
+        showCorrespondenceThumbnailsOnCanvas: false,
+      }),
     );
   });
 
@@ -92,6 +97,7 @@ describe('settingsStore.ts', () => {
       open: false,
       censored: false,
       showDeckTitleOnCanvas: true,
+      showCorrespondenceThumbnailsOnCanvas: false,
     });
   });
 
@@ -99,12 +105,14 @@ describe('settingsStore.ts', () => {
     lsState.data[STORAGE_KEY] = JSON.stringify({
       censored: true,
       showDeckTitleOnCanvas: false,
+      showCorrespondenceThumbnailsOnCanvas: true,
     });
     initSettingsStore();
     expect(getSettings()).toEqual({
       open: false,
       censored: true,
       showDeckTitleOnCanvas: false,
+      showCorrespondenceThumbnailsOnCanvas: true,
     });
   });
 
@@ -114,6 +122,7 @@ describe('settingsStore.ts', () => {
     const settings = getSettings();
     expect(settings.censored).toBe(true);
     expect(settings.showDeckTitleOnCanvas).toBe(true);
+    expect(settings.showCorrespondenceThumbnailsOnCanvas).toBe(false);
   });
 
   it('uses Boolean(showRaw) when showDeckTitleOnCanvas is present (falsy)', () => {
@@ -123,6 +132,7 @@ describe('settingsStore.ts', () => {
     });
     initSettingsStore();
     expect(getSettings().showDeckTitleOnCanvas).toBe(false);
+    expect(getSettings().showCorrespondenceThumbnailsOnCanvas).toBe(false);
   });
 
   it('uses Boolean(showRaw) when showDeckTitleOnCanvas is truthy', () => {
@@ -132,6 +142,17 @@ describe('settingsStore.ts', () => {
     });
     initSettingsStore();
     expect(getSettings().showDeckTitleOnCanvas).toBe(true);
+    expect(getSettings().showCorrespondenceThumbnailsOnCanvas).toBe(false);
+  });
+
+  it('uses Boolean when showCorrespondenceThumbnailsOnCanvas is present', () => {
+    lsState.data[STORAGE_KEY] = JSON.stringify({
+      censored: false,
+      showDeckTitleOnCanvas: true,
+      showCorrespondenceThumbnailsOnCanvas: 1,
+    });
+    initSettingsStore();
+    expect(getSettings().showCorrespondenceThumbnailsOnCanvas).toBe(true);
   });
 
   it('returns defaults when JSON is not a plain object (null)', () => {
@@ -141,6 +162,7 @@ describe('settingsStore.ts', () => {
       open: false,
       censored: false,
       showDeckTitleOnCanvas: true,
+      showCorrespondenceThumbnailsOnCanvas: false,
     });
   });
 
@@ -151,6 +173,7 @@ describe('settingsStore.ts', () => {
       open: false,
       censored: false,
       showDeckTitleOnCanvas: true,
+      showCorrespondenceThumbnailsOnCanvas: false,
     });
   });
 
@@ -161,6 +184,7 @@ describe('settingsStore.ts', () => {
       open: false,
       censored: false,
       showDeckTitleOnCanvas: true,
+      showCorrespondenceThumbnailsOnCanvas: false,
     });
   });
 
@@ -171,6 +195,7 @@ describe('settingsStore.ts', () => {
       open: false,
       censored: false,
       showDeckTitleOnCanvas: true,
+      showCorrespondenceThumbnailsOnCanvas: false,
     });
   });
 
@@ -181,6 +206,7 @@ describe('settingsStore.ts', () => {
       open: false,
       censored: false,
       showDeckTitleOnCanvas: true,
+      showCorrespondenceThumbnailsOnCanvas: false,
     });
   });
 
@@ -189,13 +215,18 @@ describe('settingsStore.ts', () => {
     const settings = getSettings();
     settings.censored = true;
     settings.showDeckTitleOnCanvas = false;
+    settings.showCorrespondenceThumbnailsOnCanvas = true;
 
     const effectFn = alpineEffect.mock.calls[0][0] as () => void;
     effectFn();
 
     expect(setItemMock).toHaveBeenCalledWith(
       STORAGE_KEY,
-      JSON.stringify({ censored: true, showDeckTitleOnCanvas: false }),
+      JSON.stringify({
+        censored: true,
+        showDeckTitleOnCanvas: false,
+        showCorrespondenceThumbnailsOnCanvas: true,
+      }),
     );
   });
 });

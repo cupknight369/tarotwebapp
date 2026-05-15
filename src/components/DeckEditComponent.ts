@@ -5,9 +5,15 @@ import { queryFailureMessage } from '../lib/supabaseErrors.js';
 import {
   addCardToLocalDeck,
   deleteLocalCards,
+  getLocalCardsByIds,
   listLocalCardsByDeckId,
   updateLocalCard,
 } from '../lib/localDecks.js';
+import {
+  listCorrespondencesGrouped,
+  updateLocalCardCorrespondenceIds,
+  type CorrespondenceGroupSection,
+} from '../lib/localCorrespondences.js';
 import type { TarotCard } from '../types/canvas.js';
 import { addLocalCardFormSchema, saveLocalCardFormSchema } from '../validation/decks.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
@@ -66,9 +72,65 @@ Alpine.data('deckEditComponent', () => ({
   newCardTitle: '',
   newCardNumber: 1,
   cardSearchQuery: '',
+  correspondenceSections: [] as CorrespondenceGroupSection[],
+  selectedCorrespondenceIds: [] as string[],
+  correspondenceAssignError: null as string | null,
 
   filteredDeckEditCards(): TarotCard[] {
     return this.cards.filter((c) => cardMatchesDeckEditSearch(this.cardSearchQuery, c));
+  },
+
+  async onCorrespondencesChanged() {
+    if (!this.open) return;
+    await this.refreshCorrespondenceLibrary();
+    await this.loadCorrespondenceSelection();
+  },
+
+  async refreshCorrespondenceLibrary() {
+    try {
+      this.correspondenceSections = await listCorrespondencesGrouped();
+    } catch (e) {
+      logError('deckEdit.refreshCorrespondenceLibrary', e);
+    }
+  },
+
+  async loadCorrespondenceSelection() {
+    this.correspondenceAssignError = null;
+    if (this.selectedCardIds.length !== 1) {
+      this.selectedCorrespondenceIds = [];
+      return;
+    }
+    const id = this.selectedCardIds[0];
+    try {
+      const map = await getLocalCardsByIds([id]);
+      const row = map.get(id);
+      this.selectedCorrespondenceIds = [...(row?.correspondence_ids ?? [])];
+    } catch (e) {
+      logError('deckEdit.loadCorrespondenceSelection', e);
+      this.selectedCorrespondenceIds = [];
+    }
+  },
+
+  async setCorrespondenceChecked(correspondenceId: string, checked: boolean) {
+    if (this.selectedCardIds.length !== 1 || !this.deckId) return;
+    const cardId = this.selectedCardIds[0];
+    const set = new Set(this.selectedCorrespondenceIds);
+    if (checked) set.add(correspondenceId);
+    else set.delete(correspondenceId);
+    this.selectedCorrespondenceIds = [...set];
+    try {
+      await updateLocalCardCorrespondenceIds(cardId, this.selectedCorrespondenceIds);
+      this.correspondenceAssignError = null;
+      const activeId = Alpine.store('activeDeckId') as string;
+      if (activeId === this.deckId) {
+        const cardsRes = await getCardsByDeckId(this.deckId);
+        if (cardsRes.ok) Alpine.store('shuffledCards', cardsRes.value);
+      }
+    } catch (e) {
+      this.correspondenceAssignError =
+        e instanceof Error ? e.message : 'Could not update correspondences';
+      await this.loadCorrespondenceSelection();
+    }
   },
 
   clearFileInputs() {
@@ -142,6 +204,8 @@ Alpine.data('deckEditComponent', () => ({
       if (this.localEmpty) {
         this.cards = [];
         this.selectedCardIds = [];
+        this.correspondenceSections = [];
+        this.selectedCorrespondenceIds = [];
         this.resetForm();
         this.formMode = 'add';
         this.newCardTitle = '';
@@ -155,7 +219,14 @@ Alpine.data('deckEditComponent', () => ({
         this.loadError = queryFailureMessage(cardsRes.error);
         this.cards = [];
         this.selectedCardIds = [];
+        this.correspondenceSections = [];
         return;
+      }
+      try {
+        this.correspondenceSections = await listCorrespondencesGrouped();
+      } catch (e) {
+        logError('deckEdit.onOpen.listCorrespondencesGrouped', e);
+        this.correspondenceSections = [];
       }
       this.cards = cardsRes.value;
       const firstId = this.cards[0]?.id ?? null;
@@ -172,6 +243,9 @@ Alpine.data('deckEditComponent', () => ({
     this.cards = [];
     this.localEmpty = false;
     this.selectedCardIds = [];
+    this.correspondenceSections = [];
+    this.selectedCorrespondenceIds = [];
+    this.correspondenceAssignError = null;
     this.saveError = null;
     this.addError = null;
     this.deleteError = null;
@@ -188,6 +262,7 @@ Alpine.data('deckEditComponent', () => ({
     if (this.selectedCardIds.length !== 1) {
       this.resetForm();
       this.clearCensor = false;
+      this.selectedCorrespondenceIds = [];
       return;
     }
     const id = this.selectedCardIds[0];
@@ -197,10 +272,12 @@ Alpine.data('deckEditComponent', () => ({
     if (!card) {
       this.editTitle = '';
       this.editNumber = 1;
+      this.selectedCorrespondenceIds = [];
       return;
     }
     this.editTitle = card.title;
     this.editNumber = card.num;
+    void this.loadCorrespondenceSelection();
   },
 
   onGridCardClick(id: string, event: MouseEvent) {

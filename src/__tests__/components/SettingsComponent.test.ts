@@ -46,6 +46,7 @@ function settingsState(overrides: Partial<SettingsStoreState> = {}): SettingsSto
     open: false,
     censored: false,
     showDeckTitleOnCanvas: true,
+    showCorrespondenceThumbnailsOnCanvas: false,
     ...overrides,
   };
 }

@@ -13,6 +13,17 @@ const m = vi.hoisted(() => ({
   backupToDecks: vi.fn(),
   backupToReadings: vi.fn(),
   materializeCardRowFromProto: vi.fn(),
+  correspondenceGroupRowFromProto: vi.fn((g: { id: string; title?: string }) => ({
+    id: g.id,
+    title: g.title ?? 'G',
+  })),
+  materializeCorrespondenceRowFromProto: vi.fn(),
+}));
+
+const corrMocks = vi.hoisted(() => ({
+  ensureDefaultCorrespondenceGroup: vi.fn(),
+  putCorrespondenceGroup: vi.fn(),
+  putCorrespondence: vi.fn(),
 }));
 
 vi.mock('../../lib/logError.js', () => ({ logError: m.logError }));
@@ -23,11 +34,19 @@ vi.mock('../../lib/indexedDb.js', () => ({
   STORE_DECKS: 'decks',
   STORE_CARDS: 'cards',
   STORE_READINGS: 'readings',
+  STORE_CORRESPONDENCE_GROUPS: 'correspondenceGroups',
+  STORE_CORRESPONDENCES: 'correspondences',
 }));
 
 vi.mock('../../lib/localDecks.js', () => ({
   putLocalDeck: m.putLocalDeck,
   putLocalCard: m.putLocalCard,
+}));
+
+vi.mock('../../lib/localCorrespondences.js', () => ({
+  ensureDefaultCorrespondenceGroup: corrMocks.ensureDefaultCorrespondenceGroup,
+  putCorrespondenceGroup: corrMocks.putCorrespondenceGroup,
+  putCorrespondence: corrMocks.putCorrespondence,
 }));
 
 vi.mock('../../lib/proto/backupCodec.js', () => ({
@@ -36,6 +55,8 @@ vi.mock('../../lib/proto/backupCodec.js', () => ({
   backupToDecks: m.backupToDecks,
   backupToReadings: m.backupToReadings,
   materializeCardRowFromProto: m.materializeCardRowFromProto,
+  correspondenceGroupRowFromProto: m.correspondenceGroupRowFromProto,
+  materializeCorrespondenceRowFromProto: m.materializeCorrespondenceRowFromProto,
 }));
 
 vi.mock('../../proto/generated/bundle.js', () => ({
@@ -116,6 +137,10 @@ describe('localBackup.ts', () => {
     m.openTarotDb.mockResolvedValue(fakeDb());
     m.putLocalDeck.mockResolvedValue(undefined);
     m.putLocalCard.mockResolvedValue(undefined);
+    corrMocks.ensureDefaultCorrespondenceGroup.mockResolvedValue(undefined);
+    corrMocks.putCorrespondenceGroup.mockResolvedValue(undefined);
+    corrMocks.putCorrespondence.mockResolvedValue(undefined);
+    m.materializeCorrespondenceRowFromProto.mockResolvedValue(null);
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       cb(0);
       return 0;
@@ -141,6 +166,8 @@ describe('localBackup.ts', () => {
       if (step === 1) return Promise.resolve([deck]);
       if (step === 2) return Promise.resolve([card]);
       if (step === 3) return Promise.resolve([reading]);
+      if (step === 4) return Promise.resolve([]);
+      if (step === 5) return Promise.resolve([]);
       return Promise.reject(new Error(`unexpected idb step ${step}`));
     });
     m.encodeCktarotBackup.mockResolvedValue(new Uint8Array([7, 8]));
@@ -154,6 +181,8 @@ describe('localBackup.ts', () => {
         decks: [deck],
         cards: [card],
         readings: [reading],
+        correspondenceGroups: [],
+        correspondences: [],
         exportedAt: expect.any(String) as string,
       }),
     );
@@ -165,7 +194,12 @@ describe('localBackup.ts', () => {
 
   it('exportLocalBackup works without onProgress', async () => {
     stubDomDownload();
-    m.idbRequest.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    m.idbRequest
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
     m.encodeCktarotBackup.mockResolvedValue(new Uint8Array());
     await expect(exportLocalBackup()).resolves.toEqual({ errors: [] });
   });
@@ -184,7 +218,12 @@ describe('localBackup.ts', () => {
   });
 
   it('exportLocalBackup handles serialize failure', async () => {
-    m.idbRequest.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    m.idbRequest
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
     m.encodeCktarotBackup.mockRejectedValue(new Error('encode'));
     const r = await exportLocalBackup();
     expect(r.errors).toEqual(['Failed to serialize backup: encode']);
@@ -195,7 +234,12 @@ describe('localBackup.ts', () => {
     dom.createElement.mockImplementation(() => {
       throw new Error('no anchor');
     });
-    m.idbRequest.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    m.idbRequest
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
     m.encodeCktarotBackup.mockResolvedValue(new Uint8Array([1]));
     const r = await exportLocalBackup();
     expect(r.errors).toEqual(['Failed to start download: no anchor']);

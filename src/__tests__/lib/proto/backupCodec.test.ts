@@ -65,7 +65,13 @@ describe('backupCodec.ts', () => {
           from_catalog: false,
         },
       ];
-      const bytes = await encodeCktarotBackup({ decks, cards: [], readings: [] });
+      const bytes = await encodeCktarotBackup({
+        decks,
+        cards: [],
+        readings: [],
+        correspondenceGroups: [],
+        correspondences: [],
+      });
       const { backup, errors } = decodeCktarotBackup(bytes);
       expect(errors).toEqual([]);
       expect(backup.version).toBe(BACKUP_VERSION);
@@ -82,13 +88,21 @@ describe('backupCodec.ts', () => {
         cards: [],
         readings: [],
         exportedAt: '2026-01-01T00:00:00.000Z',
+        correspondenceGroups: [],
+        correspondences: [],
       });
       const { backup } = decodeCktarotBackup(bytes);
       expect(backup.exportedAt).toBe('2026-01-01T00:00:00.000Z');
     });
 
     it('omits exportedAt when not provided', async () => {
-      const bytes = await encodeCktarotBackup({ decks: [], cards: [], readings: [] });
+      const bytes = await encodeCktarotBackup({
+        decks: [],
+        cards: [],
+        readings: [],
+        correspondenceGroups: [],
+        correspondences: [],
+      });
       const { backup } = decodeCktarotBackup(bytes);
       expect(backup.exportedAt).toBeFalsy();
     });
@@ -139,7 +153,13 @@ describe('backupCodec.ts', () => {
         },
       ];
 
-      const bytes = await encodeCktarotBackup({ decks: [], cards, readings: [] });
+      const bytes = await encodeCktarotBackup({
+        decks: [],
+        cards,
+        readings: [],
+        correspondenceGroups: [],
+        correspondences: [],
+      });
       const { backup } = decodeCktarotBackup(bytes);
       expect(backup.cards).toHaveLength(2);
       expect(backup.cards[0]?.data?.length).toBe(3);
@@ -165,7 +185,13 @@ describe('backupCodec.ts', () => {
           censorImageBlobId: null,
         },
       ];
-      const bytes = await encodeCktarotBackup({ decks: [], cards, readings: [] });
+      const bytes = await encodeCktarotBackup({
+        decks: [],
+        cards,
+        readings: [],
+        correspondenceGroups: [],
+        correspondences: [],
+      });
       const { backup } = decodeCktarotBackup(bytes);
       expect(backup.cards[0]?.data?.length).toBe(1);
       expect(backup.cards[0]?.mimeType).toBeFalsy();
@@ -189,7 +215,13 @@ describe('backupCodec.ts', () => {
           censorImageBlobId: 'cen-none',
         },
       ];
-      const bytes = await encodeCktarotBackup({ decks: [], cards, readings: [] });
+      const bytes = await encodeCktarotBackup({
+        decks: [],
+        cards,
+        readings: [],
+        correspondenceGroups: [],
+        correspondences: [],
+      });
       const { backup } = decodeCktarotBackup(bytes);
       expect(backup.cards[0]?.data?.length).toBe(1);
       expect(backup.cards[0]?.censoredData?.length).toBeFalsy();
@@ -220,7 +252,13 @@ describe('backupCodec.ts', () => {
           censorImageBlobId: 'c',
         },
       ];
-      const bytes = await encodeCktarotBackup({ decks: [], cards, readings: [] });
+      const bytes = await encodeCktarotBackup({
+        decks: [],
+        cards,
+        readings: [],
+        correspondenceGroups: [],
+        correspondences: [],
+      });
       const { backup } = decodeCktarotBackup(bytes);
       expect(backup.cards[0]?.censoredData?.length).toBe(1);
       expect(backup.cards[0]?.censoredMimeType).toBeFalsy();
@@ -293,7 +331,13 @@ describe('backupCodec.ts', () => {
         updated_at: 'u2',
       } as unknown as LocalReadingRow;
 
-      const bytes = await encodeCktarotBackup({ decks: [], cards: [], readings: [r1, r2] });
+      const bytes = await encodeCktarotBackup({
+        decks: [],
+        cards: [],
+        readings: [r1, r2],
+        correspondenceGroups: [],
+        correspondences: [],
+      });
       const { backup, errors } = decodeCktarotBackup(bytes);
       expect(errors).toEqual([]);
       const readings = backupToReadings(backup);
@@ -345,6 +389,7 @@ describe('backupCodec.ts', () => {
         number: 3,
         imageBlobId: 'uuid-main',
         censorImageBlobId: null,
+        correspondence_ids: [],
       });
       expect(putLocalCardImageRow).toHaveBeenCalledTimes(1);
       const put = putLocalCardImageRow.mock.calls[0][0] as LocalCardImageRow;

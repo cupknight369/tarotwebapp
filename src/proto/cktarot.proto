@@ -91,6 +91,21 @@ message CardRow {
   optional bytes data = 7;
   optional bytes censored_data = 8;
   optional string censored_mime_type = 9;
+  repeated string correspondence_ids = 10;
+}
+
+message CorrespondenceGroupRow {
+  string id = 1;
+  string title = 2;
+}
+
+message CorrespondenceRow {
+  string id = 1;
+  string title = 2;
+  optional string description = 3;
+  string group_id = 4;
+  optional bytes thumbnail_data = 5;
+  optional string thumbnail_mime_type = 6;
 }
 
 message ReadingRow {
@@ -106,4 +121,6 @@ message CktarotBackup {
   repeated DeckRow decks = 3;
   repeated CardRow cards = 4;
   repeated ReadingRow readings = 5;
+  repeated CorrespondenceGroupRow correspondence_groups = 6;
+  repeated CorrespondenceRow correspondences = 7;
 }

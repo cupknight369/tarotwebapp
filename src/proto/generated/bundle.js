@@ -2278,6 +2278,7 @@ export const cktarot = $root.cktarot = (() => {
          * @property {Uint8Array|null} [data] CardRow data
          * @property {Uint8Array|null} [censoredData] CardRow censoredData
          * @property {string|null} [censoredMimeType] CardRow censoredMimeType
+         * @property {Array.<string>|null} [correspondenceIds] CardRow correspondenceIds
          */
 
         /**
@@ -2289,6 +2290,7 @@ export const cktarot = $root.cktarot = (() => {
          * @param {cktarot.ICardRow=} [properties] Properties to set
          */
         function CardRow(properties) {
+            this.correspondenceIds = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -2367,6 +2369,14 @@ export const cktarot = $root.cktarot = (() => {
          */
         CardRow.prototype.censoredMimeType = null;
 
+        /**
+         * CardRow correspondenceIds.
+         * @member {Array.<string>} correspondenceIds
+         * @memberof cktarot.CardRow
+         * @instance
+         */
+        CardRow.prototype.correspondenceIds = $util.emptyArray;
+
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
 
@@ -2442,6 +2452,9 @@ export const cktarot = $root.cktarot = (() => {
                 writer.uint32(/* id 8, wireType 2 =*/66).bytes(message.censoredData);
             if (message.censoredMimeType != null && Object.hasOwnProperty.call(message, "censoredMimeType"))
                 writer.uint32(/* id 9, wireType 2 =*/74).string(message.censoredMimeType);
+            if (message.correspondenceIds != null && message.correspondenceIds.length)
+                for (let i = 0; i < message.correspondenceIds.length; ++i)
+                    writer.uint32(/* id 10, wireType 2 =*/82).string(message.correspondenceIds[i]);
             return writer;
         };
 
@@ -2512,6 +2525,12 @@ export const cktarot = $root.cktarot = (() => {
                     }
                 case 9: {
                         message.censoredMimeType = reader.string();
+                        break;
+                    }
+                case 10: {
+                        if (!(message.correspondenceIds && message.correspondenceIds.length))
+                            message.correspondenceIds = [];
+                        message.correspondenceIds.push(reader.string());
                         break;
                     }
                 default:
@@ -2587,6 +2606,13 @@ export const cktarot = $root.cktarot = (() => {
                 if (!$util.isString(message.censoredMimeType))
                     return "censoredMimeType: string expected";
             }
+            if (message.correspondenceIds != null && message.hasOwnProperty("correspondenceIds")) {
+                if (!Array.isArray(message.correspondenceIds))
+                    return "correspondenceIds: array expected";
+                for (let i = 0; i < message.correspondenceIds.length; ++i)
+                    if (!$util.isString(message.correspondenceIds[i]))
+                        return "correspondenceIds: string[] expected";
+            }
             return null;
         };
 
@@ -2626,6 +2652,13 @@ export const cktarot = $root.cktarot = (() => {
                     message.censoredData = object.censoredData;
             if (object.censoredMimeType != null)
                 message.censoredMimeType = String(object.censoredMimeType);
+            if (object.correspondenceIds) {
+                if (!Array.isArray(object.correspondenceIds))
+                    throw TypeError(".cktarot.CardRow.correspondenceIds: array expected");
+                message.correspondenceIds = [];
+                for (let i = 0; i < object.correspondenceIds.length; ++i)
+                    message.correspondenceIds[i] = String(object.correspondenceIds[i]);
+            }
             return message;
         };
 
@@ -2642,6 +2675,8 @@ export const cktarot = $root.cktarot = (() => {
             if (!options)
                 options = {};
             let object = {};
+            if (options.arrays || options.defaults)
+                object.correspondenceIds = [];
             if (options.defaults) {
                 object.id = "";
                 object.deckId = "";
@@ -2681,6 +2716,11 @@ export const cktarot = $root.cktarot = (() => {
                 if (options.oneofs)
                     object._censoredMimeType = "censoredMimeType";
             }
+            if (message.correspondenceIds && message.correspondenceIds.length) {
+                object.correspondenceIds = [];
+                for (let j = 0; j < message.correspondenceIds.length; ++j)
+                    object.correspondenceIds[j] = message.correspondenceIds[j];
+            }
             return object;
         };
 
@@ -2711,6 +2751,593 @@ export const cktarot = $root.cktarot = (() => {
         };
 
         return CardRow;
+    })();
+
+    cktarot.CorrespondenceGroupRow = (function() {
+
+        /**
+         * Properties of a CorrespondenceGroupRow.
+         * @memberof cktarot
+         * @interface ICorrespondenceGroupRow
+         * @property {string|null} [id] CorrespondenceGroupRow id
+         * @property {string|null} [title] CorrespondenceGroupRow title
+         */
+
+        /**
+         * Constructs a new CorrespondenceGroupRow.
+         * @memberof cktarot
+         * @classdesc Represents a CorrespondenceGroupRow.
+         * @implements ICorrespondenceGroupRow
+         * @constructor
+         * @param {cktarot.ICorrespondenceGroupRow=} [properties] Properties to set
+         */
+        function CorrespondenceGroupRow(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * CorrespondenceGroupRow id.
+         * @member {string} id
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @instance
+         */
+        CorrespondenceGroupRow.prototype.id = "";
+
+        /**
+         * CorrespondenceGroupRow title.
+         * @member {string} title
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @instance
+         */
+        CorrespondenceGroupRow.prototype.title = "";
+
+        /**
+         * Creates a new CorrespondenceGroupRow instance using the specified properties.
+         * @function create
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {cktarot.ICorrespondenceGroupRow=} [properties] Properties to set
+         * @returns {cktarot.CorrespondenceGroupRow} CorrespondenceGroupRow instance
+         */
+        CorrespondenceGroupRow.create = function create(properties) {
+            return new CorrespondenceGroupRow(properties);
+        };
+
+        /**
+         * Encodes the specified CorrespondenceGroupRow message. Does not implicitly {@link cktarot.CorrespondenceGroupRow.verify|verify} messages.
+         * @function encode
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {cktarot.ICorrespondenceGroupRow} message CorrespondenceGroupRow message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        CorrespondenceGroupRow.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
+            if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.title);
+            return writer;
+        };
+
+        /**
+         * Encodes the specified CorrespondenceGroupRow message, length delimited. Does not implicitly {@link cktarot.CorrespondenceGroupRow.verify|verify} messages.
+         * @function encodeDelimited
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {cktarot.ICorrespondenceGroupRow} message CorrespondenceGroupRow message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        CorrespondenceGroupRow.encodeDelimited = function encodeDelimited(message, writer) {
+            return this.encode(message, writer).ldelim();
+        };
+
+        /**
+         * Decodes a CorrespondenceGroupRow message from the specified reader or buffer.
+         * @function decode
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {cktarot.CorrespondenceGroupRow} CorrespondenceGroupRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        CorrespondenceGroupRow.decode = function decode(reader, length, error) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.cktarot.CorrespondenceGroupRow();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                if (tag === error)
+                    break;
+                switch (tag >>> 3) {
+                case 1: {
+                        message.id = reader.string();
+                        break;
+                    }
+                case 2: {
+                        message.title = reader.string();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Decodes a CorrespondenceGroupRow message from the specified reader or buffer, length delimited.
+         * @function decodeDelimited
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @returns {cktarot.CorrespondenceGroupRow} CorrespondenceGroupRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        CorrespondenceGroupRow.decodeDelimited = function decodeDelimited(reader) {
+            if (!(reader instanceof $Reader))
+                reader = new $Reader(reader);
+            return this.decode(reader, reader.uint32());
+        };
+
+        /**
+         * Verifies a CorrespondenceGroupRow message.
+         * @function verify
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {Object.<string,*>} message Plain object to verify
+         * @returns {string|null} `null` if valid, otherwise the reason why it is not
+         */
+        CorrespondenceGroupRow.verify = function verify(message) {
+            if (typeof message !== "object" || message === null)
+                return "object expected";
+            if (message.id != null && message.hasOwnProperty("id"))
+                if (!$util.isString(message.id))
+                    return "id: string expected";
+            if (message.title != null && message.hasOwnProperty("title"))
+                if (!$util.isString(message.title))
+                    return "title: string expected";
+            return null;
+        };
+
+        /**
+         * Creates a CorrespondenceGroupRow message from a plain object. Also converts values to their respective internal types.
+         * @function fromObject
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {Object.<string,*>} object Plain object
+         * @returns {cktarot.CorrespondenceGroupRow} CorrespondenceGroupRow
+         */
+        CorrespondenceGroupRow.fromObject = function fromObject(object) {
+            if (object instanceof $root.cktarot.CorrespondenceGroupRow)
+                return object;
+            let message = new $root.cktarot.CorrespondenceGroupRow();
+            if (object.id != null)
+                message.id = String(object.id);
+            if (object.title != null)
+                message.title = String(object.title);
+            return message;
+        };
+
+        /**
+         * Creates a plain object from a CorrespondenceGroupRow message. Also converts values to other types if specified.
+         * @function toObject
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {cktarot.CorrespondenceGroupRow} message CorrespondenceGroupRow
+         * @param {$protobuf.IConversionOptions} [options] Conversion options
+         * @returns {Object.<string,*>} Plain object
+         */
+        CorrespondenceGroupRow.toObject = function toObject(message, options) {
+            if (!options)
+                options = {};
+            let object = {};
+            if (options.defaults) {
+                object.id = "";
+                object.title = "";
+            }
+            if (message.id != null && message.hasOwnProperty("id"))
+                object.id = message.id;
+            if (message.title != null && message.hasOwnProperty("title"))
+                object.title = message.title;
+            return object;
+        };
+
+        /**
+         * Converts this CorrespondenceGroupRow to JSON.
+         * @function toJSON
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @instance
+         * @returns {Object.<string,*>} JSON object
+         */
+        CorrespondenceGroupRow.prototype.toJSON = function toJSON() {
+            return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+        };
+
+        /**
+         * Gets the default type url for CorrespondenceGroupRow
+         * @function getTypeUrl
+         * @memberof cktarot.CorrespondenceGroupRow
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        CorrespondenceGroupRow.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/cktarot.CorrespondenceGroupRow";
+        };
+
+        return CorrespondenceGroupRow;
+    })();
+
+    cktarot.CorrespondenceRow = (function() {
+
+        /**
+         * Properties of a CorrespondenceRow.
+         * @memberof cktarot
+         * @interface ICorrespondenceRow
+         * @property {string|null} [id] CorrespondenceRow id
+         * @property {string|null} [title] CorrespondenceRow title
+         * @property {string|null} [description] CorrespondenceRow description
+         * @property {string|null} [groupId] CorrespondenceRow groupId
+         * @property {Uint8Array|null} [thumbnailData] CorrespondenceRow thumbnailData
+         * @property {string|null} [thumbnailMimeType] CorrespondenceRow thumbnailMimeType
+         */
+
+        /**
+         * Constructs a new CorrespondenceRow.
+         * @memberof cktarot
+         * @classdesc Represents a CorrespondenceRow.
+         * @implements ICorrespondenceRow
+         * @constructor
+         * @param {cktarot.ICorrespondenceRow=} [properties] Properties to set
+         */
+        function CorrespondenceRow(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * CorrespondenceRow id.
+         * @member {string} id
+         * @memberof cktarot.CorrespondenceRow
+         * @instance
+         */
+        CorrespondenceRow.prototype.id = "";
+
+        /**
+         * CorrespondenceRow title.
+         * @member {string} title
+         * @memberof cktarot.CorrespondenceRow
+         * @instance
+         */
+        CorrespondenceRow.prototype.title = "";
+
+        /**
+         * CorrespondenceRow description.
+         * @member {string|null|undefined} description
+         * @memberof cktarot.CorrespondenceRow
+         * @instance
+         */
+        CorrespondenceRow.prototype.description = null;
+
+        /**
+         * CorrespondenceRow groupId.
+         * @member {string} groupId
+         * @memberof cktarot.CorrespondenceRow
+         * @instance
+         */
+        CorrespondenceRow.prototype.groupId = "";
+
+        /**
+         * CorrespondenceRow thumbnailData.
+         * @member {Uint8Array|null|undefined} thumbnailData
+         * @memberof cktarot.CorrespondenceRow
+         * @instance
+         */
+        CorrespondenceRow.prototype.thumbnailData = null;
+
+        /**
+         * CorrespondenceRow thumbnailMimeType.
+         * @member {string|null|undefined} thumbnailMimeType
+         * @memberof cktarot.CorrespondenceRow
+         * @instance
+         */
+        CorrespondenceRow.prototype.thumbnailMimeType = null;
+
+        // OneOf field names bound to virtual getters and setters
+        let $oneOfFields;
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(CorrespondenceRow.prototype, "_description", {
+            get: $util.oneOfGetter($oneOfFields = ["description"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(CorrespondenceRow.prototype, "_thumbnailData", {
+            get: $util.oneOfGetter($oneOfFields = ["thumbnailData"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(CorrespondenceRow.prototype, "_thumbnailMimeType", {
+            get: $util.oneOfGetter($oneOfFields = ["thumbnailMimeType"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        /**
+         * Creates a new CorrespondenceRow instance using the specified properties.
+         * @function create
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {cktarot.ICorrespondenceRow=} [properties] Properties to set
+         * @returns {cktarot.CorrespondenceRow} CorrespondenceRow instance
+         */
+        CorrespondenceRow.create = function create(properties) {
+            return new CorrespondenceRow(properties);
+        };
+
+        /**
+         * Encodes the specified CorrespondenceRow message. Does not implicitly {@link cktarot.CorrespondenceRow.verify|verify} messages.
+         * @function encode
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {cktarot.ICorrespondenceRow} message CorrespondenceRow message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        CorrespondenceRow.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
+            if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.title);
+            if (message.description != null && Object.hasOwnProperty.call(message, "description"))
+                writer.uint32(/* id 3, wireType 2 =*/26).string(message.description);
+            if (message.groupId != null && Object.hasOwnProperty.call(message, "groupId"))
+                writer.uint32(/* id 4, wireType 2 =*/34).string(message.groupId);
+            if (message.thumbnailData != null && Object.hasOwnProperty.call(message, "thumbnailData"))
+                writer.uint32(/* id 5, wireType 2 =*/42).bytes(message.thumbnailData);
+            if (message.thumbnailMimeType != null && Object.hasOwnProperty.call(message, "thumbnailMimeType"))
+                writer.uint32(/* id 6, wireType 2 =*/50).string(message.thumbnailMimeType);
+            return writer;
+        };
+
+        /**
+         * Encodes the specified CorrespondenceRow message, length delimited. Does not implicitly {@link cktarot.CorrespondenceRow.verify|verify} messages.
+         * @function encodeDelimited
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {cktarot.ICorrespondenceRow} message CorrespondenceRow message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        CorrespondenceRow.encodeDelimited = function encodeDelimited(message, writer) {
+            return this.encode(message, writer).ldelim();
+        };
+
+        /**
+         * Decodes a CorrespondenceRow message from the specified reader or buffer.
+         * @function decode
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {cktarot.CorrespondenceRow} CorrespondenceRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        CorrespondenceRow.decode = function decode(reader, length, error) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.cktarot.CorrespondenceRow();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                if (tag === error)
+                    break;
+                switch (tag >>> 3) {
+                case 1: {
+                        message.id = reader.string();
+                        break;
+                    }
+                case 2: {
+                        message.title = reader.string();
+                        break;
+                    }
+                case 3: {
+                        message.description = reader.string();
+                        break;
+                    }
+                case 4: {
+                        message.groupId = reader.string();
+                        break;
+                    }
+                case 5: {
+                        message.thumbnailData = reader.bytes();
+                        break;
+                    }
+                case 6: {
+                        message.thumbnailMimeType = reader.string();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Decodes a CorrespondenceRow message from the specified reader or buffer, length delimited.
+         * @function decodeDelimited
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @returns {cktarot.CorrespondenceRow} CorrespondenceRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        CorrespondenceRow.decodeDelimited = function decodeDelimited(reader) {
+            if (!(reader instanceof $Reader))
+                reader = new $Reader(reader);
+            return this.decode(reader, reader.uint32());
+        };
+
+        /**
+         * Verifies a CorrespondenceRow message.
+         * @function verify
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {Object.<string,*>} message Plain object to verify
+         * @returns {string|null} `null` if valid, otherwise the reason why it is not
+         */
+        CorrespondenceRow.verify = function verify(message) {
+            if (typeof message !== "object" || message === null)
+                return "object expected";
+            let properties = {};
+            if (message.id != null && message.hasOwnProperty("id"))
+                if (!$util.isString(message.id))
+                    return "id: string expected";
+            if (message.title != null && message.hasOwnProperty("title"))
+                if (!$util.isString(message.title))
+                    return "title: string expected";
+            if (message.description != null && message.hasOwnProperty("description")) {
+                properties._description = 1;
+                if (!$util.isString(message.description))
+                    return "description: string expected";
+            }
+            if (message.groupId != null && message.hasOwnProperty("groupId"))
+                if (!$util.isString(message.groupId))
+                    return "groupId: string expected";
+            if (message.thumbnailData != null && message.hasOwnProperty("thumbnailData")) {
+                properties._thumbnailData = 1;
+                if (!(message.thumbnailData && typeof message.thumbnailData.length === "number" || $util.isString(message.thumbnailData)))
+                    return "thumbnailData: buffer expected";
+            }
+            if (message.thumbnailMimeType != null && message.hasOwnProperty("thumbnailMimeType")) {
+                properties._thumbnailMimeType = 1;
+                if (!$util.isString(message.thumbnailMimeType))
+                    return "thumbnailMimeType: string expected";
+            }
+            return null;
+        };
+
+        /**
+         * Creates a CorrespondenceRow message from a plain object. Also converts values to their respective internal types.
+         * @function fromObject
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {Object.<string,*>} object Plain object
+         * @returns {cktarot.CorrespondenceRow} CorrespondenceRow
+         */
+        CorrespondenceRow.fromObject = function fromObject(object) {
+            if (object instanceof $root.cktarot.CorrespondenceRow)
+                return object;
+            let message = new $root.cktarot.CorrespondenceRow();
+            if (object.id != null)
+                message.id = String(object.id);
+            if (object.title != null)
+                message.title = String(object.title);
+            if (object.description != null)
+                message.description = String(object.description);
+            if (object.groupId != null)
+                message.groupId = String(object.groupId);
+            if (object.thumbnailData != null)
+                if (typeof object.thumbnailData === "string")
+                    $util.base64.decode(object.thumbnailData, message.thumbnailData = $util.newBuffer($util.base64.length(object.thumbnailData)), 0);
+                else if (object.thumbnailData.length >= 0)
+                    message.thumbnailData = object.thumbnailData;
+            if (object.thumbnailMimeType != null)
+                message.thumbnailMimeType = String(object.thumbnailMimeType);
+            return message;
+        };
+
+        /**
+         * Creates a plain object from a CorrespondenceRow message. Also converts values to other types if specified.
+         * @function toObject
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {cktarot.CorrespondenceRow} message CorrespondenceRow
+         * @param {$protobuf.IConversionOptions} [options] Conversion options
+         * @returns {Object.<string,*>} Plain object
+         */
+        CorrespondenceRow.toObject = function toObject(message, options) {
+            if (!options)
+                options = {};
+            let object = {};
+            if (options.defaults) {
+                object.id = "";
+                object.title = "";
+                object.groupId = "";
+            }
+            if (message.id != null && message.hasOwnProperty("id"))
+                object.id = message.id;
+            if (message.title != null && message.hasOwnProperty("title"))
+                object.title = message.title;
+            if (message.description != null && message.hasOwnProperty("description")) {
+                object.description = message.description;
+                if (options.oneofs)
+                    object._description = "description";
+            }
+            if (message.groupId != null && message.hasOwnProperty("groupId"))
+                object.groupId = message.groupId;
+            if (message.thumbnailData != null && message.hasOwnProperty("thumbnailData")) {
+                object.thumbnailData = options.bytes === String ? $util.base64.encode(message.thumbnailData, 0, message.thumbnailData.length) : options.bytes === Array ? Array.prototype.slice.call(message.thumbnailData) : message.thumbnailData;
+                if (options.oneofs)
+                    object._thumbnailData = "thumbnailData";
+            }
+            if (message.thumbnailMimeType != null && message.hasOwnProperty("thumbnailMimeType")) {
+                object.thumbnailMimeType = message.thumbnailMimeType;
+                if (options.oneofs)
+                    object._thumbnailMimeType = "thumbnailMimeType";
+            }
+            return object;
+        };
+
+        /**
+         * Converts this CorrespondenceRow to JSON.
+         * @function toJSON
+         * @memberof cktarot.CorrespondenceRow
+         * @instance
+         * @returns {Object.<string,*>} JSON object
+         */
+        CorrespondenceRow.prototype.toJSON = function toJSON() {
+            return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+        };
+
+        /**
+         * Gets the default type url for CorrespondenceRow
+         * @function getTypeUrl
+         * @memberof cktarot.CorrespondenceRow
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        CorrespondenceRow.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/cktarot.CorrespondenceRow";
+        };
+
+        return CorrespondenceRow;
     })();
 
     cktarot.ReadingRow = (function() {
@@ -3008,6 +3635,8 @@ export const cktarot = $root.cktarot = (() => {
          * @property {Array.<cktarot.IDeckRow>|null} [decks] CktarotBackup decks
          * @property {Array.<cktarot.ICardRow>|null} [cards] CktarotBackup cards
          * @property {Array.<cktarot.IReadingRow>|null} [readings] CktarotBackup readings
+         * @property {Array.<cktarot.ICorrespondenceGroupRow>|null} [correspondenceGroups] CktarotBackup correspondenceGroups
+         * @property {Array.<cktarot.ICorrespondenceRow>|null} [correspondences] CktarotBackup correspondences
          */
 
         /**
@@ -3022,6 +3651,8 @@ export const cktarot = $root.cktarot = (() => {
             this.decks = [];
             this.cards = [];
             this.readings = [];
+            this.correspondenceGroups = [];
+            this.correspondences = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -3067,6 +3698,22 @@ export const cktarot = $root.cktarot = (() => {
          * @instance
          */
         CktarotBackup.prototype.readings = $util.emptyArray;
+
+        /**
+         * CktarotBackup correspondenceGroups.
+         * @member {Array.<cktarot.ICorrespondenceGroupRow>} correspondenceGroups
+         * @memberof cktarot.CktarotBackup
+         * @instance
+         */
+        CktarotBackup.prototype.correspondenceGroups = $util.emptyArray;
+
+        /**
+         * CktarotBackup correspondences.
+         * @member {Array.<cktarot.ICorrespondenceRow>} correspondences
+         * @memberof cktarot.CktarotBackup
+         * @instance
+         */
+        CktarotBackup.prototype.correspondences = $util.emptyArray;
 
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
@@ -3114,6 +3761,12 @@ export const cktarot = $root.cktarot = (() => {
             if (message.readings != null && message.readings.length)
                 for (let i = 0; i < message.readings.length; ++i)
                     $root.cktarot.ReadingRow.encode(message.readings[i], writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
+            if (message.correspondenceGroups != null && message.correspondenceGroups.length)
+                for (let i = 0; i < message.correspondenceGroups.length; ++i)
+                    $root.cktarot.CorrespondenceGroupRow.encode(message.correspondenceGroups[i], writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
+            if (message.correspondences != null && message.correspondences.length)
+                for (let i = 0; i < message.correspondences.length; ++i)
+                    $root.cktarot.CorrespondenceRow.encode(message.correspondences[i], writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
             return writer;
         };
 
@@ -3174,6 +3827,18 @@ export const cktarot = $root.cktarot = (() => {
                         if (!(message.readings && message.readings.length))
                             message.readings = [];
                         message.readings.push($root.cktarot.ReadingRow.decode(reader, reader.uint32()));
+                        break;
+                    }
+                case 6: {
+                        if (!(message.correspondenceGroups && message.correspondenceGroups.length))
+                            message.correspondenceGroups = [];
+                        message.correspondenceGroups.push($root.cktarot.CorrespondenceGroupRow.decode(reader, reader.uint32()));
+                        break;
+                    }
+                case 7: {
+                        if (!(message.correspondences && message.correspondences.length))
+                            message.correspondences = [];
+                        message.correspondences.push($root.cktarot.CorrespondenceRow.decode(reader, reader.uint32()));
                         break;
                     }
                 default:
@@ -3247,6 +3912,24 @@ export const cktarot = $root.cktarot = (() => {
                         return "readings." + error;
                 }
             }
+            if (message.correspondenceGroups != null && message.hasOwnProperty("correspondenceGroups")) {
+                if (!Array.isArray(message.correspondenceGroups))
+                    return "correspondenceGroups: array expected";
+                for (let i = 0; i < message.correspondenceGroups.length; ++i) {
+                    let error = $root.cktarot.CorrespondenceGroupRow.verify(message.correspondenceGroups[i]);
+                    if (error)
+                        return "correspondenceGroups." + error;
+                }
+            }
+            if (message.correspondences != null && message.hasOwnProperty("correspondences")) {
+                if (!Array.isArray(message.correspondences))
+                    return "correspondences: array expected";
+                for (let i = 0; i < message.correspondences.length; ++i) {
+                    let error = $root.cktarot.CorrespondenceRow.verify(message.correspondences[i]);
+                    if (error)
+                        return "correspondences." + error;
+                }
+            }
             return null;
         };
 
@@ -3296,6 +3979,26 @@ export const cktarot = $root.cktarot = (() => {
                     message.readings[i] = $root.cktarot.ReadingRow.fromObject(object.readings[i]);
                 }
             }
+            if (object.correspondenceGroups) {
+                if (!Array.isArray(object.correspondenceGroups))
+                    throw TypeError(".cktarot.CktarotBackup.correspondenceGroups: array expected");
+                message.correspondenceGroups = [];
+                for (let i = 0; i < object.correspondenceGroups.length; ++i) {
+                    if (typeof object.correspondenceGroups[i] !== "object")
+                        throw TypeError(".cktarot.CktarotBackup.correspondenceGroups: object expected");
+                    message.correspondenceGroups[i] = $root.cktarot.CorrespondenceGroupRow.fromObject(object.correspondenceGroups[i]);
+                }
+            }
+            if (object.correspondences) {
+                if (!Array.isArray(object.correspondences))
+                    throw TypeError(".cktarot.CktarotBackup.correspondences: array expected");
+                message.correspondences = [];
+                for (let i = 0; i < object.correspondences.length; ++i) {
+                    if (typeof object.correspondences[i] !== "object")
+                        throw TypeError(".cktarot.CktarotBackup.correspondences: object expected");
+                    message.correspondences[i] = $root.cktarot.CorrespondenceRow.fromObject(object.correspondences[i]);
+                }
+            }
             return message;
         };
 
@@ -3316,6 +4019,8 @@ export const cktarot = $root.cktarot = (() => {
                 object.decks = [];
                 object.cards = [];
                 object.readings = [];
+                object.correspondenceGroups = [];
+                object.correspondences = [];
             }
             if (options.defaults)
                 object.version = 0;
@@ -3340,6 +4045,16 @@ export const cktarot = $root.cktarot = (() => {
                 object.readings = [];
                 for (let j = 0; j < message.readings.length; ++j)
                     object.readings[j] = $root.cktarot.ReadingRow.toObject(message.readings[j], options);
+            }
+            if (message.correspondenceGroups && message.correspondenceGroups.length) {
+                object.correspondenceGroups = [];
+                for (let j = 0; j < message.correspondenceGroups.length; ++j)
+                    object.correspondenceGroups[j] = $root.cktarot.CorrespondenceGroupRow.toObject(message.correspondenceGroups[j], options);
+            }
+            if (message.correspondences && message.correspondences.length) {
+                object.correspondences = [];
+                for (let j = 0; j < message.correspondences.length; ++j)
+                    object.correspondences[j] = $root.cktarot.CorrespondenceRow.toObject(message.correspondences[j], options);
             }
             return object;
         };

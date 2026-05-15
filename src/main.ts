@@ -25,6 +25,7 @@ import './components/HelpComponent';
 import './components/WelcomeComponent';
 import './components/AuthComponent';
 import './components/DeckEditComponent';
+import './components/CorrespondenceManagerComponent';
 
 declare global {
   interface Window {

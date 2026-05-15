@@ -1,0 +1,250 @@
+<div
+  x-data="correspondenceManagerComponent"
+  @open-correspondence-manager.window="openManager()"
+  x-cloak
+  x-show="open"
+  x-transition
+  class="fixed inset-0 z-[10001] flex items-center justify-center bg-gray-900/85 p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="corr-manager-title"
+  @click.self="closeManager()"
+>
+  <div
+    class="relative flex max-h-[min(92vh,720px)] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-gray-700 bg-gray-800 shadow-xl"
+  >
+    <button
+      type="button"
+      class="absolute right-2 top-2 z-10 rounded p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+      aria-label="Close"
+      @click="closeManager()"
+    >
+      <span class="text-xl leading-none">×</span>
+    </button>
+    <div class="border-b border-gray-700 px-4 pb-3 pt-4 pr-12">
+      <h2 id="corr-manager-title" class="text-lg font-bold text-gray-100">Correspondences</h2>
+      <p class="mt-1 text-xs text-gray-500">
+        Organize symbols and notes. Assign them to cards in the deck editor.
+      </p>
+      <div class="mt-3 flex gap-2">
+        <button
+          type="button"
+          class="rounded px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+          :class="tab === 'library' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+          @click="tab = 'library'"
+        >
+          Library
+        </button>
+        <button
+          type="button"
+          class="rounded px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+          :class="tab === 'groups' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+          @click="tab = 'groups'"
+        >
+          Groups
+        </button>
+      </div>
+    </div>
+
+    <p x-show="loading" class="px-4 py-3 text-sm text-gray-400">Loading…</p>
+    <p x-show="error" class="px-4 py-2 text-sm text-red-400" x-text="error"></p>
+
+    <div x-show="tab === 'library' && !loading" class="flex min-h-0 flex-1 flex-col md:flex-row">
+      <div class="min-h-0 flex-1 overflow-y-auto border-gray-700 p-4 md:border-r">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p class="text-sm font-medium text-gray-300">All entries</p>
+          <button
+            type="button"
+            class="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-500"
+            @click="startCreateCorrespondence()"
+          >
+            New correspondence
+          </button>
+        </div>
+        <template x-for="sec in sections" :key="sec.group.id">
+          <div class="mb-5">
+            <p
+              class="mb-2 border-b border-gray-700 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+              x-text="sec.group.title"
+            ></p>
+            <ul class="space-y-2">
+              <template x-for="item in sec.items" :key="item.id">
+                <li
+                  class="flex flex-wrap items-start justify-between gap-2 rounded border border-gray-600 bg-gray-900/40 p-2"
+                >
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-gray-200" x-text="item.title"></p>
+                    <p
+                      class="mt-0.5 line-clamp-2 text-xs text-gray-500"
+                      x-show="item.description"
+                      x-text="item.description"
+                    ></p>
+                  </div>
+                  <div class="flex shrink-0 gap-1">
+                    <button
+                      type="button"
+                      class="rounded bg-gray-700 px-2 py-1 text-xs text-gray-200 hover:bg-gray-600"
+                      @click="startEditCorrespondence(item)"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded bg-gray-800 px-2 py-1 text-xs text-red-300 hover:bg-gray-700"
+                      @click="confirmDeleteCorrespondence(item)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+      </div>
+
+      <div
+        x-show="editingCorrespondenceId"
+        class="w-full shrink-0 border-t border-gray-700 p-4 md:w-80 md:border-l md:border-t-0"
+      >
+        <p class="text-sm font-medium text-gray-300" x-show="editingCorrespondenceId === 'new'">
+          New correspondence
+        </p>
+        <p
+          class="text-sm font-medium text-gray-300"
+          x-show="editingCorrespondenceId && editingCorrespondenceId !== 'new'"
+        >
+          Edit correspondence
+        </p>
+        <div class="mt-3 flex flex-col gap-2">
+          <label class="text-xs text-gray-400">Title</label>
+          <input
+            type="text"
+            x-model="formTitle"
+            class="rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200"
+          />
+          <label class="text-xs text-gray-400">Description (optional)</label>
+          <textarea
+            x-model="formDescription"
+            rows="3"
+            class="rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200"
+          ></textarea>
+          <label class="text-xs text-gray-400">Group</label>
+          <select
+            x-model="formGroupId"
+            class="rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200"
+          >
+            <template x-for="g in groupsOnly" :key="g.id">
+              <option :value="g.id" x-text="g.title"></option>
+            </template>
+          </select>
+          <label class="text-xs text-gray-400">Thumbnail (optional)</label>
+          <input
+            id="corr-manager-thumb"
+            type="file"
+            accept="image/*"
+            class="text-xs text-gray-400"
+          />
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              x-model="clearThumbnail"
+              class="rounded border-gray-600 bg-gray-700 text-purple-600"
+            />
+            <span class="text-xs text-gray-400">Remove thumbnail</span>
+          </label>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded-lg bg-purple-600 px-3 py-1.5 text-sm text-white hover:bg-purple-500"
+              @click="saveCorrespondence()"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-500"
+              @click="cancelForm()"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div x-show="tab === 'groups' && !loading" class="min-h-0 flex-1 overflow-y-auto p-4">
+      <div class="mb-4 flex flex-wrap items-end gap-2">
+        <div class="flex-1 min-w-[12rem]">
+          <label class="text-xs text-gray-400">New group name</label>
+          <input
+            type="text"
+            x-model="newGroupTitle"
+            class="mt-1 w-full rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200"
+            placeholder="e.g. Astrology"
+          />
+        </div>
+        <button
+          type="button"
+          class="rounded-lg bg-purple-600 px-3 py-2 text-sm text-white hover:bg-purple-500"
+          @click="addGroup()"
+        >
+          Add group
+        </button>
+      </div>
+      <ul class="space-y-2">
+        <template x-for="g in groupsOnly" :key="g.id">
+          <li
+            class="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-600 bg-gray-900/40 p-2"
+          >
+            <template x-if="renamingGroupId !== g.id">
+              <div class="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <span class="truncate text-sm text-gray-200" x-text="g.title"></span>
+                <div class="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    class="rounded bg-gray-700 px-2 py-1 text-xs text-gray-200 hover:bg-gray-600"
+                    @click="startRenameGroup(g)"
+                  >
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded bg-gray-800 px-2 py-1 text-xs text-red-300 hover:bg-gray-700 disabled:opacity-40"
+                    :disabled="g.id === '__cktarot_default_group__'"
+                    @click="confirmDeleteGroup(g)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </template>
+            <template x-if="renamingGroupId === g.id">
+              <div class="flex w-full flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  x-model="renameGroupTitle"
+                  class="min-w-0 flex-1 rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-gray-200"
+                />
+                <button
+                  type="button"
+                  class="rounded bg-purple-600 px-2 py-1 text-xs text-white"
+                  @click="saveRenameGroup()"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  class="rounded bg-gray-600 px-2 py-1 text-xs text-gray-200"
+                  @click="cancelRenameGroup()"
+                >
+                  Cancel
+                </button>
+              </div>
+            </template>
+          </li>
+        </template>
+      </ul>
+    </div>
+  </div>
+</div>

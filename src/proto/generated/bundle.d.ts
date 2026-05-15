@@ -774,6 +774,9 @@ export namespace cktarot {
 
         /** CardRow censoredMimeType */
         censoredMimeType?: (string|null);
+
+        /** CardRow correspondenceIds */
+        correspondenceIds?: (string[]|null);
     }
 
     /** Represents a CardRow. */
@@ -811,6 +814,9 @@ export namespace cktarot {
 
         /** CardRow censoredMimeType. */
         public censoredMimeType?: (string|null);
+
+        /** CardRow correspondenceIds. */
+        public correspondenceIds: string[];
 
         /**
          * Creates a new CardRow instance using the specified properties.
@@ -884,6 +890,236 @@ export namespace cktarot {
 
         /**
          * Gets the default type url for CardRow
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a CorrespondenceGroupRow. */
+    interface ICorrespondenceGroupRow {
+
+        /** CorrespondenceGroupRow id */
+        id?: (string|null);
+
+        /** CorrespondenceGroupRow title */
+        title?: (string|null);
+    }
+
+    /** Represents a CorrespondenceGroupRow. */
+    class CorrespondenceGroupRow implements ICorrespondenceGroupRow {
+
+        /**
+         * Constructs a new CorrespondenceGroupRow.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: cktarot.ICorrespondenceGroupRow);
+
+        /** CorrespondenceGroupRow id. */
+        public id: string;
+
+        /** CorrespondenceGroupRow title. */
+        public title: string;
+
+        /**
+         * Creates a new CorrespondenceGroupRow instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns CorrespondenceGroupRow instance
+         */
+        public static create(properties?: cktarot.ICorrespondenceGroupRow): cktarot.CorrespondenceGroupRow;
+
+        /**
+         * Encodes the specified CorrespondenceGroupRow message. Does not implicitly {@link cktarot.CorrespondenceGroupRow.verify|verify} messages.
+         * @param message CorrespondenceGroupRow message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: cktarot.ICorrespondenceGroupRow, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified CorrespondenceGroupRow message, length delimited. Does not implicitly {@link cktarot.CorrespondenceGroupRow.verify|verify} messages.
+         * @param message CorrespondenceGroupRow message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: cktarot.ICorrespondenceGroupRow, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a CorrespondenceGroupRow message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns CorrespondenceGroupRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): cktarot.CorrespondenceGroupRow;
+
+        /**
+         * Decodes a CorrespondenceGroupRow message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns CorrespondenceGroupRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): cktarot.CorrespondenceGroupRow;
+
+        /**
+         * Verifies a CorrespondenceGroupRow message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a CorrespondenceGroupRow message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns CorrespondenceGroupRow
+         */
+        public static fromObject(object: { [k: string]: any }): cktarot.CorrespondenceGroupRow;
+
+        /**
+         * Creates a plain object from a CorrespondenceGroupRow message. Also converts values to other types if specified.
+         * @param message CorrespondenceGroupRow
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: cktarot.CorrespondenceGroupRow, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this CorrespondenceGroupRow to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for CorrespondenceGroupRow
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a CorrespondenceRow. */
+    interface ICorrespondenceRow {
+
+        /** CorrespondenceRow id */
+        id?: (string|null);
+
+        /** CorrespondenceRow title */
+        title?: (string|null);
+
+        /** CorrespondenceRow description */
+        description?: (string|null);
+
+        /** CorrespondenceRow groupId */
+        groupId?: (string|null);
+
+        /** CorrespondenceRow thumbnailData */
+        thumbnailData?: (Uint8Array|null);
+
+        /** CorrespondenceRow thumbnailMimeType */
+        thumbnailMimeType?: (string|null);
+    }
+
+    /** Represents a CorrespondenceRow. */
+    class CorrespondenceRow implements ICorrespondenceRow {
+
+        /**
+         * Constructs a new CorrespondenceRow.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: cktarot.ICorrespondenceRow);
+
+        /** CorrespondenceRow id. */
+        public id: string;
+
+        /** CorrespondenceRow title. */
+        public title: string;
+
+        /** CorrespondenceRow description. */
+        public description?: (string|null);
+
+        /** CorrespondenceRow groupId. */
+        public groupId: string;
+
+        /** CorrespondenceRow thumbnailData. */
+        public thumbnailData?: (Uint8Array|null);
+
+        /** CorrespondenceRow thumbnailMimeType. */
+        public thumbnailMimeType?: (string|null);
+
+        /**
+         * Creates a new CorrespondenceRow instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns CorrespondenceRow instance
+         */
+        public static create(properties?: cktarot.ICorrespondenceRow): cktarot.CorrespondenceRow;
+
+        /**
+         * Encodes the specified CorrespondenceRow message. Does not implicitly {@link cktarot.CorrespondenceRow.verify|verify} messages.
+         * @param message CorrespondenceRow message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: cktarot.ICorrespondenceRow, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified CorrespondenceRow message, length delimited. Does not implicitly {@link cktarot.CorrespondenceRow.verify|verify} messages.
+         * @param message CorrespondenceRow message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: cktarot.ICorrespondenceRow, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a CorrespondenceRow message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns CorrespondenceRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): cktarot.CorrespondenceRow;
+
+        /**
+         * Decodes a CorrespondenceRow message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns CorrespondenceRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): cktarot.CorrespondenceRow;
+
+        /**
+         * Verifies a CorrespondenceRow message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a CorrespondenceRow message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns CorrespondenceRow
+         */
+        public static fromObject(object: { [k: string]: any }): cktarot.CorrespondenceRow;
+
+        /**
+         * Creates a plain object from a CorrespondenceRow message. Also converts values to other types if specified.
+         * @param message CorrespondenceRow
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: cktarot.CorrespondenceRow, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this CorrespondenceRow to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for CorrespondenceRow
          * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
          * @returns The default type url
          */
@@ -1022,6 +1258,12 @@ export namespace cktarot {
 
         /** CktarotBackup readings */
         readings?: (cktarot.IReadingRow[]|null);
+
+        /** CktarotBackup correspondenceGroups */
+        correspondenceGroups?: (cktarot.ICorrespondenceGroupRow[]|null);
+
+        /** CktarotBackup correspondences */
+        correspondences?: (cktarot.ICorrespondenceRow[]|null);
     }
 
     /** Represents a CktarotBackup. */
@@ -1047,6 +1289,12 @@ export namespace cktarot {
 
         /** CktarotBackup readings. */
         public readings: cktarot.IReadingRow[];
+
+        /** CktarotBackup correspondenceGroups. */
+        public correspondenceGroups: cktarot.ICorrespondenceGroupRow[];
+
+        /** CktarotBackup correspondences. */
+        public correspondences: cktarot.ICorrespondenceRow[];
 
         /**
          * Creates a new CktarotBackup instance using the specified properties.

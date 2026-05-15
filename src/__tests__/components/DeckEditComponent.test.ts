@@ -23,6 +23,12 @@ const localMocks = vi.hoisted(() => ({
   addCardToLocalDeck: vi.fn(),
   updateLocalCard: vi.fn(),
   deleteLocalCards: vi.fn(),
+  getLocalCardsByIds: vi.fn(),
+}));
+
+const corrMocks = vi.hoisted(() => ({
+  listCorrespondencesGrouped: vi.fn(),
+  updateLocalCardCorrespondenceIds: vi.fn(),
 }));
 
 const alpineCapture = vi.hoisted(() =>
@@ -52,6 +58,12 @@ vi.mock('../../lib/localDecks.js', () => ({
   addCardToLocalDeck: localMocks.addCardToLocalDeck,
   updateLocalCard: localMocks.updateLocalCard,
   deleteLocalCards: localMocks.deleteLocalCards,
+  getLocalCardsByIds: localMocks.getLocalCardsByIds,
+}));
+
+vi.mock('../../lib/localCorrespondences.js', () => ({
+  listCorrespondencesGrouped: corrMocks.listCorrespondencesGrouped,
+  updateLocalCardCorrespondenceIds: corrMocks.updateLocalCardCorrespondenceIds,
 }));
 
 import '../../components/DeckEditComponent.js';
@@ -148,6 +160,23 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     localMocks.addCardToLocalDeck.mockResolvedValue({ id: 'new-id' });
     localMocks.updateLocalCard.mockResolvedValue(undefined);
     localMocks.deleteLocalCards.mockResolvedValue(undefined);
+    corrMocks.listCorrespondencesGrouped.mockResolvedValue([]);
+    corrMocks.updateLocalCardCorrespondenceIds.mockResolvedValue(undefined);
+    localMocks.getLocalCardsByIds.mockImplementation((ids: string[]) => {
+      const m = new Map();
+      for (const id of ids) {
+        m.set(id, {
+          id,
+          deck_id: 'deck-a',
+          title: 'Star',
+          number: 3,
+          imageBlobId: 'b',
+          censorImageBlobId: null,
+          correspondence_ids: [],
+        } as never);
+      }
+      return Promise.resolve(m);
+    });
   });
 
   afterEach(() => {

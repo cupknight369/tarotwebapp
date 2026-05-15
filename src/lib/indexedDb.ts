@@ -1,6 +1,8 @@
+import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../types/localDb.js';
+
 const DB_NAME = 'tarot';
-/** v3: `readings.state` is protobuf bytes (prior versions stored structured objects). */
-const DB_VERSION = 3;
+/** v4: correspondence library + per-card correspondence ids. */
+const DB_VERSION = 4;
 
 /** IndexedDB object store for saved readings (protobuf state). */
 export const STORE_READINGS = 'readings';
@@ -10,6 +12,12 @@ export const STORE_DECKS = 'decks';
 export const STORE_CARDS = 'cards';
 /** IndexedDB object store for image blobs referenced by local cards. */
 export const STORE_CARD_IMAGES = 'cardImages';
+/** IndexedDB object store for correspondence group rows. */
+export const STORE_CORRESPONDENCE_GROUPS = 'correspondenceGroups';
+/** IndexedDB object store for correspondence rows. */
+export const STORE_CORRESPONDENCES = 'correspondences';
+/** IndexedDB object store for correspondence thumbnail blobs. */
+export const STORE_CORRESPONDENCE_IMAGES = 'correspondenceImages';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -49,6 +57,23 @@ export function openTarotDb(): Promise<IDBDatabase> {
         }
         const readings = db.createObjectStore(STORE_READINGS, { keyPath: 'id' });
         readings.createIndex('by_updated_at', 'updated_at');
+      }
+      if (old < 4) {
+        if (!db.objectStoreNames.contains(STORE_CORRESPONDENCE_GROUPS)) {
+          db.createObjectStore(STORE_CORRESPONDENCE_GROUPS, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(STORE_CORRESPONDENCES)) {
+          const corr = db.createObjectStore(STORE_CORRESPONDENCES, { keyPath: 'id' });
+          corr.createIndex('by_group_id', 'group_id');
+        }
+        if (!db.objectStoreNames.contains(STORE_CORRESPONDENCE_IMAGES)) {
+          db.createObjectStore(STORE_CORRESPONDENCE_IMAGES, { keyPath: 'id' });
+        }
+        const upgradeTx = req.transaction;
+        if (upgradeTx) {
+          const gStore = upgradeTx.objectStore(STORE_CORRESPONDENCE_GROUPS);
+          gStore.put({ id: DEFAULT_CORRESPONDENCE_GROUP_ID, title: 'Default' });
+        }
       }
     };
   });

@@ -108,6 +108,7 @@ vi.mock('../components/HelpComponent', () => ({}));
 vi.mock('../components/WelcomeComponent', () => ({}));
 vi.mock('../components/AuthComponent', () => ({}));
 vi.mock('../components/DeckEditComponent', () => ({}));
+vi.mock('../components/CorrespondenceManagerComponent', () => ({}));
 
 async function loadMain(): Promise<void> {
   await import('../main.js');

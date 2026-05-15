@@ -211,7 +211,10 @@ describe('localDecks.ts', () => {
       { id: 'a', deck_id: 'd', title: 'A', number: 1, imageBlobId: 'i', censorImageBlobId: null },
     ];
     ctx.idbRequest.mockResolvedValue(rows);
-    await expect(LD.listLocalCardsByDeckId('d')).resolves.toEqual([rows[1], rows[0]]);
+    await expect(LD.listLocalCardsByDeckId('d')).resolves.toEqual([
+      { ...rows[1], correspondence_ids: [] },
+      { ...rows[0], correspondence_ids: [] },
+    ]);
   });
 
   it('getLocalCardsByIds returns empty map for empty input', async () => {
@@ -236,7 +239,7 @@ describe('localDecks.ts', () => {
     });
     const m = await LD.getLocalCardsByIds(['a', 'missing']);
     expect(m.size).toBe(1);
-    expect(m.get('a')).toEqual(r1);
+    expect(m.get('a')).toEqual({ ...r1, correspondence_ids: [] });
   });
 
   it('putLocalCard updates deck modified_at when deck exists', async () => {

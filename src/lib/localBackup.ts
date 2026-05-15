@@ -1,14 +1,36 @@
 import { logError } from './logError.js';
-import type { LocalCardRow, LocalDeckRow, LocalReadingRow } from '../types/localDb.js';
+import type {
+  LocalCardRow,
+  LocalCorrespondenceGroupRow,
+  LocalCorrespondenceRow,
+  LocalDeckRow,
+  LocalReadingRow,
+} from '../types/localDb.js';
+import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../types/localDb.js';
 import type { BackupProgress } from '../types/settings.js';
-import { openTarotDb, STORE_CARDS, STORE_DECKS, STORE_READINGS, idbRequest } from './indexedDb.js';
+import {
+  openTarotDb,
+  STORE_CARDS,
+  STORE_CORRESPONDENCE_GROUPS,
+  STORE_CORRESPONDENCES,
+  STORE_DECKS,
+  STORE_READINGS,
+  idbRequest,
+} from './indexedDb.js';
 import { putLocalCard, putLocalDeck } from './localDecks.js';
+import {
+  ensureDefaultCorrespondenceGroup,
+  putCorrespondence,
+  putCorrespondenceGroup,
+} from './localCorrespondences.js';
 import {
   backupToDecks,
   backupToReadings,
+  correspondenceGroupRowFromProto,
   decodeCktarotBackup,
   encodeCktarotBackup,
   materializeCardRowFromProto,
+  materializeCorrespondenceRowFromProto,
 } from './proto/backupCodec.js';
 import { cktarot } from '../proto/generated/bundle.js';
 
@@ -37,10 +59,19 @@ export async function exportLocalBackup(
     onProgress?.({ phase, current, total });
   };
 
+  try {
+    await ensureDefaultCorrespondenceGroup();
+  } catch (e) {
+    pushError(errors, 'Failed to prepare correspondence data', e);
+    return { errors };
+  }
+
   const db = await openTarotDb();
   let decks: LocalDeckRow[] = [];
   let cards: LocalCardRow[] = [];
   let readings: LocalReadingRow[] = [];
+  let correspondenceGroups: LocalCorrespondenceGroupRow[] = [];
+  let correspondences: LocalCorrespondenceRow[] = [];
 
   const total = 3;
   let step = 0;
@@ -48,10 +79,25 @@ export async function exportLocalBackup(
   step += 1;
 
   try {
-    const tx = db.transaction([STORE_DECKS, STORE_CARDS, STORE_READINGS], 'readonly');
+    const tx = db.transaction(
+      [
+        STORE_DECKS,
+        STORE_CARDS,
+        STORE_READINGS,
+        STORE_CORRESPONDENCE_GROUPS,
+        STORE_CORRESPONDENCES,
+      ],
+      'readonly',
+    );
     decks = (await idbRequest(tx.objectStore(STORE_DECKS).getAll())) as LocalDeckRow[];
     cards = (await idbRequest(tx.objectStore(STORE_CARDS).getAll())) as LocalCardRow[];
     readings = (await idbRequest(tx.objectStore(STORE_READINGS).getAll())) as LocalReadingRow[];
+    correspondenceGroups = (await idbRequest(
+      tx.objectStore(STORE_CORRESPONDENCE_GROUPS).getAll(),
+    )) as LocalCorrespondenceGroupRow[];
+    correspondences = (await idbRequest(
+      tx.objectStore(STORE_CORRESPONDENCES).getAll(),
+    )) as LocalCorrespondenceRow[];
   } catch (e) {
     pushError(errors, 'Failed to read IndexedDB', e);
     return { errors };
@@ -65,6 +111,8 @@ export async function exportLocalBackup(
       decks,
       cards,
       readings,
+      correspondenceGroups,
+      correspondences,
       exportedAt: new Date().toISOString(),
     });
   } catch (e) {
@@ -120,12 +168,55 @@ export async function importLocalBackup(
   const decks = backupToDecks(backup);
   const readings = backupToReadings(backup);
   const cardProtos = (backup.cards ?? []) as cktarot.CardRow[];
+  const groupProtos = (backup.correspondenceGroups ?? []) as cktarot.CorrespondenceGroupRow[];
+  const corrProtos = (backup.correspondences ?? []) as cktarot.CorrespondenceRow[];
 
-  const total = 1 + decks.length + cardProtos.length + readings.length;
+  const total =
+    1 + groupProtos.length + corrProtos.length + decks.length + cardProtos.length + readings.length;
 
   let step = 0;
   report('Parsing backup', step, total);
   step += 1;
+
+  for (let i = 0; i < groupProtos.length; i++) {
+    const gp = groupProtos[i];
+    try {
+      await putCorrespondenceGroup(correspondenceGroupRowFromProto(gp));
+    } catch (e) {
+      pushError(errors, `correspondence_groups import id=${gp.id}`, e);
+    }
+    step += 1;
+    report(`Restoring correspondence groups (${i + 1}/${groupProtos.length})`, step, total);
+    await yieldToUi();
+  }
+
+  try {
+    await ensureDefaultCorrespondenceGroup();
+  } catch (e) {
+    pushError(errors, 'correspondence_groups ensure default', e);
+  }
+
+  const validGroupIds = new Set<string>([DEFAULT_CORRESPONDENCE_GROUP_ID]);
+  for (const g of groupProtos) {
+    if (g.id) validGroupIds.add(g.id);
+  }
+
+  const validCorrespondenceIds = new Set<string>();
+  for (let i = 0; i < corrProtos.length; i++) {
+    const proto = corrProtos[i];
+    try {
+      const row = await materializeCorrespondenceRowFromProto(proto, validGroupIds, errors);
+      if (row) {
+        await putCorrespondence(row);
+        validCorrespondenceIds.add(row.id);
+      }
+    } catch (e) {
+      pushError(errors, `correspondences import id=${proto.id}`, e);
+    }
+    step += 1;
+    report(`Restoring correspondences (${i + 1}/${corrProtos.length})`, step, total);
+    await yieldToUi();
+  }
 
   for (let i = 0; i < decks.length; i++) {
     const row = decks[i];
@@ -142,7 +233,7 @@ export async function importLocalBackup(
   for (let i = 0; i < cardProtos.length; i++) {
     const proto = cardProtos[i];
     try {
-      const row = await materializeCardRowFromProto(proto, errors);
+      const row = await materializeCardRowFromProto(proto, errors, validCorrespondenceIds);
       if (row) await putLocalCard(row);
     } catch (e) {
       pushError(errors, `cards import id=${proto.id}`, e);

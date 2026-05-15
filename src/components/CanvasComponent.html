@@ -190,6 +190,22 @@
                     />
                   </template>
                   <div
+                    x-show="$store.settings.showCorrespondenceThumbnailsOnCanvas && (draggableCard.card.correspondenceThumbnailUrls?.length ?? 0) > 0"
+                    x-cloak
+                    class="mt-1 flex w-[150px] max-w-[150px] flex-wrap justify-center gap-1"
+                  >
+                    <template
+                      x-for="(thumbUrl, ti) in draggableCard.card.correspondenceThumbnailUrls || []"
+                      :key="ti"
+                    >
+                      <img
+                        :src="thumbUrl"
+                        alt=""
+                        class="h-9 max-h-9 w-auto max-w-[2.5rem] rounded object-cover ring-1 ring-gray-600 pointer-events-none"
+                      />
+                    </template>
+                  </div>
+                  <div
                     x-show="selectedCardIds.includes(draggableCard.id)"
                     class="absolute inset-0 bg-purple-600/30 pointer-events-none rounded"
                   ></div>

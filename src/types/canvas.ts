@@ -244,6 +244,8 @@ export interface TarotCard {
   censorImageSourceLabel?: string | null;
   /** True when the card data is missing (e.g. deck deleted); canvas shows a placeholder instead of art. */
   invalidReference?: boolean;
+  /** Object URLs for correspondence thumbnails (local deck cards); from shared correspondence image cache. */
+  correspondenceThumbnailUrls?: readonly string[];
 }
 
 export interface DraggableCard {

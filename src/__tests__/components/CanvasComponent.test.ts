@@ -460,7 +460,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     ctx.$nextTick = ((fn: () => void) => {
       fn();
     }) as MergedThis['$nextTick'];
-    ctx.addCardToCanvas = vi.fn((card: TarotCard) => {
+    const addCardToCanvasSpy = vi.fn((card: TarotCard) => {
       ctx.draggableCards = [
         ...ctx.draggableCards,
         {
@@ -476,9 +476,10 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
         },
       ];
     });
+    ctx.addCardToCanvas = addCardToCanvasSpy;
     c.confirmDrawByNameSelection.call(ctx);
     expect(ctx.drawByName).toBeNull();
-    expect(ctx.addCardToCanvas).toHaveBeenCalledWith(
+    expect(addCardToCanvasSpy).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'cid', title: 'Star' }),
     );
     const placed = ctx.draggableCards[ctx.draggableCards.length - 1];

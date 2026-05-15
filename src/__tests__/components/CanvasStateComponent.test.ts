@@ -347,6 +347,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       number: 17,
       imageBlobId: 'bid',
       censorImageBlobId: null,
+      correspondence_ids: [],
     };
     localDecksMocks.getLocalCardsByIds.mockResolvedValue(new Map([['cid-1', row]]));
     localDecksMocks.getCardImageRow.mockResolvedValue({
@@ -362,7 +363,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     const bytes = new Uint8Array([1]);
     const blob = new Blob([bytes], { type: 'image/webp' });
     localDecksMocks.getLocalCardsByIds.mockResolvedValue(
-      new Map([['cid-1', { imageBlobId: 'b1', censorImageBlobId: null as unknown as string }]]),
+      new Map([
+        [
+          'cid-1',
+          {
+            imageBlobId: 'b1',
+            censorImageBlobId: null as unknown as string,
+            correspondence_ids: [],
+          },
+        ],
+      ]),
     );
     localDecksMocks.getCardImageRow.mockResolvedValue({
       blob,
@@ -384,6 +394,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       number: 17,
       imageBlobId: 'bid',
       censorImageBlobId: null,
+      correspondence_ids: [],
     };
     const bytes = new Uint8Array([1]);
     const blob = new Blob([bytes], { type: '' });
@@ -408,6 +419,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       number: 17,
       imageBlobId: 'b-main',
       censorImageBlobId: 'b-cen',
+      correspondence_ids: [],
     };
     const mainBytes = new Uint8Array([1]);
     const cenBytes = new Uint8Array([2]);
@@ -436,6 +448,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       number: 17,
       imageBlobId: 'b-main',
       censorImageBlobId: 'b-cen',
+      correspondence_ids: [],
     };
     const bytes = new Uint8Array([2]);
     const mainBlob = pngBlob(bytes);

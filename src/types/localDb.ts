@@ -20,6 +20,24 @@ export interface LocalDeckRow {
   from_catalog?: boolean;
 }
 
+/** Stable id for the built-in correspondence group (always present after DB init). */
+export const DEFAULT_CORRESPONDENCE_GROUP_ID = '__cktarot_default_group__';
+
+/** User-defined or built-in correspondence group in IndexedDB. */
+export interface LocalCorrespondenceGroupRow {
+  id: string;
+  title: string;
+}
+
+/** Correspondence library entry in IndexedDB (optional thumbnail in `correspondenceImages`). */
+export interface LocalCorrespondenceRow {
+  id: string;
+  title: string;
+  description: string | null;
+  group_id: string;
+  thumbnailBlobId: string | null;
+}
+
 /** Local card in IndexedDB `cards` store (references `cardImages`). */
 export interface LocalCardRow {
   id: string;
@@ -28,6 +46,8 @@ export interface LocalCardRow {
   number: number;
   imageBlobId: string;
   censorImageBlobId: string | null;
+  /** Ids of {@link LocalCorrespondenceRow} entries shown for this card on the canvas (local decks only). Omitted on legacy rows. */
+  correspondence_ids?: string[];
 }
 
 /** Blob asset in IndexedDB `cardImages` store. */

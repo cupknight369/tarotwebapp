@@ -163,14 +163,18 @@ Alpine.data('textLabelComponent', () => ({
     const label = this.textLabels.find((l) => l.id === id);
     if (!label) return;
     const minW = 40;
-    let px = label.fixedWidthPx;
+    const px = label.fixedWidthPx;
     if (!Number.isFinite(px) || px < minW) {
       this.$nextTick(() => {
-        const el = document.querySelector(
-          `[data-text-id="${CSS.escape(id)}"]`,
-        ) as HTMLElement | null;
-        const measured =
-          el && el.offsetWidth > 0 ? clampFixedWidthPx(Math.ceil(el.offsetWidth)) : null;
+        const el = document.querySelector(`[data-text-id="${CSS.escape(id)}"]`);
+        let rawW = 0;
+        if (el instanceof HTMLElement) {
+          rawW = el.offsetWidth;
+        } else if (el) {
+          const o = (el as Element & { offsetWidth?: number }).offsetWidth;
+          rawW = typeof o === 'number' && Number.isFinite(o) ? o : 0;
+        }
+        const measured = rawW > 0 ? clampFixedWidthPx(Math.ceil(rawW)) : null;
         const resolved = measured !== null ? measured : clampFixedWidthPx(240);
         this.updateTextLabel(id, { fixedWidth: true, fixedWidthPx: resolved });
       });

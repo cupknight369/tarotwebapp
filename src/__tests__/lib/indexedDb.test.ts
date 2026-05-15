@@ -46,6 +46,7 @@ type FakeIdbOptions = {
 interface MutableOpenRequest {
   error: DOMException | null;
   result: IDBDatabase | null;
+  transaction: IDBTransaction | null;
   onerror: ((this: IDBOpenDBRequest, ev: Event) => unknown) | null;
   onsuccess: ((this: IDBOpenDBRequest, ev: Event) => unknown) | null;
   onupgradeneeded: ((this: IDBOpenDBRequest, ev: IDBVersionChangeEvent) => unknown) | null;
@@ -77,6 +78,7 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
       const req: MutableOpenRequest = {
         error: null,
         result: null,
+        transaction: null,
         onerror: null,
         onsuccess: null,
         onupgradeneeded: null,
@@ -126,12 +128,18 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
         const asReq = req as unknown as IDBOpenDBRequest;
 
         if (newVersion > oldVersion) {
+          req.transaction = {
+            objectStore: () => ({
+              put: vi.fn(),
+            }),
+          } as unknown as IDBTransaction;
           const ev = {
             oldVersion,
             newVersion,
           } as unknown as IDBVersionChangeEvent;
           rec.version = newVersion;
           req.onupgradeneeded?.call(asReq, ev);
+          req.transaction = null;
         }
 
         req.onsuccess?.call(asReq, new Event('success'));
@@ -166,6 +174,9 @@ describe('indexedDb.ts', () => {
     expect(m.STORE_DECKS).toBe('decks');
     expect(m.STORE_CARDS).toBe('cards');
     expect(m.STORE_CARD_IMAGES).toBe('cardImages');
+    expect(m.STORE_CORRESPONDENCE_GROUPS).toBe('correspondenceGroups');
+    expect(m.STORE_CORRESPONDENCES).toBe('correspondences');
+    expect(m.STORE_CORRESPONDENCE_IMAGES).toBe('correspondenceImages');
   });
 
   it('openTarotDb rejects when indexedDB.open fails', async () => {
@@ -193,22 +204,70 @@ describe('indexedDb.ts', () => {
   it('openTarotDb runs v0 upgrade: creates all object stores and indexes', async () => {
     const createIndexSpy = vi.fn();
     vi.stubGlobal('indexedDB', createFakeIndexedDB({ createIndexSpy }));
-    const { openTarotDb, STORE_READINGS, STORE_CARDS, STORE_CARD_IMAGES, STORE_DECKS } =
-      await loadIndexedDbModule();
+    const {
+      openTarotDb,
+      STORE_READINGS,
+      STORE_CARDS,
+      STORE_CARD_IMAGES,
+      STORE_DECKS,
+      STORE_CORRESPONDENCE_GROUPS,
+      STORE_CORRESPONDENCES,
+      STORE_CORRESPONDENCE_IMAGES,
+    } = await loadIndexedDbModule();
     const db = await openTarotDb();
     expect(db.objectStoreNames.contains(STORE_READINGS)).toBe(true);
     expect(db.objectStoreNames.contains(STORE_DECKS)).toBe(true);
     expect(db.objectStoreNames.contains(STORE_CARD_IMAGES)).toBe(true);
     expect(db.objectStoreNames.contains(STORE_CARDS)).toBe(true);
+    expect(db.objectStoreNames.contains(STORE_CORRESPONDENCE_GROUPS)).toBe(true);
+    expect(db.objectStoreNames.contains(STORE_CORRESPONDENCES)).toBe(true);
+    expect(db.objectStoreNames.contains(STORE_CORRESPONDENCE_IMAGES)).toBe(true);
     expect(createIndexSpy).toHaveBeenCalledWith('by_updated_at', 'updated_at');
     expect(createIndexSpy).toHaveBeenCalledWith('by_deck_id', 'deck_id');
+    expect(createIndexSpy).toHaveBeenCalledWith('by_group_id', 'group_id');
+  });
+
+  it('openTarotDb migrates v3 to v4: adds correspondence object stores', async () => {
+    const createIndexSpy = vi.fn();
+    vi.stubGlobal(
+      'indexedDB',
+      createFakeIndexedDB({
+        createIndexSpy,
+        persisted: {
+          version: 3,
+          stores: ['readings', 'decks', 'cardImages', 'cards'],
+        },
+      }),
+    );
+    const {
+      openTarotDb,
+      STORE_CORRESPONDENCE_GROUPS,
+      STORE_CORRESPONDENCES,
+      STORE_CORRESPONDENCE_IMAGES,
+    } = await loadIndexedDbModule();
+    const db = await openTarotDb();
+    expect(db.objectStoreNames.contains(STORE_CORRESPONDENCE_GROUPS)).toBe(true);
+    expect(db.objectStoreNames.contains(STORE_CORRESPONDENCES)).toBe(true);
+    expect(db.objectStoreNames.contains(STORE_CORRESPONDENCE_IMAGES)).toBe(true);
+    expect(createIndexSpy).toHaveBeenCalledWith('by_group_id', 'group_id');
   });
 
   it('openTarotDb v0 upgrade skips createObjectStore when store names already exist', async () => {
     vi.stubGlobal(
       'indexedDB',
       createFakeIndexedDB({
-        persisted: { version: 0, stores: ['readings', 'decks', 'cardImages', 'cards'] },
+        persisted: {
+          version: 0,
+          stores: [
+            'readings',
+            'decks',
+            'cardImages',
+            'cards',
+            'correspondenceGroups',
+            'correspondences',
+            'correspondenceImages',
+          ],
+        },
       }),
     );
     const { openTarotDb } = await loadIndexedDbModule();

@@ -6,8 +6,16 @@ const localDecksMocks = vi.hoisted(() => ({
   isBlobUrlManagedByDeckCache: vi.fn(),
 }));
 
+const corrMocks = vi.hoisted(() => ({
+  isCorrespondenceThumbUrlManagedByCache: vi.fn(),
+}));
+
 vi.mock('../../lib/localDecks.js', () => ({
   isBlobUrlManagedByDeckCache: localDecksMocks.isBlobUrlManagedByDeckCache,
+}));
+
+vi.mock('../../lib/localCorrespondences.js', () => ({
+  isCorrespondenceThumbUrlManagedByCache: corrMocks.isCorrespondenceThumbUrlManagedByCache,
 }));
 
 import { revokeTarotCardBlobUrls } from '../../lib/cardBlobUrls.js';
@@ -29,6 +37,7 @@ describe('revokeTarotCardBlobUrls', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localDecksMocks.isBlobUrlManagedByDeckCache.mockReturnValue(false);
+    corrMocks.isCorrespondenceThumbUrlManagedByCache.mockReturnValue(false);
     revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
   });
 
@@ -89,5 +98,19 @@ describe('revokeTarotCardBlobUrls', () => {
     expect(revokeSpy).toHaveBeenCalledTimes(2);
     expect(revokeSpy).toHaveBeenCalledWith(main);
     expect(revokeSpy).toHaveBeenCalledWith(cen);
+  });
+
+  it('revokes correspondence thumbnail blob URLs when not managed by cache', () => {
+    const t = 'blob:http://localhost/thumb';
+    revokeTarotCardBlobUrls(tarot({ correspondenceThumbnailUrls: [t] }));
+    expect(corrMocks.isCorrespondenceThumbUrlManagedByCache).toHaveBeenCalledWith(t);
+    expect(revokeSpy).toHaveBeenCalledWith(t);
+  });
+
+  it('does not revoke correspondence thumbnails managed by cache', () => {
+    const t = 'blob:http://localhost/thumb2';
+    corrMocks.isCorrespondenceThumbUrlManagedByCache.mockImplementation((u) => u === t);
+    revokeTarotCardBlobUrls(tarot({ correspondenceThumbnailUrls: [t] }));
+    expect(revokeSpy).not.toHaveBeenCalled();
   });
 });

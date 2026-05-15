@@ -4,6 +4,8 @@ export interface SettingsStoreState {
   censored: boolean;
   /** When false, the active deck name is hidden in the bottom-left of the canvas. */
   showDeckTitleOnCanvas: boolean;
+  /** When true, correspondence thumbnails render in a row under each local card image on the canvas. */
+  showCorrespondenceThumbnailsOnCanvas: boolean;
 }
 
 /** Protobuf `CktarotBackup.version` field — must match generated backup files. */

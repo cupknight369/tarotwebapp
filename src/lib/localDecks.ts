@@ -35,6 +35,14 @@ export function isBlobUrlManagedByDeckCache(url: string): boolean {
   return false;
 }
 
+/** Normalize legacy IndexedDB rows missing `correspondence_ids`. */
+export function normalizeLocalCardRow(row: LocalCardRow): LocalCardRow {
+  return {
+    ...row,
+    correspondence_ids: row.correspondence_ids ?? [],
+  };
+}
+
 export async function listLocalDecks(): Promise<LocalDeckRow[]> {
   const db = await openTarotDb();
   const tx = db.transaction(STORE_DECKS, 'readonly');
@@ -115,7 +123,7 @@ export async function listLocalCardsByDeckId(deckId: string): Promise<LocalCardR
   const store = tx.objectStore(STORE_CARDS);
   const idx = store.index('by_deck_id');
   const rows = (await idbRequest(idx.getAll(deckId))) as LocalCardRow[];
-  return rows.sort((a, b) => a.number - b.number);
+  return rows.sort((a, b) => a.number - b.number).map(normalizeLocalCardRow);
 }
 
 export async function getLocalCardsByIds(ids: string[]): Promise<Map<string, LocalCardRow>> {
@@ -128,20 +136,21 @@ export async function getLocalCardsByIds(ids: string[]): Promise<Map<string, Loc
   await Promise.all(
     unique.map(async (id) => {
       const row = (await idbRequest(store.get(id))) as LocalCardRow | undefined;
-      if (row) map.set(id, row);
+      if (row) map.set(id, normalizeLocalCardRow(row));
     }),
   );
   return map;
 }
 
 export async function putLocalCard(row: LocalCardRow): Promise<void> {
+  const normalized = normalizeLocalCardRow(row);
   const db = await openTarotDb();
   const tx = db.transaction(STORE_CARDS, 'readwrite');
-  await idbRequest(tx.objectStore(STORE_CARDS).put(row));
+  await idbRequest(tx.objectStore(STORE_CARDS).put(normalized));
 
   const deckTx = db.transaction(STORE_DECKS, 'readwrite');
   const deckStore = deckTx.objectStore(STORE_DECKS);
-  const deck = (await idbRequest(deckStore.get(row.deck_id))) as LocalDeckRow | undefined;
+  const deck = (await idbRequest(deckStore.get(normalized.deck_id))) as LocalDeckRow | undefined;
   if (deck) {
     deck.modified_at = new Date().toISOString();
     await idbRequest(deckStore.put(deck));
@@ -220,6 +229,7 @@ export async function addCardToLocalDeck(opts: {
     number: opts.number,
     imageBlobId: mainBlobId,
     censorImageBlobId: censorBlobId,
+    correspondence_ids: [],
   };
   await putLocalCard(row);
   return row;
@@ -241,11 +251,13 @@ export async function updateLocalCard(opts: {
     | undefined;
   if (!row) throw new Error(`Card not found: ${opts.cardId}`);
 
-  const oldMain = row.imageBlobId;
-  const oldCensor = row.censorImageBlobId;
+  const base = normalizeLocalCardRow(row);
 
-  let imageBlobId = row.imageBlobId;
-  let censorImageBlobId = row.censorImageBlobId;
+  const oldMain = base.imageBlobId;
+  const oldCensor = base.censorImageBlobId;
+
+  let imageBlobId = base.imageBlobId;
+  let censorImageBlobId = base.censorImageBlobId;
 
   const mainFile = opts.mainImageFile;
   if (mainFile && mainFile.size > 0) {
@@ -262,7 +274,7 @@ export async function updateLocalCard(opts: {
   }
 
   const updated: LocalCardRow = {
-    ...row,
+    ...base,
     title: opts.title.trim(),
     number: opts.number,
     imageBlobId,

@@ -132,6 +132,7 @@ export async function downloadCloudDeckToDevice(
         number: row.number,
         imageBlobId: mainId,
         censorImageBlobId: censorBlobId,
+        correspondence_ids: [],
       };
       await putLocalCard(localCard);
     }

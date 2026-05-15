@@ -1,7 +1,15 @@
-import type { LocalCardRow, LocalDeckRow, LocalReadingRow } from '../../types/localDb.js';
+import type {
+  LocalCardRow,
+  LocalCorrespondenceGroupRow,
+  LocalCorrespondenceRow,
+  LocalDeckRow,
+  LocalReadingRow,
+} from '../../types/localDb.js';
+import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../../types/localDb.js';
 import { BACKUP_VERSION } from '../../types/settings.js';
 import { cktarot } from '../../proto/generated/bundle.js';
 import { getCardImageRow, putLocalCardImageRow } from '../localDecks.js';
+import { getCorrespondenceImageRow, putCorrespondenceImageRow } from '../localCorrespondences.js';
 
 function deckRowToProto(d: LocalDeckRow): cktarot.DeckRow {
   const row = new cktarot.DeckRow();
@@ -25,6 +33,38 @@ function deckRowFromProto(d: cktarot.DeckRow): LocalDeckRow {
     modified_at: d.modifiedAt,
     from_catalog: d.fromCatalog,
   };
+}
+
+function correspondenceGroupToProto(
+  d: LocalCorrespondenceGroupRow,
+): cktarot.CorrespondenceGroupRow {
+  const row = new cktarot.CorrespondenceGroupRow();
+  row.id = d.id;
+  row.title = d.title;
+  return row;
+}
+
+async function correspondenceRowToProto(
+  c: LocalCorrespondenceRow,
+): Promise<cktarot.CorrespondenceRow> {
+  const row = new cktarot.CorrespondenceRow();
+  row.id = c.id;
+  row.title = c.title;
+  if (c.description !== null && c.description !== undefined && c.description !== '') {
+    row.description = c.description;
+  }
+  row.groupId = c.group_id;
+
+  if (c.thumbnailBlobId) {
+    const thumb = await getCorrespondenceImageRow(c.thumbnailBlobId);
+    if (thumb?.blob) {
+      const buf = await thumb.blob.arrayBuffer();
+      row.thumbnailData = new Uint8Array(buf);
+      if (thumb.mimeType) row.thumbnailMimeType = thumb.mimeType;
+    }
+  }
+
+  return row;
 }
 
 async function cardRowToProto(c: LocalCardRow): Promise<cktarot.CardRow> {
@@ -51,15 +91,19 @@ async function cardRowToProto(c: LocalCardRow): Promise<cktarot.CardRow> {
     }
   }
 
+  row.correspondenceIds = [...(c.correspondence_ids ?? [])];
   return row;
 }
 
 /**
  * Restore a single backup `CardRow` into IndexedDB image rows + a `LocalCardRow`.
+ *
+ * @param validCorrespondenceIds - When set, only these ids are kept on the restored card.
  */
 export async function materializeCardRowFromProto(
   c: cktarot.CardRow,
   errors: string[],
+  validCorrespondenceIds?: ReadonlySet<string>,
 ): Promise<LocalCardRow | null> {
   const hasMain = c.data && c.data.length > 0;
   if (!hasMain) {
@@ -99,6 +143,12 @@ export async function materializeCardRowFromProto(
       censorId = id;
     }
 
+    const rawCorr = c.correspondenceIds ?? [];
+    const correspondence_ids =
+      validCorrespondenceIds !== undefined
+        ? rawCorr.filter((id) => validCorrespondenceIds.has(id))
+        : [...rawCorr];
+
     return {
       id: c.id,
       deck_id: c.deckId,
@@ -106,9 +156,67 @@ export async function materializeCardRowFromProto(
       number: c.number,
       imageBlobId: mainId,
       censorImageBlobId: censorId,
+      correspondence_ids,
     };
   } catch (e) {
     errors.push(`card id=${c.id}: ${e instanceof Error ? e.message : String(e)}`);
+    return null;
+  }
+}
+
+export function correspondenceGroupRowFromProto(
+  g: cktarot.CorrespondenceGroupRow,
+): LocalCorrespondenceGroupRow {
+  return {
+    id: g.id,
+    title: (g.title ?? '').trim() || 'Untitled',
+  };
+}
+
+/**
+ * Restore a backup `CorrespondenceRow` into a new IndexedDB row (new thumbnail blob id when present).
+ */
+export async function materializeCorrespondenceRowFromProto(
+  c: cktarot.CorrespondenceRow,
+  validGroupIds: ReadonlySet<string>,
+  errors: string[],
+): Promise<LocalCorrespondenceRow | null> {
+  let gid = c.groupId?.trim() ? c.groupId.trim() : DEFAULT_CORRESPONDENCE_GROUP_ID;
+  if (!validGroupIds.has(gid)) gid = DEFAULT_CORRESPONDENCE_GROUP_ID;
+
+  let thumbnailBlobId: string | null = null;
+  try {
+    const hasThumb = c.thumbnailData && c.thumbnailData.length > 0;
+    if (hasThumb) {
+      const thumbId = crypto.randomUUID();
+      const tm =
+        c.thumbnailMimeType !== undefined &&
+        c.thumbnailMimeType !== null &&
+        c.thumbnailMimeType !== ''
+          ? c.thumbnailMimeType
+          : 'application/octet-stream';
+      const blob = new Blob([new Uint8Array(c.thumbnailData as Uint8Array)], { type: tm });
+      await putCorrespondenceImageRow({
+        id: thumbId,
+        blob,
+        created_at: new Date().toISOString(),
+        mimeType: tm,
+      });
+      thumbnailBlobId = thumbId;
+    }
+
+    return {
+      id: c.id,
+      title: (c.title ?? '').trim() || 'Untitled',
+      description:
+        c.description !== undefined && c.description !== null && c.description.trim() !== ''
+          ? c.description.trim()
+          : null,
+      group_id: gid,
+      thumbnailBlobId,
+    };
+  } catch (e) {
+    errors.push(`correspondence id=${c.id}: ${e instanceof Error ? e.message : String(e)}`);
     return null;
   }
 }
@@ -136,6 +244,8 @@ export async function encodeCktarotBackup(payload: {
   decks: LocalDeckRow[];
   cards: LocalCardRow[];
   readings: LocalReadingRow[];
+  correspondenceGroups: LocalCorrespondenceGroupRow[];
+  correspondences: LocalCorrespondenceRow[];
   exportedAt?: string;
 }): Promise<Uint8Array> {
   const msg = new cktarot.CktarotBackup();
@@ -144,6 +254,8 @@ export async function encodeCktarotBackup(payload: {
   msg.decks = payload.decks.map(deckRowToProto);
   msg.cards = await Promise.all(payload.cards.map(cardRowToProto));
   msg.readings = payload.readings.map(readingRowToProto);
+  msg.correspondenceGroups = payload.correspondenceGroups.map(correspondenceGroupToProto);
+  msg.correspondences = await Promise.all(payload.correspondences.map(correspondenceRowToProto));
   return new Uint8Array(cktarot.CktarotBackup.encode(msg).finish());
 }
 

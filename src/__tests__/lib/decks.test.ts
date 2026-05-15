@@ -64,6 +64,20 @@ vi.mock('../../lib/localDecks.js', () => ({
   getLocalCardsByIds: localMocks.getLocalCardsByIds,
 }));
 
+const corrMocks = vi.hoisted(() => ({
+  getCorrespondenceById: vi.fn(),
+  getCorrespondenceImageRow: vi.fn(),
+  getCachedCorrespondenceThumbUrl: vi.fn(),
+  setCachedCorrespondenceThumbUrl: vi.fn(),
+}));
+
+vi.mock('../../lib/localCorrespondences.js', () => ({
+  getCorrespondenceById: corrMocks.getCorrespondenceById,
+  getCorrespondenceImageRow: corrMocks.getCorrespondenceImageRow,
+  getCachedCorrespondenceThumbUrl: corrMocks.getCachedCorrespondenceThumbUrl,
+  setCachedCorrespondenceThumbUrl: corrMocks.setCachedCorrespondenceThumbUrl,
+}));
+
 import { publicCardImageUrl } from '../../lib/cardImageUrls.js';
 import {
   DEFAULT_DECK_ID,
@@ -133,6 +147,10 @@ describe('decks.ts', () => {
     vi.clearAllMocks();
     supabaseFrom.mockImplementation(defaultSupabaseFrom);
     resetSbPromises();
+    corrMocks.getCorrespondenceById.mockResolvedValue(null);
+    corrMocks.getCorrespondenceImageRow.mockResolvedValue(null);
+    corrMocks.getCachedCorrespondenceThumbUrl.mockReturnValue(undefined);
+    corrMocks.setCachedCorrespondenceThumbUrl.mockImplementation(() => {});
     localMocks.listLocalDecks.mockResolvedValue([]);
     localMocks.listLocalCardsByDeckId.mockResolvedValue([]);
     localMocks.putLocalDeck.mockResolvedValue(undefined);
@@ -314,6 +332,49 @@ describe('decks.ts', () => {
     const r2 = await getCardsByDeckId('d-a');
     expect(r2.ok).toBe(true);
     if (r2.ok) expect(r2.value[0]?.img).toBe('blob:cached');
+  });
+
+  it('getCardsByDeckId resolves correspondence thumbnail urls with cache miss and hit', async () => {
+    localMocks.listLocalDecks.mockResolvedValue([deckA]);
+    const row: LocalCardRow = {
+      ...localCard,
+      correspondence_ids: ['corr-1'],
+    };
+    localMocks.listLocalCardsByDeckId.mockResolvedValue([row]);
+    const mainBlob = new Blob([new Uint8Array([1])]);
+    localMocks.getCardImageRow.mockResolvedValue({
+      id: 'blob-main',
+      blob: mainBlob,
+      created_at: 't',
+      title: 'm',
+    });
+    localMocks.getCachedObjectUrlForBlobId.mockReturnValue('blob:main');
+    corrMocks.getCorrespondenceById.mockResolvedValue({
+      id: 'corr-1',
+      title: 'Herb',
+      description: null,
+      group_id: 'g1',
+      thumbnailBlobId: 'thumb-b',
+    });
+    corrMocks.getCachedCorrespondenceThumbUrl.mockReturnValue(undefined);
+    corrMocks.getCorrespondenceImageRow.mockResolvedValue({
+      id: 'thumb-b',
+      blob: new Blob([new Uint8Array([2])]),
+      created_at: 't',
+    });
+    const r = await getCardsByDeckId('d-a');
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value[0]?.correspondenceThumbnailUrls).toEqual(['blob:created']);
+      expect(corrMocks.setCachedCorrespondenceThumbUrl).toHaveBeenCalledWith(
+        'thumb-b',
+        'blob:created',
+      );
+    }
+    corrMocks.getCachedCorrespondenceThumbUrl.mockReturnValue('blob:thumb-hit');
+    const r2 = await getCardsByDeckId('d-a');
+    expect(r2.ok).toBe(true);
+    if (r2.ok) expect(r2.value[0]?.correspondenceThumbnailUrls).toEqual(['blob:thumb-hit']);
   });
 
   it('getCardsByDeckId uses local image fallbacks for title metadata', async () => {
