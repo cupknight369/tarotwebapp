@@ -19,11 +19,24 @@ import {
 } from '../validation/correspondences.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
 
+/**
+ * @param query - Raw search string from the library tab.
+ * @param title - Correspondence title to test.
+ * @returns True when `query` is empty/whitespace, or when title contains the trimmed query
+ *   case-insensitively.
+ */
+function correspondenceMatchesLibrarySearch(query: string, title: string): boolean {
+  const raw = query.trim();
+  if (raw === '') return true;
+  return title.toLowerCase().includes(raw.toLowerCase());
+}
+
 Alpine.data('correspondenceManagerComponent', () => ({
   open: false,
   loading: false,
   error: null as string | null,
   tab: 'library' as 'library' | 'groups',
+  librarySearchQuery: '',
   sections: [] as CorrespondenceGroupSection[],
   groupsOnly: [] as LocalCorrespondenceGroupRow[],
   newGroupTitle: '',
@@ -34,6 +47,21 @@ Alpine.data('correspondenceManagerComponent', () => ({
   clearThumbnail: false,
   renamingGroupId: null as string | null,
   renameGroupTitle: '',
+
+  filteredLibrarySections(): CorrespondenceGroupSection[] {
+    return this.sections
+      .map((sec) => ({
+        group: sec.group,
+        items: sec.items.filter((item) =>
+          correspondenceMatchesLibrarySearch(this.librarySearchQuery, item.title),
+        ),
+      }))
+      .filter((sec) => sec.items.length > 0);
+  },
+
+  totalLibraryCorrespondenceCount(): number {
+    return this.sections.reduce((n, sec) => n + sec.items.length, 0);
+  },
 
   async refresh() {
     this.loading = true;
@@ -58,6 +86,7 @@ Alpine.data('correspondenceManagerComponent', () => ({
     this.open = false;
     this.editingCorrespondenceId = null;
     this.renamingGroupId = null;
+    this.librarySearchQuery = '';
     window.dispatchEvent(new CustomEvent('correspondences-changed'));
   },
 

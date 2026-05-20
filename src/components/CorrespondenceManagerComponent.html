@@ -61,7 +61,24 @@
             New correspondence
           </button>
         </div>
-        <template x-for="sec in sections" :key="sec.group.id">
+        <div class="mb-3">
+          <label for="corr-manager-search" class="sr-only">Search correspondences by title</label>
+          <input
+            id="corr-manager-search"
+            type="search"
+            x-model="librarySearchQuery"
+            placeholder="Search by title…"
+            autocomplete="off"
+            class="w-full rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200 focus:border-transparent focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+        <p
+          class="mb-3 text-sm text-gray-400"
+          x-show="totalLibraryCorrespondenceCount() > 0 && filteredLibrarySections().length === 0"
+        >
+          No correspondences match your search.
+        </p>
+        <template x-for="sec in filteredLibrarySections()" :key="sec.group.id">
           <div class="mb-5">
             <p
               class="mb-2 border-b border-gray-700 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
