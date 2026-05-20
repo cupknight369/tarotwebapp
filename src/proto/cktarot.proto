@@ -124,3 +124,10 @@ message CktarotBackup {
   repeated CorrespondenceGroupRow correspondence_groups = 6;
   repeated CorrespondenceRow correspondences = 7;
 }
+
+message CktarotCorrespondenceExport {
+  int32 version = 1;
+  optional string exported_at = 2;
+  repeated CorrespondenceGroupRow groups = 3;
+  repeated CorrespondenceRow correspondences = 4;
+}

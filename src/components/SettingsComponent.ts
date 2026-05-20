@@ -1,6 +1,9 @@
 import Alpine from 'alpinejs';
 import type { BackupProgress, SettingsStoreState } from '../types/settings.js';
 import { exportLocalBackup, importLocalBackup } from '../lib/localBackup.js';
+import { exportCorrespondences, importCorrespondences } from '../lib/localCorrespondenceExport.js';
+import { listCorrespondenceGroups } from '../lib/localCorrespondences.js';
+import type { LocalCorrespondenceGroupRow } from '../types/localDb.js';
 
 function settingsStore(): SettingsStoreState {
   return Alpine.store('settings') as SettingsStoreState;
@@ -19,12 +22,22 @@ Alpine.data('settingsComponent', () => ({
   storageEstimateError: null as string | null,
   storageEstimatePending: false,
 
+  correspondenceGroups: [] as LocalCorrespondenceGroupRow[],
+  selectedCorrespondenceGroupIds: [] as string[],
+  correspondenceGroupsLoadError: null as string | null,
+  correspondenceGroupsPending: false,
+
   init() {
     Alpine.effect(() => {
       if ((Alpine.store('settings') as SettingsStoreState).open) {
         void this.refreshStorageEstimate();
+        void this.loadCorrespondenceGroupsForExport();
       }
     });
+  },
+
+  isSettingsBusy(): boolean {
+    return this.backupBusy || this.correspondenceTransferBusy;
   },
 
   formatStorageLine(): string {
@@ -57,6 +70,54 @@ Alpine.data('settingsComponent', () => ({
     }
   },
 
+  async loadCorrespondenceGroupsForExport() {
+    this.correspondenceGroupsLoadError = null;
+    this.correspondenceGroupsPending = true;
+    try {
+      const groups = await listCorrespondenceGroups();
+      this.correspondenceGroups = groups;
+      this.selectedCorrespondenceGroupIds = groups.map((g) => g.id);
+    } catch (e) {
+      this.correspondenceGroups = [];
+      this.selectedCorrespondenceGroupIds = [];
+      this.correspondenceGroupsLoadError =
+        e instanceof Error ? e.message : 'Could not load correspondence groups.';
+    } finally {
+      this.correspondenceGroupsPending = false;
+    }
+  },
+
+  isCorrespondenceGroupSelected(id: string): boolean {
+    return this.selectedCorrespondenceGroupIds.includes(id);
+  },
+
+  toggleCorrespondenceGroup(id: string) {
+    if (this.isCorrespondenceGroupSelected(id)) {
+      this.selectedCorrespondenceGroupIds = this.selectedCorrespondenceGroupIds.filter(
+        (x) => x !== id,
+      );
+    } else {
+      this.selectedCorrespondenceGroupIds = [...this.selectedCorrespondenceGroupIds, id];
+    }
+  },
+
+  selectAllCorrespondenceGroups() {
+    this.selectedCorrespondenceGroupIds = this.correspondenceGroups.map((g) => g.id);
+  },
+
+  clearCorrespondenceGroupSelection() {
+    this.selectedCorrespondenceGroupIds = [];
+  },
+
+  canExportCorrespondences(): boolean {
+    return (
+      !this.correspondenceTransferBusy &&
+      !this.correspondenceGroupsPending &&
+      this.correspondenceGroups.length > 0 &&
+      this.selectedCorrespondenceGroupIds.length > 0
+    );
+  },
+
   backupBusy: false,
   backupProgress: { phase: '', current: 0, total: 1 } as BackupProgress,
   backupStartedAt: 0,
@@ -65,9 +126,24 @@ Alpine.data('settingsComponent', () => ({
   backupResultSummary: '',
   _backupTimer: null as ReturnType<typeof setInterval> | null,
 
+  correspondenceTransferBusy: false,
+  correspondenceProgress: { phase: '', current: 0, total: 1 } as BackupProgress,
+  correspondenceStartedAt: 0,
+  correspondenceElapsedMs: 0,
+  correspondenceResultErrors: [] as string[],
+  correspondenceResultSummary: '',
+  _correspondenceTimer: null as ReturnType<typeof setInterval> | null,
+
   getBackupPercent() {
     const t = this.backupProgress.total;
     const c = this.backupProgress.current;
+    if (t <= 0) return 0;
+    return Math.min(100, Math.round((c / t) * 100));
+  },
+
+  getCorrespondencePercent() {
+    const t = this.correspondenceProgress.total;
+    const c = this.correspondenceProgress.current;
     if (t <= 0) return 0;
     return Math.min(100, Math.round((c / t) * 100));
   },
@@ -84,6 +160,11 @@ Alpine.data('settingsComponent', () => ({
     return `Elapsed: ${this.formatSeconds(s)}`;
   },
 
+  getCorrespondenceElapsedLabel() {
+    const s = Math.round(this.correspondenceElapsedMs / 1000);
+    return `Elapsed: ${this.formatSeconds(s)}`;
+  },
+
   getEtaLabel() {
     const { current, total } = this.backupProgress;
     if (!this.backupBusy || this.backupElapsedMs <= 0 || current <= 0 || current >= total) {
@@ -94,9 +175,29 @@ Alpine.data('settingsComponent', () => ({
     return `Est. remaining: ${this.formatSeconds(sec)}`;
   },
 
+  getCorrespondenceEtaLabel() {
+    const { current, total } = this.correspondenceProgress;
+    if (
+      !this.correspondenceTransferBusy ||
+      this.correspondenceElapsedMs <= 0 ||
+      current <= 0 ||
+      current >= total
+    ) {
+      return '';
+    }
+    const rate = this.correspondenceElapsedMs / current;
+    const sec = Math.max(0, Math.round((rate * (total - current)) / 1000));
+    return `Est. remaining: ${this.formatSeconds(sec)}`;
+  },
+
   clearBackupResult() {
     this.backupResultSummary = '';
     this.backupResultErrors = [];
+  },
+
+  clearCorrespondenceResult() {
+    this.correspondenceResultSummary = '';
+    this.correspondenceResultErrors = [];
   },
 
   openExportConfirm() {
@@ -215,6 +316,138 @@ Alpine.data('settingsComponent', () => ({
         this._backupTimer = null;
       }
       this.backupBusy = false;
+    }
+  },
+
+  openCorrespondenceExportConfirm() {
+    if (!this.canExportCorrespondences()) return;
+    settingsStore().open = false;
+    Alpine.store('dialog', {
+      open: true,
+      type: 'confirm',
+      title: "Export selected correspondence groups. Click 'Begin' to proceed.",
+      confirmLabel: 'Begin',
+      cancelLabel: 'Cancel',
+      cancelLabelVisible: true,
+      onConfirm: () => {
+        void this.startCorrespondenceExport();
+      },
+      onCancel: () => {
+        settingsStore().open = true;
+      },
+    });
+  },
+
+  async startCorrespondenceExport() {
+    if (this.correspondenceTransferBusy || !this.canExportCorrespondences()) return;
+    settingsStore().open = true;
+    this.clearCorrespondenceResult();
+    this.correspondenceTransferBusy = true;
+    this.correspondenceProgress = { phase: 'Starting…', current: 0, total: 1 };
+    this.correspondenceStartedAt = Date.now();
+    this.correspondenceElapsedMs = 0;
+    this._correspondenceTimer = setInterval(() => {
+      this.correspondenceElapsedMs = Date.now() - this.correspondenceStartedAt;
+    }, 250);
+    try {
+      const { errors } = await exportCorrespondences(this.selectedCorrespondenceGroupIds, (p) => {
+        this.correspondenceProgress = { ...p };
+      });
+      this.correspondenceResultErrors = errors;
+      this.correspondenceResultSummary =
+        errors.length === 0
+          ? 'Correspondence export finished.'
+          : 'Correspondence export finished with issues (see below).';
+    } catch (e) {
+      this.correspondenceResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.correspondenceResultSummary = 'Correspondence export failed.';
+    } finally {
+      if (this._correspondenceTimer) {
+        clearInterval(this._correspondenceTimer);
+        this._correspondenceTimer = null;
+      }
+      this.correspondenceTransferBusy = false;
+    }
+  },
+
+  openCorrespondenceImportConfirm() {
+    settingsStore().open = false;
+    Alpine.store('dialog', {
+      open: true,
+      type: 'confirm',
+      title:
+        "Import adds new correspondence entries without replacing existing ones. Click 'Begin' to choose a file.",
+      confirmLabel: 'Begin',
+      cancelLabel: 'Cancel',
+      cancelLabelVisible: true,
+      onConfirm: () => {
+        document.getElementById('settings-correspondence-file-input')?.click();
+      },
+      onCancel: () => {
+        settingsStore().open = true;
+      },
+    });
+  },
+
+  async onCorrespondenceImportFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.correspondenceTransferBusy) return;
+
+    settingsStore().open = true;
+    this.clearCorrespondenceResult();
+    this.correspondenceTransferBusy = true;
+    this.correspondenceProgress = { phase: 'Reading file…', current: 0, total: 1 };
+    this.correspondenceStartedAt = Date.now();
+    this.correspondenceElapsedMs = 0;
+    this._correspondenceTimer = setInterval(() => {
+      this.correspondenceElapsedMs = Date.now() - this.correspondenceStartedAt;
+    }, 250);
+
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch (e) {
+      if (this._correspondenceTimer) {
+        clearInterval(this._correspondenceTimer);
+        this._correspondenceTimer = null;
+      }
+      this.correspondenceTransferBusy = false;
+      this.correspondenceResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.correspondenceResultSummary = 'Could not read the file.';
+      return;
+    }
+
+    try {
+      const { errors, importedGroups, importedCorrespondences } = await importCorrespondences(
+        buffer,
+        (p) => {
+          this.correspondenceProgress = { ...p };
+        },
+      );
+      this.correspondenceResultErrors = errors;
+      if (errors.length === 0) {
+        this.correspondenceResultSummary = `Import finished. Added ${importedGroups} group(s) and ${importedCorrespondences} correspondence(s).`;
+        window.dispatchEvent(new CustomEvent('correspondences-changed'));
+        void this.loadCorrespondenceGroupsForExport();
+      } else {
+        this.correspondenceResultSummary =
+          'Import finished with issues (see below). Some entries may have been added.';
+        if (importedCorrespondences > 0) {
+          window.dispatchEvent(new CustomEvent('correspondences-changed'));
+          void this.loadCorrespondenceGroupsForExport();
+        }
+      }
+    } catch (e) {
+      this.correspondenceResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.correspondenceResultSummary = 'Correspondence import failed.';
+    } finally {
+      if (this._correspondenceTimer) {
+        clearInterval(this._correspondenceTimer);
+        this._correspondenceTimer = null;
+      }
+      this.correspondenceTransferBusy = false;
     }
   },
 }));

@@ -1373,4 +1373,119 @@ export namespace cktarot {
          */
         public static getTypeUrl(typeUrlPrefix?: string): string;
     }
+
+    /** Properties of a CktarotCorrespondenceExport. */
+    interface ICktarotCorrespondenceExport {
+
+        /** CktarotCorrespondenceExport version */
+        version?: (number|null);
+
+        /** CktarotCorrespondenceExport exportedAt */
+        exportedAt?: (string|null);
+
+        /** CktarotCorrespondenceExport groups */
+        groups?: (cktarot.ICorrespondenceGroupRow[]|null);
+
+        /** CktarotCorrespondenceExport correspondences */
+        correspondences?: (cktarot.ICorrespondenceRow[]|null);
+    }
+
+    /** Represents a CktarotCorrespondenceExport. */
+    class CktarotCorrespondenceExport implements ICktarotCorrespondenceExport {
+
+        /**
+         * Constructs a new CktarotCorrespondenceExport.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: cktarot.ICktarotCorrespondenceExport);
+
+        /** CktarotCorrespondenceExport version. */
+        public version: number;
+
+        /** CktarotCorrespondenceExport exportedAt. */
+        public exportedAt?: (string|null);
+
+        /** CktarotCorrespondenceExport groups. */
+        public groups: cktarot.ICorrespondenceGroupRow[];
+
+        /** CktarotCorrespondenceExport correspondences. */
+        public correspondences: cktarot.ICorrespondenceRow[];
+
+        /**
+         * Creates a new CktarotCorrespondenceExport instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns CktarotCorrespondenceExport instance
+         */
+        public static create(properties?: cktarot.ICktarotCorrespondenceExport): cktarot.CktarotCorrespondenceExport;
+
+        /**
+         * Encodes the specified CktarotCorrespondenceExport message. Does not implicitly {@link cktarot.CktarotCorrespondenceExport.verify|verify} messages.
+         * @param message CktarotCorrespondenceExport message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: cktarot.ICktarotCorrespondenceExport, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified CktarotCorrespondenceExport message, length delimited. Does not implicitly {@link cktarot.CktarotCorrespondenceExport.verify|verify} messages.
+         * @param message CktarotCorrespondenceExport message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: cktarot.ICktarotCorrespondenceExport, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a CktarotCorrespondenceExport message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns CktarotCorrespondenceExport
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): cktarot.CktarotCorrespondenceExport;
+
+        /**
+         * Decodes a CktarotCorrespondenceExport message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns CktarotCorrespondenceExport
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): cktarot.CktarotCorrespondenceExport;
+
+        /**
+         * Verifies a CktarotCorrespondenceExport message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a CktarotCorrespondenceExport message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns CktarotCorrespondenceExport
+         */
+        public static fromObject(object: { [k: string]: any }): cktarot.CktarotCorrespondenceExport;
+
+        /**
+         * Creates a plain object from a CktarotCorrespondenceExport message. Also converts values to other types if specified.
+         * @param message CktarotCorrespondenceExport
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: cktarot.CktarotCorrespondenceExport, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this CktarotCorrespondenceExport to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for CktarotCorrespondenceExport
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
 }

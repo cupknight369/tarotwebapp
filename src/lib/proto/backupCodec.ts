@@ -35,7 +35,7 @@ function deckRowFromProto(d: cktarot.DeckRow): LocalDeckRow {
   };
 }
 
-function correspondenceGroupToProto(
+export function correspondenceGroupToProto(
   d: LocalCorrespondenceGroupRow,
 ): cktarot.CorrespondenceGroupRow {
   const row = new cktarot.CorrespondenceGroupRow();
@@ -44,7 +44,7 @@ function correspondenceGroupToProto(
   return row;
 }
 
-async function correspondenceRowToProto(
+export async function correspondenceRowToProto(
   c: LocalCorrespondenceRow,
 ): Promise<cktarot.CorrespondenceRow> {
   const row = new cktarot.CorrespondenceRow();

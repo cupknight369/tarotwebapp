@@ -15,6 +15,9 @@ export interface SettingsStoreState {
 /** Protobuf `CktarotBackup.version` field — must match generated backup files. */
 export const BACKUP_VERSION = 1 as const;
 
+/** Protobuf `CktarotCorrespondenceExport.version` field — must match correspondence export files. */
+export const CORRESPONDENCE_EXPORT_VERSION = 1 as const;
+
 export interface BackupProgress {
   phase: string;
   current: number;

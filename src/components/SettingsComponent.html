@@ -15,8 +15,8 @@
       type="button"
       class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
       aria-label="Close"
-      :disabled="backupBusy"
-      :class="backupBusy ? 'opacity-40 cursor-not-allowed' : ''"
+      :disabled="isSettingsBusy()"
+      :class="isSettingsBusy() ? 'opacity-40 cursor-not-allowed' : ''"
       @click="$store.settings.open = false"
     >
       <span class="text-xl leading-none">×</span>
@@ -27,7 +27,7 @@
       <input
         type="checkbox"
         x-model="$store.settings.censored"
-        :disabled="backupBusy"
+        :disabled="isSettingsBusy()"
         class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
       />
       <span class="text-gray-200">Censored</span>
@@ -36,7 +36,7 @@
       <input
         type="checkbox"
         x-model="$store.settings.showDeckTitleOnCanvas"
-        :disabled="backupBusy"
+        :disabled="isSettingsBusy()"
         class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
       />
       <span class="text-gray-200">Show active deck on canvas</span>
@@ -45,7 +45,7 @@
       <input
         type="checkbox"
         x-model="$store.settings.showCorrespondenceThumbnailsOnCanvas"
-        :disabled="backupBusy"
+        :disabled="isSettingsBusy()"
         class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
       />
       <span class="text-gray-200">Show correspondence thumbnails</span>
@@ -54,7 +54,7 @@
       <input
         type="checkbox"
         x-model="$store.settings.showCorrespondenceCountBarOnCanvas"
-        :disabled="backupBusy"
+        :disabled="isSettingsBusy()"
         class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
       />
       <span class="text-gray-200">Show correspondence count on canvas</span>
@@ -63,7 +63,7 @@
       <input
         type="checkbox"
         x-model="$store.settings.showCardCountBarOnCanvas"
-        :disabled="backupBusy"
+        :disabled="isSettingsBusy()"
         class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
       />
       <span class="text-gray-200">Show card count on canvas</span>
@@ -73,11 +73,129 @@
       <button
         type="button"
         class="cursor-pointer w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        :disabled="backupBusy"
+        :disabled="isSettingsBusy()"
         @click="$dispatch('open-correspondence-manager')"
       >
         Manage correspondences…
       </button>
+    </div>
+
+    <div class="border-t border-gray-700 mt-6 pt-6">
+      <p class="text-sm font-medium text-gray-300 mb-1">Correspondence data</p>
+      <p class="text-xs text-gray-500 mb-3">
+        Export selected groups to a file, or import to add copies without replacing existing
+        entries.
+      </p>
+      <p x-show="correspondenceGroupsPending" x-cloak class="text-xs text-gray-400 mb-2">
+        Loading groups…
+      </p>
+      <p
+        x-show="correspondenceGroupsLoadError"
+        x-cloak
+        class="text-xs text-red-400 mb-2"
+        x-text="correspondenceGroupsLoadError"
+      ></p>
+      <div
+        x-show="correspondenceGroups.length && !correspondenceGroupsPending"
+        x-cloak
+        class="mb-3"
+      >
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-xs text-gray-400">Groups to export</span>
+          <span class="text-xs shrink-0">
+            <button
+              type="button"
+              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+              :disabled="isSettingsBusy()"
+              @click="selectAllCorrespondenceGroups()"
+            >
+              Select all
+            </button>
+            <span class="text-gray-600 mx-1">·</span>
+            <button
+              type="button"
+              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+              :disabled="isSettingsBusy()"
+              @click="clearCorrespondenceGroupSelection()"
+            >
+              Clear all
+            </button>
+          </span>
+        </div>
+        <ul
+          class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
+        >
+          <template x-for="g in correspondenceGroups" :key="g.id">
+            <li>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
+                <input
+                  type="checkbox"
+                  class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+                  :checked="isCorrespondenceGroupSelected(g.id)"
+                  :disabled="isSettingsBusy()"
+                  @change="toggleCorrespondenceGroup(g.id)"
+                />
+                <span x-text="g.title"></span>
+              </label>
+            </li>
+          </template>
+        </ul>
+      </div>
+      <div class="flex flex-col gap-2">
+        <button
+          type="button"
+          class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="!canExportCorrespondences() || isSettingsBusy()"
+          @click="openCorrespondenceExportConfirm()"
+        >
+          Export correspondences…
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="isSettingsBusy()"
+          @click="openCorrespondenceImportConfirm()"
+        >
+          Import correspondences…
+        </button>
+      </div>
+      <input
+        id="settings-correspondence-file-input"
+        type="file"
+        accept="application/octet-stream,.pb"
+        class="sr-only"
+        :disabled="isSettingsBusy()"
+        @change="onCorrespondenceImportFileChange($event)"
+      />
+
+      <div x-show="correspondenceTransferBusy" x-cloak class="mt-4 space-y-2">
+        <div class="h-2 bg-gray-700 rounded overflow-hidden">
+          <div
+            class="h-full bg-purple-600 transition-[width] duration-150"
+            :style="`width: ${getCorrespondencePercent()}%`"
+          ></div>
+        </div>
+        <p class="text-xs text-gray-400" x-text="correspondenceProgress.phase"></p>
+        <p class="text-xs text-gray-500">
+          <span x-text="getCorrespondenceElapsedLabel()"></span>
+          <span
+            x-show="getCorrespondenceEtaLabel()"
+            x-text="' · ' + getCorrespondenceEtaLabel()"
+          ></span>
+        </p>
+      </div>
+
+      <div x-show="correspondenceResultSummary" x-cloak class="mt-4 space-y-2">
+        <p class="text-sm text-gray-300" x-text="correspondenceResultSummary"></p>
+        <ul
+          x-show="correspondenceResultErrors.length"
+          class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
+        >
+          <template x-for="(err, idx) in correspondenceResultErrors" :key="idx">
+            <li x-text="err"></li>
+          </template>
+        </ul>
+      </div>
     </div>
 
     <div class="border-t border-gray-700 mt-6 pt-6">
@@ -89,7 +207,7 @@
         <button
           type="button"
           class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="backupBusy"
+          :disabled="isSettingsBusy()"
           @click="openExportConfirm()"
         >
           Export local data…
@@ -97,7 +215,7 @@
         <button
           type="button"
           class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="backupBusy"
+          :disabled="isSettingsBusy()"
           @click="openImportConfirm()"
         >
           Import from backup…
@@ -108,7 +226,7 @@
         type="file"
         accept="application/octet-stream,.pb"
         class="sr-only"
-        :disabled="backupBusy"
+        :disabled="isSettingsBusy()"
         @change="onImportFileChange($event)"
       />
 

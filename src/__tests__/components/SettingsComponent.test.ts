@@ -12,6 +12,12 @@ const backupMocks = vi.hoisted(() => ({
   importLocalBackup: vi.fn(),
 }));
 
+const correspondenceMocks = vi.hoisted(() => ({
+  exportCorrespondences: vi.fn(),
+  importCorrespondences: vi.fn(),
+  listCorrespondenceGroups: vi.fn(),
+}));
+
 const alpineBundle = vi.hoisted(() => {
   const cap = (
     globalThis as unknown as VitestGlobalWithAlpineDataCapture
@@ -37,7 +43,17 @@ vi.mock('../../lib/localBackup.js', () => ({
   importLocalBackup: backupMocks.importLocalBackup,
 }));
 
+vi.mock('../../lib/localCorrespondenceExport.js', () => ({
+  exportCorrespondences: correspondenceMocks.exportCorrespondences,
+  importCorrespondences: correspondenceMocks.importCorrespondences,
+}));
+
+vi.mock('../../lib/localCorrespondences.js', () => ({
+  listCorrespondenceGroups: correspondenceMocks.listCorrespondenceGroups,
+}));
+
 import '../../components/SettingsComponent.js';
+import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../../types/localDb.js';
 
 const rawStores = alpineBundle.cap.rawStores;
 
@@ -76,6 +92,32 @@ type SettingsCtx = {
   startExport: () => Promise<void>;
   openImportConfirm: () => void;
   onImportFileChange: (event: Event) => Promise<void>;
+  correspondenceGroups: { id: string; title: string }[];
+  selectedCorrespondenceGroupIds: string[];
+  correspondenceGroupsLoadError: string | null;
+  correspondenceGroupsPending: boolean;
+  isSettingsBusy: () => boolean;
+  loadCorrespondenceGroupsForExport: () => Promise<void>;
+  isCorrespondenceGroupSelected: (id: string) => boolean;
+  toggleCorrespondenceGroup: (id: string) => void;
+  selectAllCorrespondenceGroups: () => void;
+  clearCorrespondenceGroupSelection: () => void;
+  canExportCorrespondences: () => boolean;
+  correspondenceTransferBusy: boolean;
+  correspondenceProgress: { phase: string; current: number; total: number };
+  correspondenceStartedAt: number;
+  correspondenceElapsedMs: number;
+  correspondenceResultErrors: string[];
+  correspondenceResultSummary: string;
+  _correspondenceTimer: ReturnType<typeof setInterval> | null;
+  getCorrespondencePercent: () => number;
+  getCorrespondenceElapsedLabel: () => string;
+  getCorrespondenceEtaLabel: () => string;
+  clearCorrespondenceResult: () => void;
+  openCorrespondenceExportConfirm: () => void;
+  startCorrespondenceExport: () => Promise<void>;
+  openCorrespondenceImportConfirm: () => void;
+  onCorrespondenceImportFileChange: (event: Event) => Promise<void>;
 };
 
 function mount(): SettingsCtx {
@@ -100,6 +142,16 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     rawStores.settings = settingsState();
     backupMocks.exportLocalBackup.mockResolvedValue({ errors: [] });
     backupMocks.importLocalBackup.mockResolvedValue({ errors: [] });
+    correspondenceMocks.exportCorrespondences.mockResolvedValue({ errors: [] });
+    correspondenceMocks.importCorrespondences.mockResolvedValue({
+      errors: [],
+      importedGroups: 1,
+      importedCorrespondences: 2,
+    });
+    correspondenceMocks.listCorrespondenceGroups.mockResolvedValue([
+      { id: DEFAULT_CORRESPONDENCE_GROUP_ID, title: 'Default' },
+      { id: 'g1', title: 'Herbs' },
+    ]);
     vi.stubGlobal('navigator', {
       ...navigator,
       storage: {
@@ -122,6 +174,93 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     expect(spy).toHaveBeenCalledTimes(1);
     await vi.waitFor(() => expect(ctx.storageEstimatePending).toBe(false));
     expect(ctx.storageEstimate).toEqual({ usage: 100, quota: 10 * 1024 * 1024 });
+  });
+
+  it('init loads correspondence groups when settings opens', async () => {
+    rawStores.settings = settingsState({ open: true });
+    const ctx = mount();
+    ctx.init.call(ctx);
+    await vi.waitFor(() => expect(ctx.correspondenceGroupsPending).toBe(false));
+    expect(correspondenceMocks.listCorrespondenceGroups).toHaveBeenCalled();
+    expect(ctx.correspondenceGroups).toHaveLength(2);
+    expect(ctx.selectedCorrespondenceGroupIds).toEqual([DEFAULT_CORRESPONDENCE_GROUP_ID, 'g1']);
+  });
+
+  it('isSettingsBusy is true when backup or correspondence transfer is busy', () => {
+    const ctx = mount();
+    expect(ctx.isSettingsBusy.call(ctx)).toBe(false);
+    ctx.backupBusy = true;
+    expect(ctx.isSettingsBusy.call(ctx)).toBe(true);
+    ctx.backupBusy = false;
+    ctx.correspondenceTransferBusy = true;
+    expect(ctx.isSettingsBusy.call(ctx)).toBe(true);
+  });
+
+  it('toggleCorrespondenceGroup and canExportCorrespondences gate export', () => {
+    const ctx = mount();
+    ctx.correspondenceGroups = [{ id: DEFAULT_CORRESPONDENCE_GROUP_ID, title: 'Default' }];
+    ctx.selectedCorrespondenceGroupIds = [DEFAULT_CORRESPONDENCE_GROUP_ID];
+    expect(ctx.canExportCorrespondences.call(ctx)).toBe(true);
+    ctx.toggleCorrespondenceGroup(DEFAULT_CORRESPONDENCE_GROUP_ID);
+    expect(ctx.canExportCorrespondences.call(ctx)).toBe(false);
+    ctx.selectAllCorrespondenceGroups.call(ctx);
+    expect(ctx.selectedCorrespondenceGroupIds).toEqual([DEFAULT_CORRESPONDENCE_GROUP_ID]);
+  });
+
+  it('openCorrespondenceExportConfirm no-ops when export not allowed', () => {
+    const ctx = mount();
+    ctx.correspondenceGroups = [];
+    ctx.openCorrespondenceExportConfirm.call(ctx);
+    expect(rawStores.dialog).toBeUndefined();
+  });
+
+  it('startCorrespondenceExport calls exportCorrespondences with selected group ids', async () => {
+    vi.useFakeTimers();
+    const ctx = mount();
+    ctx.correspondenceGroups = [
+      { id: DEFAULT_CORRESPONDENCE_GROUP_ID, title: 'Default' },
+      { id: 'g1', title: 'Herbs' },
+    ];
+    ctx.selectedCorrespondenceGroupIds = ['g1'];
+    ctx.correspondenceGroupsPending = false;
+    await ctx.startCorrespondenceExport.call(ctx);
+    expect(correspondenceMocks.exportCorrespondences).toHaveBeenCalledWith(
+      ['g1'],
+      expect.any(Function),
+    );
+    expect(ctx.correspondenceResultSummary).toBe('Correspondence export finished.');
+  });
+
+  it('openCorrespondenceImportConfirm wires file input click', () => {
+    rawStores.settings = settingsState({ open: true });
+    const input = document.createElement('input');
+    input.id = 'settings-correspondence-file-input';
+    const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
+    document.body.appendChild(input);
+    const ctx = mount();
+    ctx.openCorrespondenceImportConfirm.call(ctx);
+    (rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it('onCorrespondenceImportFileChange dispatches correspondences-changed on success', async () => {
+    vi.useFakeTimers();
+    const dispatch = vi.fn();
+    vi.stubGlobal('window', { ...window, dispatchEvent: dispatch });
+    const file = new File([new Uint8Array([1])], 'corr.pb');
+    const input = document.createElement('input');
+    input.type = 'file';
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    Object.defineProperty(input, 'files', { value: dt.files, configurable: true });
+    const ev = new Event('change', { bubbles: true });
+    Object.defineProperty(ev, 'target', { value: input, enumerable: true });
+    const ctx = mount();
+    await ctx.onCorrespondenceImportFileChange.call(ctx, ev);
+    expect(dispatch).toHaveBeenCalled();
+    const evt = dispatch.mock.calls[0][0] as CustomEvent;
+    expect(evt.type).toBe('correspondences-changed');
+    expect(ctx.correspondenceResultSummary).toContain('Added 1 group(s) and 2 correspondence(s)');
   });
 
   it('init effect does not refresh when settings panel is closed', () => {
