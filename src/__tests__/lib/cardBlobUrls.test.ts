@@ -102,7 +102,9 @@ describe('revokeTarotCardBlobUrls', () => {
 
   it('revokes correspondence thumbnail blob URLs when not managed by cache', () => {
     const t = 'blob:http://localhost/thumb';
-    revokeTarotCardBlobUrls(tarot({ correspondenceThumbnailUrls: [t] }));
+    revokeTarotCardBlobUrls(
+      tarot({ correspondenceDisplays: [{ id: 'c', title: 'T', thumbnailUrl: t }] }),
+    );
     expect(corrMocks.isCorrespondenceThumbUrlManagedByCache).toHaveBeenCalledWith(t);
     expect(revokeSpy).toHaveBeenCalledWith(t);
   });
@@ -110,7 +112,9 @@ describe('revokeTarotCardBlobUrls', () => {
   it('does not revoke correspondence thumbnails managed by cache', () => {
     const t = 'blob:http://localhost/thumb2';
     corrMocks.isCorrespondenceThumbUrlManagedByCache.mockImplementation((u) => u === t);
-    revokeTarotCardBlobUrls(tarot({ correspondenceThumbnailUrls: [t] }));
+    revokeTarotCardBlobUrls(
+      tarot({ correspondenceDisplays: [{ id: 'c', title: 'T', thumbnailUrl: t }] }),
+    );
     expect(revokeSpy).not.toHaveBeenCalled();
   });
 });

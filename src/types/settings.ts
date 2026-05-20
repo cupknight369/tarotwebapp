@@ -6,6 +6,8 @@ export interface SettingsStoreState {
   showDeckTitleOnCanvas: boolean;
   /** When true, correspondence thumbnails render in a row under each local card image on the canvas. */
   showCorrespondenceThumbnailsOnCanvas: boolean;
+  /** When true, the correspondence count status bar is shown on the left side of the canvas. */
+  showCorrespondenceCountBarOnCanvas: boolean;
 }
 
 /** Protobuf `CktarotBackup.version` field — must match generated backup files. */

@@ -15,12 +15,7 @@ import {
   putLocalDeck,
   setCachedObjectUrl,
 } from './localDecks.js';
-import {
-  getCachedCorrespondenceThumbUrl,
-  getCorrespondenceById,
-  getCorrespondenceImageRow,
-  setCachedCorrespondenceThumbUrl,
-} from './localCorrespondences.js';
+import { resolveCorrespondenceDisplays } from './correspondenceCanvasCounts.js';
 
 export const LAST_DECK_STORAGE_KEY = 'last_deck_id';
 
@@ -198,19 +193,7 @@ async function localRowToTarotCard(row: LocalCardRow, deckTitle?: string): Promi
       censoredImg = u;
     }
   }
-  const correspondenceThumbnailUrls: string[] = [];
-  for (const corrId of row.correspondence_ids ?? []) {
-    const cr = await getCorrespondenceById(corrId);
-    if (!cr?.thumbnailBlobId) continue;
-    let u = getCachedCorrespondenceThumbUrl(cr.thumbnailBlobId);
-    if (!u) {
-      const thumbMeta = await getCorrespondenceImageRow(cr.thumbnailBlobId);
-      if (!thumbMeta?.blob) continue;
-      u = URL.createObjectURL(thumbMeta.blob);
-      setCachedCorrespondenceThumbUrl(cr.thumbnailBlobId, u);
-    }
-    correspondenceThumbnailUrls.push(u);
-  }
+  const correspondenceDisplays = await resolveCorrespondenceDisplays(row.correspondence_ids ?? []);
 
   return {
     id: row.id,
@@ -222,7 +205,8 @@ async function localRowToTarotCard(row: LocalCardRow, deckTitle?: string): Promi
     deckTitle,
     imageSourceLabel: localImageSourceLabel(mainMeta),
     censorImageSourceLabel,
-    correspondenceThumbnailUrls,
+    correspondence_ids: row.correspondence_ids ?? [],
+    correspondenceDisplays,
   };
 }
 

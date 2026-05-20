@@ -1,3 +1,9 @@
+import type {
+  CorrespondenceCanvasCountEntry,
+  CorrespondenceDisplay,
+} from '../lib/correspondenceCanvasCounts.js';
+
+export type { CorrespondenceDisplay };
 import type { SavedReadingState } from './readingState.js';
 
 export interface MouseLikeEvent {
@@ -217,6 +223,15 @@ export type MergedThis = {
   closeStorageAdditionalInfo(): void;
   exportFromStorageWarning(): void;
 
+  correspondenceCountBarCollapsed: boolean;
+  correspondenceBarEntries: CorrespondenceCanvasCountEntry[];
+  _correspondenceBarRefreshGen: number;
+  _correspondenceDisplaysHydrateGen: number;
+  showCorrespondenceOnCanvas(): boolean;
+  hydrateCanvasCardCorrespondenceDisplays(): Promise<void>;
+  onCorrespondencesChanged(): Promise<void>;
+  refreshCorrespondenceCountBar(): Promise<void>;
+
   // ScaleComponent props & methods
   scale: number;
   offsetX: number;
@@ -244,8 +259,10 @@ export interface TarotCard {
   censorImageSourceLabel?: string | null;
   /** True when the card data is missing (e.g. deck deleted); canvas shows a placeholder instead of art. */
   invalidReference?: boolean;
-  /** Object URLs for correspondence thumbnails (local deck cards); from shared correspondence image cache. */
-  correspondenceThumbnailUrls?: readonly string[];
+  /** Ids of correspondence library entries assigned to this card (local decks). */
+  correspondence_ids?: readonly string[];
+  /** Resolved correspondence icons for canvas display (thumbnail or letter placeholder). */
+  correspondenceDisplays?: readonly CorrespondenceDisplay[];
 }
 
 export interface DraggableCard {

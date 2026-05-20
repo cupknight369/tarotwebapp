@@ -25,6 +25,8 @@
           x-cloak
           id="draggable-container"
           class="relative w-screen h-screen bg-gray-900 border-2 border-gray-700 rounded-lg overflow-hidden"
+          @correspondences-changed.window="onCorrespondencesChanged()"
+          x-effect="if (showCorrespondenceOnCanvas() && draggableCards.length) hydrateCanvasCardCorrespondenceDisplays()"
         >
           <div
             x-cloak
@@ -125,6 +127,57 @@
           </div>
 
           <div
+            x-cloak
+            x-show="$store.settings.showCorrespondenceCountBarOnCanvas && correspondenceBarEntries.length > 0"
+            x-effect="refreshCorrespondenceCountBar()"
+            class="fixed top-12 left-2 z-[9998] pointer-events-auto"
+          >
+            <div
+              class="rounded-lg border border-gray-700/80 bg-gray-900/90 shadow-lg backdrop-blur-sm"
+              :class="correspondenceCountBarCollapsed ? 'p-1' : 'px-2 py-2'"
+            >
+              <button
+                type="button"
+                class="flex w-full items-center justify-center rounded p-1 text-gray-400 hover:bg-gray-800 hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+                :aria-expanded="!correspondenceCountBarCollapsed"
+                :aria-label="correspondenceCountBarCollapsed ? 'Expand correspondence count' : 'Collapse correspondence count'"
+                @click="correspondenceCountBarCollapsed = !correspondenceCountBarCollapsed"
+              >
+                <span
+                  class="text-sm leading-none"
+                  aria-hidden="true"
+                  x-text="correspondenceCountBarCollapsed ? '›' : '‹'"
+                ></span>
+              </button>
+              <div
+                x-show="!correspondenceCountBarCollapsed"
+                x-cloak
+                class="mt-1 flex flex-col gap-1.5"
+              >
+                <template x-for="entry in correspondenceBarEntries" :key="entry.id">
+                  <div class="flex items-center gap-2">
+                    <img
+                      x-show="entry.thumbnailUrl"
+                      :src="entry.thumbnailUrl"
+                      alt=""
+                      class="h-9 w-9 shrink-0 rounded object-cover ring-1 ring-gray-600"
+                    />
+                    <span
+                      x-show="!entry.thumbnailUrl"
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-gray-700 text-sm font-semibold uppercase text-gray-200 ring-1 ring-gray-600"
+                      x-text="(entry.title || '?').charAt(0)"
+                    ></span>
+                    <span
+                      class="min-w-[1.25rem] text-sm font-semibold tabular-nums text-gray-200"
+                      x-text="entry.count"
+                    ></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div
             x-show="$store.settings.showDeckTitleOnCanvas && ($store.activeDeckTitle || '').length > 0"
             x-cloak
             class="pointer-events-none absolute bottom-3 left-3 z-[9998] max-w-[min(85vw,22rem)] rounded-lg border border-gray-700/80 bg-gray-900/90 px-3 py-2 shadow-lg backdrop-blur-sm"
@@ -190,19 +243,29 @@
                     />
                   </template>
                   <div
-                    x-show="$store.settings.showCorrespondenceThumbnailsOnCanvas && (draggableCard.card.correspondenceThumbnailUrls?.length ?? 0) > 0"
+                    x-show="showCorrespondenceOnCanvas() && (draggableCard.card.correspondenceDisplays?.length ?? 0) > 0"
                     x-cloak
                     class="mt-1 flex w-[150px] max-w-[150px] flex-wrap justify-center gap-1"
                   >
                     <template
-                      x-for="(thumbUrl, ti) in draggableCard.card.correspondenceThumbnailUrls || []"
-                      :key="ti"
+                      x-for="display in draggableCard.card.correspondenceDisplays || []"
+                      :key="display.id"
                     >
-                      <img
-                        :src="thumbUrl"
-                        alt=""
-                        class="h-9 max-h-9 w-auto max-w-[2.5rem] rounded object-cover ring-1 ring-gray-600 pointer-events-none"
-                      />
+                      <div class="pointer-events-none shrink-0">
+                        <template x-if="display.thumbnailUrl">
+                          <img
+                            :src="display.thumbnailUrl"
+                            alt=""
+                            class="h-9 max-h-9 w-auto max-w-[2.5rem] rounded object-cover ring-1 ring-gray-600"
+                          />
+                        </template>
+                        <template x-if="!display.thumbnailUrl">
+                          <span
+                            class="flex h-9 w-9 items-center justify-center rounded bg-gray-700 text-sm font-semibold uppercase text-gray-200 ring-1 ring-gray-600"
+                            x-text="(display.title || '?').charAt(0)"
+                          ></span>
+                        </template>
+                      </div>
                     </template>
                   </div>
                   <div

@@ -33,6 +33,42 @@ vi.mock('../../lib/openSettingsExportConfirm.js', () => ({
   openSettingsExportConfirm: openSettingsExportConfirmMock,
 }));
 
+const aggregateCorrespondenceCountsMock = vi.hoisted(() => vi.fn());
+const resolveCorrespondenceCountEntriesMock = vi.hoisted(() => vi.fn());
+
+const resolveCorrespondenceDisplaysMock = vi.hoisted(() => vi.fn());
+
+vi.mock('../../lib/correspondenceCanvasCounts.js', () => ({
+  aggregateCorrespondenceCounts: aggregateCorrespondenceCountsMock,
+  resolveCorrespondenceCountEntries: resolveCorrespondenceCountEntriesMock,
+  resolveCorrespondenceDisplays: resolveCorrespondenceDisplaysMock,
+  shouldShowCorrespondenceOnCanvas: vi.fn(
+    (s: {
+      showCorrespondenceThumbnailsOnCanvas: boolean;
+      showCorrespondenceCountBarOnCanvas: boolean;
+    }) => s.showCorrespondenceThumbnailsOnCanvas || s.showCorrespondenceCountBarOnCanvas,
+  ),
+  correspondenceMetaEqual: vi.fn(
+    (
+      a: { correspondence_ids?: readonly string[]; correspondenceDisplays?: readonly unknown[] },
+      b: {
+        correspondence_ids?: readonly string[];
+        correspondenceDisplays?: readonly unknown[];
+      },
+    ) =>
+      JSON.stringify(a.correspondence_ids ?? []) === JSON.stringify(b.correspondence_ids ?? []) &&
+      JSON.stringify(a.correspondenceDisplays ?? []) ===
+        JSON.stringify(b.correspondenceDisplays ?? []),
+  ),
+}));
+
+const getCardsByIdsMock = vi.hoisted(() => vi.fn());
+
+vi.mock('../../lib/decks.js', () => ({
+  getCardsByIds: getCardsByIdsMock,
+}));
+
+import { ok } from '../../lib/result.js';
 import { revokeTarotCardBlobUrls } from '../../lib/cardBlobUrls.js';
 import { STORAGE_WARNING_DISMISSED_SESSION_KEY } from '../../lib/storageWarning.js';
 import '../../components/CanvasComponent.js';
@@ -1297,5 +1333,214 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     const ctx = createMerged();
     c.exportFromStorageWarning.call(ctx);
     expect(openSettingsExportConfirmMock).toHaveBeenCalledTimes(1);
+  });
+
+  describe('hydrateCanvasCardCorrespondenceDisplays', () => {
+    beforeEach(() => {
+      getCardsByIdsMock.mockReset();
+      resolveCorrespondenceDisplaysMock.mockReset();
+      alpineStub.rawStores.settings = {
+        showCorrespondenceThumbnailsOnCanvas: true,
+        showCorrespondenceCountBarOnCanvas: false,
+      };
+    });
+
+    it('merges correspondence displays from deck lookup onto canvas cards', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      const card = mkCard('1');
+      card.card.id = 'deck-card-1';
+      ctx.draggableCards = [card];
+      getCardsByIdsMock.mockResolvedValue(
+        ok(
+          new Map([
+            [
+              'deck-card-1',
+              {
+                id: 'deck-card-1',
+                deckId: 'd',
+                title: 'T',
+                num: 1,
+                img: 'i.webp',
+                correspondence_ids: ['corr-x'],
+                correspondenceDisplays: [{ id: 'corr-x', title: 'Moon', thumbnailUrl: null }],
+              },
+            ],
+          ]),
+        ),
+      );
+
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+
+      expect(getCardsByIdsMock).toHaveBeenCalledWith(['deck-card-1']);
+      expect(ctx.draggableCards[0]?.card.correspondenceDisplays).toEqual([
+        { id: 'corr-x', title: 'Moon', thumbnailUrl: null },
+      ]);
+    });
+
+    it('hydrates when only showCorrespondenceCountBarOnCanvas is enabled', async () => {
+      alpineStub.rawStores.settings = {
+        showCorrespondenceThumbnailsOnCanvas: false,
+        showCorrespondenceCountBarOnCanvas: true,
+      };
+      const c = mountCanvas();
+      const ctx = createMerged();
+      const card = mkCard('1');
+      card.card.id = 'deck-card-2';
+      ctx.draggableCards = [card];
+      getCardsByIdsMock.mockResolvedValue(
+        ok(
+          new Map([
+            [
+              'deck-card-2',
+              {
+                id: 'deck-card-2',
+                deckId: 'd',
+                title: 'T',
+                num: 1,
+                img: 'i.webp',
+                correspondence_ids: ['corr-y'],
+                correspondenceDisplays: [{ id: 'corr-y', title: 'Sun', thumbnailUrl: null }],
+              },
+            ],
+          ]),
+        ),
+      );
+
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+
+      expect(getCardsByIdsMock).toHaveBeenCalled();
+      expect(ctx.draggableCards[0]?.card.correspondenceDisplays).toHaveLength(1);
+    });
+
+    it('resolves displays when deck lookup returns ids but no displays', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      const card = mkCard('1');
+      card.card.id = 'deck-card-3';
+      ctx.draggableCards = [card];
+      getCardsByIdsMock.mockResolvedValue(
+        ok(
+          new Map([
+            [
+              'deck-card-3',
+              {
+                id: 'deck-card-3',
+                deckId: 'd',
+                title: 'T',
+                num: 1,
+                img: 'i.webp',
+                correspondence_ids: ['corr-z'],
+                correspondenceDisplays: [],
+              },
+            ],
+          ]),
+        ),
+      );
+      resolveCorrespondenceDisplaysMock.mockResolvedValue([
+        { id: 'corr-z', title: 'Star', thumbnailUrl: null },
+      ]);
+
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+
+      expect(resolveCorrespondenceDisplaysMock).toHaveBeenCalledWith(['corr-z']);
+      expect(ctx.draggableCards[0]?.card.correspondenceDisplays).toEqual([
+        { id: 'corr-z', title: 'Star', thumbnailUrl: null },
+      ]);
+    });
+
+    it('skips when correspondence canvas display is disabled', async () => {
+      alpineStub.rawStores.settings = {
+        showCorrespondenceThumbnailsOnCanvas: false,
+        showCorrespondenceCountBarOnCanvas: false,
+      };
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.draggableCards = [mkCard('1')];
+
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+
+      expect(getCardsByIdsMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('refreshCorrespondenceCountBar', () => {
+    beforeEach(() => {
+      aggregateCorrespondenceCountsMock.mockReset();
+      resolveCorrespondenceCountEntriesMock.mockReset();
+      alpineStub.rawStores.settings = {
+        showCorrespondenceCountBarOnCanvas: true,
+      };
+    });
+
+    it('clears entries when setting is off', async () => {
+      alpineStub.rawStores.settings = { showCorrespondenceCountBarOnCanvas: false };
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.correspondenceBarEntries = [{ id: 'x', title: 'X', count: 1, thumbnailUrl: null }];
+      ctx.draggableCards = [mkCard('1')];
+
+      await c.refreshCorrespondenceCountBar.call(ctx);
+
+      expect(ctx.correspondenceBarEntries).toEqual([]);
+      expect(aggregateCorrespondenceCountsMock).not.toHaveBeenCalled();
+    });
+
+    it('clears entries when no correspondences on canvas', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      aggregateCorrespondenceCountsMock.mockReturnValue(new Map());
+
+      await c.refreshCorrespondenceCountBar.call(ctx);
+
+      expect(ctx.correspondenceBarEntries).toEqual([]);
+      expect(resolveCorrespondenceCountEntriesMock).not.toHaveBeenCalled();
+    });
+
+    it('resolves and assigns entries from draggable cards', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      const card = mkCard('1');
+      card.card.correspondence_ids = ['corr-a'];
+      ctx.draggableCards = [card];
+      const counts = new Map([['corr-a', 2]]);
+      const resolved = [{ id: 'corr-a', title: 'Herb', count: 2, thumbnailUrl: 'blob:t' }];
+      aggregateCorrespondenceCountsMock.mockReturnValue(counts);
+      resolveCorrespondenceCountEntriesMock.mockResolvedValue(resolved);
+
+      await c.refreshCorrespondenceCountBar.call(ctx);
+
+      expect(aggregateCorrespondenceCountsMock).toHaveBeenCalledWith(ctx.draggableCards);
+      expect(resolveCorrespondenceCountEntriesMock).toHaveBeenCalledWith(counts);
+      expect(ctx.correspondenceBarEntries).toEqual(resolved);
+    });
+
+    it('ignores stale async results when a newer refresh runs', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.draggableCards = [mkCard('1')];
+      aggregateCorrespondenceCountsMock.mockReturnValue(new Map([['a', 1]]));
+      let resolveLate: (v: typeof ctx.correspondenceBarEntries) => void;
+      const latePromise = new Promise<typeof ctx.correspondenceBarEntries>((r) => {
+        resolveLate = r;
+      });
+      resolveCorrespondenceCountEntriesMock
+        .mockReturnValueOnce(latePromise)
+        .mockResolvedValueOnce([{ id: 'b', title: 'New', count: 1, thumbnailUrl: null }]);
+
+      void c.refreshCorrespondenceCountBar.call(ctx);
+      await c.refreshCorrespondenceCountBar.call(ctx);
+
+      expect(ctx.correspondenceBarEntries).toEqual([
+        { id: 'b', title: 'New', count: 1, thumbnailUrl: null },
+      ]);
+
+      resolveLate!([{ id: 'a', title: 'Stale', count: 9, thumbnailUrl: null }]);
+      await Promise.resolve();
+
+      expect(ctx.correspondenceBarEntries).toEqual([
+        { id: 'b', title: 'New', count: 1, thumbnailUrl: null },
+      ]);
+    });
   });
 });

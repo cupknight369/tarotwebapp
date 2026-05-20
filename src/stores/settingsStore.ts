@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS = {
   censored: false,
   showDeckTitleOnCanvas: true,
   showCorrespondenceThumbnailsOnCanvas: false,
+  showCorrespondenceCountBarOnCanvas: true,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -17,6 +18,7 @@ function loadFromStorage(): {
   censored: boolean;
   showDeckTitleOnCanvas: boolean;
   showCorrespondenceThumbnailsOnCanvas: boolean;
+  showCorrespondenceCountBarOnCanvas: boolean;
 } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -29,10 +31,12 @@ function loadFromStorage(): {
     }
     const showRaw = parsed['showDeckTitleOnCanvas'];
     const thumbRaw = parsed['showCorrespondenceThumbnailsOnCanvas'];
+    const countBarRaw = parsed['showCorrespondenceCountBarOnCanvas'];
     return {
       censored: Boolean(parsed['censored']),
       showDeckTitleOnCanvas: showRaw === undefined ? true : Boolean(showRaw),
       showCorrespondenceThumbnailsOnCanvas: thumbRaw === undefined ? false : Boolean(thumbRaw),
+      showCorrespondenceCountBarOnCanvas: countBarRaw === undefined ? true : Boolean(countBarRaw),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -43,13 +47,18 @@ function loadFromStorage(): {
  * Registers the `settings` Alpine store and persists settings to localStorage.
  */
 export function initSettingsStore(): void {
-  const { censored, showDeckTitleOnCanvas, showCorrespondenceThumbnailsOnCanvas } =
-    loadFromStorage();
+  const {
+    censored,
+    showDeckTitleOnCanvas,
+    showCorrespondenceThumbnailsOnCanvas,
+    showCorrespondenceCountBarOnCanvas,
+  } = loadFromStorage();
   Alpine.store('settings', {
     open: false,
     censored,
     showDeckTitleOnCanvas,
     showCorrespondenceThumbnailsOnCanvas,
+    showCorrespondenceCountBarOnCanvas,
   });
   Alpine.effect(() => {
     const settings = Alpine.store('settings') as SettingsStoreState;
@@ -59,6 +68,7 @@ export function initSettingsStore(): void {
         censored: settings.censored,
         showDeckTitleOnCanvas: settings.showDeckTitleOnCanvas,
         showCorrespondenceThumbnailsOnCanvas: settings.showCorrespondenceThumbnailsOnCanvas,
+        showCorrespondenceCountBarOnCanvas: settings.showCorrespondenceCountBarOnCanvas,
       }),
     );
   });

@@ -79,6 +79,7 @@ describe('settingsStore.ts', () => {
       censored: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
+      showCorrespondenceCountBarOnCanvas: true,
     });
     expect(setItemMock).toHaveBeenCalledWith(
       STORAGE_KEY,
@@ -86,6 +87,7 @@ describe('settingsStore.ts', () => {
         censored: false,
         showDeckTitleOnCanvas: true,
         showCorrespondenceThumbnailsOnCanvas: false,
+        showCorrespondenceCountBarOnCanvas: true,
       }),
     );
   });
@@ -98,6 +100,7 @@ describe('settingsStore.ts', () => {
       censored: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
+      showCorrespondenceCountBarOnCanvas: true,
     });
   });
 
@@ -106,6 +109,7 @@ describe('settingsStore.ts', () => {
       censored: true,
       showDeckTitleOnCanvas: false,
       showCorrespondenceThumbnailsOnCanvas: true,
+      showCorrespondenceCountBarOnCanvas: false,
     });
     initSettingsStore();
     expect(getSettings()).toEqual({
@@ -113,6 +117,7 @@ describe('settingsStore.ts', () => {
       censored: true,
       showDeckTitleOnCanvas: false,
       showCorrespondenceThumbnailsOnCanvas: true,
+      showCorrespondenceCountBarOnCanvas: false,
     });
   });
 
@@ -123,6 +128,16 @@ describe('settingsStore.ts', () => {
     expect(settings.censored).toBe(true);
     expect(settings.showDeckTitleOnCanvas).toBe(true);
     expect(settings.showCorrespondenceThumbnailsOnCanvas).toBe(false);
+    expect(settings.showCorrespondenceCountBarOnCanvas).toBe(true);
+  });
+
+  it('uses Boolean when showCorrespondenceCountBarOnCanvas is present', () => {
+    lsState.data[STORAGE_KEY] = JSON.stringify({
+      censored: false,
+      showCorrespondenceCountBarOnCanvas: 0,
+    });
+    initSettingsStore();
+    expect(getSettings().showCorrespondenceCountBarOnCanvas).toBe(false);
   });
 
   it('uses Boolean(showRaw) when showDeckTitleOnCanvas is present (falsy)', () => {
@@ -163,6 +178,7 @@ describe('settingsStore.ts', () => {
       censored: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
+      showCorrespondenceCountBarOnCanvas: true,
     });
   });
 
@@ -174,6 +190,7 @@ describe('settingsStore.ts', () => {
       censored: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
+      showCorrespondenceCountBarOnCanvas: true,
     });
   });
 
@@ -185,6 +202,7 @@ describe('settingsStore.ts', () => {
       censored: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
+      showCorrespondenceCountBarOnCanvas: true,
     });
   });
 
@@ -196,6 +214,7 @@ describe('settingsStore.ts', () => {
       censored: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
+      showCorrespondenceCountBarOnCanvas: true,
     });
   });
 
@@ -207,6 +226,7 @@ describe('settingsStore.ts', () => {
       censored: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
+      showCorrespondenceCountBarOnCanvas: true,
     });
   });
 
@@ -216,6 +236,7 @@ describe('settingsStore.ts', () => {
     settings.censored = true;
     settings.showDeckTitleOnCanvas = false;
     settings.showCorrespondenceThumbnailsOnCanvas = true;
+    settings.showCorrespondenceCountBarOnCanvas = false;
 
     const effectFn = alpineEffect.mock.calls[0][0] as () => void;
     effectFn();
@@ -226,6 +247,7 @@ describe('settingsStore.ts', () => {
         censored: true,
         showDeckTitleOnCanvas: false,
         showCorrespondenceThumbnailsOnCanvas: true,
+        showCorrespondenceCountBarOnCanvas: false,
       }),
     );
   });

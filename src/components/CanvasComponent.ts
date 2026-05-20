@@ -1,6 +1,15 @@
-import { MouseLikeEvent, MergedThis, TarotCard } from '../types/canvas.js';
+import { DraggableCard, MouseLikeEvent, MergedThis, TarotCard } from '../types/canvas.js';
 import Alpine from 'alpinejs';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
+import {
+  aggregateCorrespondenceCounts,
+  correspondenceMetaEqual,
+  resolveCorrespondenceCountEntries,
+  resolveCorrespondenceDisplays,
+  shouldShowCorrespondenceOnCanvas,
+  type CorrespondenceCanvasCountEntry,
+} from '../lib/correspondenceCanvasCounts.js';
+import { getCardsByIds } from '../lib/decks.js';
 import { searchDeckCardsByTitle } from '../lib/searchDeckCardsByTitle.js';
 import { openSettingsExportConfirm } from '../lib/openSettingsExportConfirm.js';
 import {
@@ -8,6 +17,7 @@ import {
   isRemainingStorageBelowFraction,
   isStorageWarningDismissedThisSession,
 } from '../lib/storageWarning.js';
+import type { SettingsStoreState } from '../types/settings.js';
 import { clampFixedWidthPx } from '../validation/canvasLabel.js';
 
 Alpine.data('canvasComponent', () => ({
@@ -60,6 +70,85 @@ Alpine.data('canvasComponent', () => ({
   storageWarningVisible: false,
   storageAdditionalInfoOpen: false,
   _storageWarningStartupListener: null as (() => void) | null,
+
+  correspondenceCountBarCollapsed: false,
+  correspondenceBarEntries: [] as CorrespondenceCanvasCountEntry[],
+  _correspondenceBarRefreshGen: 0,
+  _correspondenceDisplaysHydrateGen: 0,
+
+  /**
+   * Syncs correspondence ids/displays on canvas cards from the active deck (IndexedDB).
+   * Canvas snapshots may omit displays until hydrated.
+   */
+  showCorrespondenceOnCanvas(this: MergedThis): boolean {
+    return shouldShowCorrespondenceOnCanvas(Alpine.store('settings') as SettingsStoreState);
+  },
+
+  async hydrateCanvasCardCorrespondenceDisplays(this: MergedThis): Promise<void> {
+    const settings = Alpine.store('settings') as SettingsStoreState;
+    if (!shouldShowCorrespondenceOnCanvas(settings)) return;
+
+    const cardIds = [...new Set(this.draggableCards.map((dc) => dc.card.id).filter(Boolean))];
+    if (cardIds.length === 0) return;
+
+    const gen = ++this._correspondenceDisplaysHydrateGen;
+    const mapRes = await getCardsByIds(cardIds);
+    if (!mapRes.ok || gen !== this._correspondenceDisplaysHydrateGen) return;
+
+    let changed = false;
+    const nextCards: DraggableCard[] = [];
+    for (const dc of this.draggableCards) {
+      const fresh = mapRes.value.get(dc.card.id);
+      if (!fresh) {
+        nextCards.push(dc);
+        continue;
+      }
+      const ids = fresh.correspondence_ids ?? [];
+      let displays = fresh.correspondenceDisplays ?? [];
+      if (ids.length > 0 && displays.length === 0) {
+        displays = await resolveCorrespondenceDisplays(ids);
+      }
+      const merged: TarotCard = {
+        ...dc.card,
+        correspondence_ids: ids,
+        correspondenceDisplays: displays,
+      };
+      if (correspondenceMetaEqual(dc.card, merged)) {
+        nextCards.push(dc);
+      } else {
+        changed = true;
+        nextCards.push({ ...dc, card: merged });
+      }
+    }
+    if (changed) {
+      this.draggableCards = nextCards;
+    }
+  },
+
+  async onCorrespondencesChanged(this: MergedThis): Promise<void> {
+    await this.hydrateCanvasCardCorrespondenceDisplays();
+    await this.refreshCorrespondenceCountBar();
+  },
+
+  async refreshCorrespondenceCountBar(this: MergedThis): Promise<void> {
+    const settings = Alpine.store('settings') as SettingsStoreState;
+    if (!settings.showCorrespondenceCountBarOnCanvas) {
+      this.correspondenceBarEntries = [];
+      return;
+    }
+    const gen = ++this._correspondenceBarRefreshGen;
+    const counts = aggregateCorrespondenceCounts(this.draggableCards);
+    if (counts.size === 0) {
+      if (gen === this._correspondenceBarRefreshGen) {
+        this.correspondenceBarEntries = [];
+      }
+      return;
+    }
+    const entries = await resolveCorrespondenceCountEntries(counts);
+    if (gen === this._correspondenceBarRefreshGen) {
+      this.correspondenceBarEntries = entries;
+    }
+  },
 
   activeTouchId: null as number | null,
   touchStartPos: null as { clientX: number; clientY: number; target: EventTarget | null } | null,

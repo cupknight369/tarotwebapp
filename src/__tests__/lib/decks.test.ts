@@ -365,7 +365,10 @@ describe('decks.ts', () => {
     const r = await getCardsByDeckId('d-a');
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.value[0]?.correspondenceThumbnailUrls).toEqual(['blob:created']);
+      expect(r.value[0]?.correspondence_ids).toEqual(['corr-1']);
+      expect(r.value[0]?.correspondenceDisplays).toEqual([
+        { id: 'corr-1', title: 'Herb', thumbnailUrl: 'blob:created' },
+      ]);
       expect(corrMocks.setCachedCorrespondenceThumbUrl).toHaveBeenCalledWith(
         'thumb-b',
         'blob:created',
@@ -374,7 +377,11 @@ describe('decks.ts', () => {
     corrMocks.getCachedCorrespondenceThumbUrl.mockReturnValue('blob:thumb-hit');
     const r2 = await getCardsByDeckId('d-a');
     expect(r2.ok).toBe(true);
-    if (r2.ok) expect(r2.value[0]?.correspondenceThumbnailUrls).toEqual(['blob:thumb-hit']);
+    if (r2.ok) {
+      expect(r2.value[0]?.correspondenceDisplays).toEqual([
+        { id: 'corr-1', title: 'Herb', thumbnailUrl: 'blob:thumb-hit' },
+      ]);
+    }
   });
 
   it('getCardsByDeckId uses local image fallbacks for title metadata', async () => {

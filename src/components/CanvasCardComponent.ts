@@ -124,6 +124,9 @@ Alpine.data('cardComponent', () => ({
     this.draggableCards = [...this.draggableCards, draggableCard];
     this.maxZIndex += 1;
     this.dirty = true;
+    if (typeof this.hydrateCanvasCardCorrespondenceDisplays === 'function') {
+      void this.hydrateCanvasCardCorrespondenceDisplays();
+    }
   },
 
   generateCardId(): string {

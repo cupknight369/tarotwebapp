@@ -14,8 +14,9 @@ export function revokeTarotCardBlobUrls(card: TarotCard): void {
   if (card.censoredImg?.startsWith('blob:') && !isBlobUrlManagedByDeckCache(card.censoredImg)) {
     URL.revokeObjectURL(card.censoredImg);
   }
-  for (const u of card.correspondenceThumbnailUrls ?? []) {
-    if (u.startsWith('blob:') && !isCorrespondenceThumbUrlManagedByCache(u)) {
+  for (const d of card.correspondenceDisplays ?? []) {
+    const u = d.thumbnailUrl;
+    if (u?.startsWith('blob:') && !isCorrespondenceThumbUrlManagedByCache(u)) {
       URL.revokeObjectURL(u);
     }
   }
