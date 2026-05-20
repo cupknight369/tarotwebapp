@@ -4420,6 +4420,293 @@ export const cktarot = $root.cktarot = (() => {
         return CktarotCorrespondenceExport;
     })();
 
+    cktarot.CktarotReadingExport = (function() {
+
+        /**
+         * Properties of a CktarotReadingExport.
+         * @memberof cktarot
+         * @interface ICktarotReadingExport
+         * @property {number|null} [version] CktarotReadingExport version
+         * @property {string|null} [exportedAt] CktarotReadingExport exportedAt
+         * @property {Array.<cktarot.IReadingRow>|null} [readings] CktarotReadingExport readings
+         */
+
+        /**
+         * Constructs a new CktarotReadingExport.
+         * @memberof cktarot
+         * @classdesc Represents a CktarotReadingExport.
+         * @implements ICktarotReadingExport
+         * @constructor
+         * @param {cktarot.ICktarotReadingExport=} [properties] Properties to set
+         */
+        function CktarotReadingExport(properties) {
+            this.readings = [];
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * CktarotReadingExport version.
+         * @member {number} version
+         * @memberof cktarot.CktarotReadingExport
+         * @instance
+         */
+        CktarotReadingExport.prototype.version = 0;
+
+        /**
+         * CktarotReadingExport exportedAt.
+         * @member {string|null|undefined} exportedAt
+         * @memberof cktarot.CktarotReadingExport
+         * @instance
+         */
+        CktarotReadingExport.prototype.exportedAt = null;
+
+        /**
+         * CktarotReadingExport readings.
+         * @member {Array.<cktarot.IReadingRow>} readings
+         * @memberof cktarot.CktarotReadingExport
+         * @instance
+         */
+        CktarotReadingExport.prototype.readings = $util.emptyArray;
+
+        // OneOf field names bound to virtual getters and setters
+        let $oneOfFields;
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(CktarotReadingExport.prototype, "_exportedAt", {
+            get: $util.oneOfGetter($oneOfFields = ["exportedAt"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        /**
+         * Creates a new CktarotReadingExport instance using the specified properties.
+         * @function create
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {cktarot.ICktarotReadingExport=} [properties] Properties to set
+         * @returns {cktarot.CktarotReadingExport} CktarotReadingExport instance
+         */
+        CktarotReadingExport.create = function create(properties) {
+            return new CktarotReadingExport(properties);
+        };
+
+        /**
+         * Encodes the specified CktarotReadingExport message. Does not implicitly {@link cktarot.CktarotReadingExport.verify|verify} messages.
+         * @function encode
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {cktarot.ICktarotReadingExport} message CktarotReadingExport message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        CktarotReadingExport.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.version != null && Object.hasOwnProperty.call(message, "version"))
+                writer.uint32(/* id 1, wireType 0 =*/8).int32(message.version);
+            if (message.exportedAt != null && Object.hasOwnProperty.call(message, "exportedAt"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.exportedAt);
+            if (message.readings != null && message.readings.length)
+                for (let i = 0; i < message.readings.length; ++i)
+                    $root.cktarot.ReadingRow.encode(message.readings[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+            return writer;
+        };
+
+        /**
+         * Encodes the specified CktarotReadingExport message, length delimited. Does not implicitly {@link cktarot.CktarotReadingExport.verify|verify} messages.
+         * @function encodeDelimited
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {cktarot.ICktarotReadingExport} message CktarotReadingExport message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        CktarotReadingExport.encodeDelimited = function encodeDelimited(message, writer) {
+            return this.encode(message, writer).ldelim();
+        };
+
+        /**
+         * Decodes a CktarotReadingExport message from the specified reader or buffer.
+         * @function decode
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {cktarot.CktarotReadingExport} CktarotReadingExport
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        CktarotReadingExport.decode = function decode(reader, length, error) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.cktarot.CktarotReadingExport();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                if (tag === error)
+                    break;
+                switch (tag >>> 3) {
+                case 1: {
+                        message.version = reader.int32();
+                        break;
+                    }
+                case 2: {
+                        message.exportedAt = reader.string();
+                        break;
+                    }
+                case 3: {
+                        if (!(message.readings && message.readings.length))
+                            message.readings = [];
+                        message.readings.push($root.cktarot.ReadingRow.decode(reader, reader.uint32()));
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Decodes a CktarotReadingExport message from the specified reader or buffer, length delimited.
+         * @function decodeDelimited
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @returns {cktarot.CktarotReadingExport} CktarotReadingExport
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        CktarotReadingExport.decodeDelimited = function decodeDelimited(reader) {
+            if (!(reader instanceof $Reader))
+                reader = new $Reader(reader);
+            return this.decode(reader, reader.uint32());
+        };
+
+        /**
+         * Verifies a CktarotReadingExport message.
+         * @function verify
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {Object.<string,*>} message Plain object to verify
+         * @returns {string|null} `null` if valid, otherwise the reason why it is not
+         */
+        CktarotReadingExport.verify = function verify(message) {
+            if (typeof message !== "object" || message === null)
+                return "object expected";
+            let properties = {};
+            if (message.version != null && message.hasOwnProperty("version"))
+                if (!$util.isInteger(message.version))
+                    return "version: integer expected";
+            if (message.exportedAt != null && message.hasOwnProperty("exportedAt")) {
+                properties._exportedAt = 1;
+                if (!$util.isString(message.exportedAt))
+                    return "exportedAt: string expected";
+            }
+            if (message.readings != null && message.hasOwnProperty("readings")) {
+                if (!Array.isArray(message.readings))
+                    return "readings: array expected";
+                for (let i = 0; i < message.readings.length; ++i) {
+                    let error = $root.cktarot.ReadingRow.verify(message.readings[i]);
+                    if (error)
+                        return "readings." + error;
+                }
+            }
+            return null;
+        };
+
+        /**
+         * Creates a CktarotReadingExport message from a plain object. Also converts values to their respective internal types.
+         * @function fromObject
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {Object.<string,*>} object Plain object
+         * @returns {cktarot.CktarotReadingExport} CktarotReadingExport
+         */
+        CktarotReadingExport.fromObject = function fromObject(object) {
+            if (object instanceof $root.cktarot.CktarotReadingExport)
+                return object;
+            let message = new $root.cktarot.CktarotReadingExport();
+            if (object.version != null)
+                message.version = object.version | 0;
+            if (object.exportedAt != null)
+                message.exportedAt = String(object.exportedAt);
+            if (object.readings) {
+                if (!Array.isArray(object.readings))
+                    throw TypeError(".cktarot.CktarotReadingExport.readings: array expected");
+                message.readings = [];
+                for (let i = 0; i < object.readings.length; ++i) {
+                    if (typeof object.readings[i] !== "object")
+                        throw TypeError(".cktarot.CktarotReadingExport.readings: object expected");
+                    message.readings[i] = $root.cktarot.ReadingRow.fromObject(object.readings[i]);
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Creates a plain object from a CktarotReadingExport message. Also converts values to other types if specified.
+         * @function toObject
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {cktarot.CktarotReadingExport} message CktarotReadingExport
+         * @param {$protobuf.IConversionOptions} [options] Conversion options
+         * @returns {Object.<string,*>} Plain object
+         */
+        CktarotReadingExport.toObject = function toObject(message, options) {
+            if (!options)
+                options = {};
+            let object = {};
+            if (options.arrays || options.defaults)
+                object.readings = [];
+            if (options.defaults)
+                object.version = 0;
+            if (message.version != null && message.hasOwnProperty("version"))
+                object.version = message.version;
+            if (message.exportedAt != null && message.hasOwnProperty("exportedAt")) {
+                object.exportedAt = message.exportedAt;
+                if (options.oneofs)
+                    object._exportedAt = "exportedAt";
+            }
+            if (message.readings && message.readings.length) {
+                object.readings = [];
+                for (let j = 0; j < message.readings.length; ++j)
+                    object.readings[j] = $root.cktarot.ReadingRow.toObject(message.readings[j], options);
+            }
+            return object;
+        };
+
+        /**
+         * Converts this CktarotReadingExport to JSON.
+         * @function toJSON
+         * @memberof cktarot.CktarotReadingExport
+         * @instance
+         * @returns {Object.<string,*>} JSON object
+         */
+        CktarotReadingExport.prototype.toJSON = function toJSON() {
+            return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+        };
+
+        /**
+         * Gets the default type url for CktarotReadingExport
+         * @function getTypeUrl
+         * @memberof cktarot.CktarotReadingExport
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        CktarotReadingExport.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/cktarot.CktarotReadingExport";
+        };
+
+        return CktarotReadingExport;
+    })();
+
     return cktarot;
 })();
 

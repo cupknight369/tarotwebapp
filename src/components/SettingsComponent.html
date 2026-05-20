@@ -199,6 +199,121 @@
     </div>
 
     <div class="border-t border-gray-700 mt-6 pt-6">
+      <p class="text-sm font-medium text-gray-300 mb-1">Reading data</p>
+      <p class="text-xs text-gray-500 mb-3">
+        Export selected readings to a file, or import to add copies without replacing existing
+        entries.
+      </p>
+      <p x-show="readingsPending" x-cloak class="text-xs text-gray-400 mb-2">Loading readings…</p>
+      <p
+        x-show="readingsLoadError"
+        x-cloak
+        class="text-xs text-red-400 mb-2"
+        x-text="readingsLoadError"
+      ></p>
+      <div x-show="readingsForExport.length && !readingsPending" x-cloak class="mb-3">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-xs text-gray-400">Readings to export</span>
+          <span class="text-xs shrink-0">
+            <button
+              type="button"
+              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+              :disabled="isSettingsBusy()"
+              @click="selectAllReadings()"
+            >
+              Select all
+            </button>
+            <span class="text-gray-600 mx-1">·</span>
+            <button
+              type="button"
+              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+              :disabled="isSettingsBusy()"
+              @click="clearReadingSelection()"
+            >
+              Clear all
+            </button>
+          </span>
+        </div>
+        <ul
+          class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
+        >
+          <template x-for="r in readingsForExport" :key="r.id">
+            <li>
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
+                <input
+                  type="checkbox"
+                  class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+                  :checked="isReadingSelected(r.id)"
+                  :disabled="isSettingsBusy()"
+                  @change="toggleReading(r.id)"
+                />
+                <span class="min-w-0">
+                  <span x-text="r.name" class="block truncate"></span>
+                  <span
+                    x-text="formatReadingUpdatedAt(r.updated_at)"
+                    class="block text-xs text-gray-500 truncate"
+                  ></span>
+                </span>
+              </label>
+            </li>
+          </template>
+        </ul>
+      </div>
+      <div class="flex flex-col gap-2">
+        <button
+          type="button"
+          class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="!canExportReadings() || isSettingsBusy()"
+          @click="openReadingExportConfirm()"
+        >
+          Export readings…
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="isSettingsBusy()"
+          @click="openReadingImportConfirm()"
+        >
+          Import readings…
+        </button>
+      </div>
+      <input
+        id="settings-reading-file-input"
+        type="file"
+        accept="application/octet-stream,.pb"
+        class="sr-only"
+        :disabled="isSettingsBusy()"
+        @change="onReadingImportFileChange($event)"
+      />
+
+      <div x-show="readingTransferBusy" x-cloak class="mt-4 space-y-2">
+        <div class="h-2 bg-gray-700 rounded overflow-hidden">
+          <div
+            class="h-full bg-purple-600 transition-[width] duration-150"
+            :style="`width: ${getReadingPercent()}%`"
+          ></div>
+        </div>
+        <p class="text-xs text-gray-400" x-text="readingProgress.phase"></p>
+        <p class="text-xs text-gray-500">
+          <span x-text="getReadingElapsedLabel()"></span>
+          <span x-show="getReadingEtaLabel()" x-text="' · ' + getReadingEtaLabel()"></span>
+        </p>
+      </div>
+
+      <div x-show="readingResultSummary" x-cloak class="mt-4 space-y-2">
+        <p class="text-sm text-gray-300" x-text="readingResultSummary"></p>
+        <ul
+          x-show="readingResultErrors.length"
+          class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
+        >
+          <template x-for="(err, idx) in readingResultErrors" :key="idx">
+            <li x-text="err"></li>
+          </template>
+        </ul>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-700 mt-6 pt-6">
       <p class="text-sm font-medium text-gray-300 mb-1">IndexedDB storage (estimate)</p>
       <p class="text-xs text-gray-400 mb-4" x-text="formatStorageLine()"></p>
       <p class="text-sm font-medium text-gray-300 mb-3">Local backup</p>

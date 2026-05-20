@@ -2,8 +2,11 @@ import Alpine from 'alpinejs';
 import type { BackupProgress, SettingsStoreState } from '../types/settings.js';
 import { exportLocalBackup, importLocalBackup } from '../lib/localBackup.js';
 import { exportCorrespondences, importCorrespondences } from '../lib/localCorrespondenceExport.js';
+import { exportReadings, importReadings } from '../lib/localReadingExport.js';
 import { listCorrespondenceGroups } from '../lib/localCorrespondences.js';
+import { listLocalReadings } from '../lib/localReadings.js';
 import type { LocalCorrespondenceGroupRow } from '../types/localDb.js';
+import type { ReadingSummary } from '../types/readingState.js';
 
 function settingsStore(): SettingsStoreState {
   return Alpine.store('settings') as SettingsStoreState;
@@ -27,17 +30,23 @@ Alpine.data('settingsComponent', () => ({
   correspondenceGroupsLoadError: null as string | null,
   correspondenceGroupsPending: false,
 
+  readingsForExport: [] as ReadingSummary[],
+  selectedReadingIds: [] as string[],
+  readingsLoadError: null as string | null,
+  readingsPending: false,
+
   init() {
     Alpine.effect(() => {
       if ((Alpine.store('settings') as SettingsStoreState).open) {
         void this.refreshStorageEstimate();
         void this.loadCorrespondenceGroupsForExport();
+        void this.loadReadingsForExport();
       }
     });
   },
 
   isSettingsBusy(): boolean {
-    return this.backupBusy || this.correspondenceTransferBusy;
+    return this.backupBusy || this.correspondenceTransferBusy || this.readingTransferBusy;
   },
 
   formatStorageLine(): string {
@@ -118,6 +127,57 @@ Alpine.data('settingsComponent', () => ({
     );
   },
 
+  async loadReadingsForExport() {
+    this.readingsLoadError = null;
+    this.readingsPending = true;
+    try {
+      const readings = await listLocalReadings();
+      this.readingsForExport = readings;
+      this.selectedReadingIds = readings.map((r) => r.id);
+    } catch (e) {
+      this.readingsForExport = [];
+      this.selectedReadingIds = [];
+      this.readingsLoadError = e instanceof Error ? e.message : 'Could not load readings.';
+    } finally {
+      this.readingsPending = false;
+    }
+  },
+
+  isReadingSelected(id: string): boolean {
+    return this.selectedReadingIds.includes(id);
+  },
+
+  toggleReading(id: string) {
+    if (this.isReadingSelected(id)) {
+      this.selectedReadingIds = this.selectedReadingIds.filter((x) => x !== id);
+    } else {
+      this.selectedReadingIds = [...this.selectedReadingIds, id];
+    }
+  },
+
+  selectAllReadings() {
+    this.selectedReadingIds = this.readingsForExport.map((r) => r.id);
+  },
+
+  clearReadingSelection() {
+    this.selectedReadingIds = [];
+  },
+
+  canExportReadings(): boolean {
+    return (
+      !this.readingTransferBusy &&
+      !this.readingsPending &&
+      this.readingsForExport.length > 0 &&
+      this.selectedReadingIds.length > 0
+    );
+  },
+
+  formatReadingUpdatedAt(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString();
+  },
+
   backupBusy: false,
   backupProgress: { phase: '', current: 0, total: 1 } as BackupProgress,
   backupStartedAt: 0,
@@ -134,6 +194,14 @@ Alpine.data('settingsComponent', () => ({
   correspondenceResultSummary: '',
   _correspondenceTimer: null as ReturnType<typeof setInterval> | null,
 
+  readingTransferBusy: false,
+  readingProgress: { phase: '', current: 0, total: 1 } as BackupProgress,
+  readingStartedAt: 0,
+  readingElapsedMs: 0,
+  readingResultErrors: [] as string[],
+  readingResultSummary: '',
+  _readingTimer: null as ReturnType<typeof setInterval> | null,
+
   getBackupPercent() {
     const t = this.backupProgress.total;
     const c = this.backupProgress.current;
@@ -144,6 +212,13 @@ Alpine.data('settingsComponent', () => ({
   getCorrespondencePercent() {
     const t = this.correspondenceProgress.total;
     const c = this.correspondenceProgress.current;
+    if (t <= 0) return 0;
+    return Math.min(100, Math.round((c / t) * 100));
+  },
+
+  getReadingPercent() {
+    const t = this.readingProgress.total;
+    const c = this.readingProgress.current;
     if (t <= 0) return 0;
     return Math.min(100, Math.round((c / t) * 100));
   },
@@ -162,6 +237,11 @@ Alpine.data('settingsComponent', () => ({
 
   getCorrespondenceElapsedLabel() {
     const s = Math.round(this.correspondenceElapsedMs / 1000);
+    return `Elapsed: ${this.formatSeconds(s)}`;
+  },
+
+  getReadingElapsedLabel() {
+    const s = Math.round(this.readingElapsedMs / 1000);
     return `Elapsed: ${this.formatSeconds(s)}`;
   },
 
@@ -190,6 +270,21 @@ Alpine.data('settingsComponent', () => ({
     return `Est. remaining: ${this.formatSeconds(sec)}`;
   },
 
+  getReadingEtaLabel() {
+    const { current, total } = this.readingProgress;
+    if (
+      !this.readingTransferBusy ||
+      this.readingElapsedMs <= 0 ||
+      current <= 0 ||
+      current >= total
+    ) {
+      return '';
+    }
+    const rate = this.readingElapsedMs / current;
+    const sec = Math.max(0, Math.round((rate * (total - current)) / 1000));
+    return `Est. remaining: ${this.formatSeconds(sec)}`;
+  },
+
   clearBackupResult() {
     this.backupResultSummary = '';
     this.backupResultErrors = [];
@@ -198,6 +293,11 @@ Alpine.data('settingsComponent', () => ({
   clearCorrespondenceResult() {
     this.correspondenceResultSummary = '';
     this.correspondenceResultErrors = [];
+  },
+
+  clearReadingResult() {
+    this.readingResultSummary = '';
+    this.readingResultErrors = [];
   },
 
   openExportConfirm() {
@@ -448,6 +548,135 @@ Alpine.data('settingsComponent', () => ({
         this._correspondenceTimer = null;
       }
       this.correspondenceTransferBusy = false;
+    }
+  },
+
+  openReadingExportConfirm() {
+    if (!this.canExportReadings()) return;
+    settingsStore().open = false;
+    Alpine.store('dialog', {
+      open: true,
+      type: 'confirm',
+      title: "Export selected readings. Click 'Begin' to proceed.",
+      confirmLabel: 'Begin',
+      cancelLabel: 'Cancel',
+      cancelLabelVisible: true,
+      onConfirm: () => {
+        void this.startReadingExport();
+      },
+      onCancel: () => {
+        settingsStore().open = true;
+      },
+    });
+  },
+
+  async startReadingExport() {
+    if (this.readingTransferBusy || !this.canExportReadings()) return;
+    settingsStore().open = true;
+    this.clearReadingResult();
+    this.readingTransferBusy = true;
+    this.readingProgress = { phase: 'Starting…', current: 0, total: 1 };
+    this.readingStartedAt = Date.now();
+    this.readingElapsedMs = 0;
+    this._readingTimer = setInterval(() => {
+      this.readingElapsedMs = Date.now() - this.readingStartedAt;
+    }, 250);
+    try {
+      const { errors } = await exportReadings(this.selectedReadingIds, (p) => {
+        this.readingProgress = { ...p };
+      });
+      this.readingResultErrors = errors;
+      this.readingResultSummary =
+        errors.length === 0
+          ? 'Reading export finished.'
+          : 'Reading export finished with issues (see below).';
+    } catch (e) {
+      this.readingResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.readingResultSummary = 'Reading export failed.';
+    } finally {
+      if (this._readingTimer) {
+        clearInterval(this._readingTimer);
+        this._readingTimer = null;
+      }
+      this.readingTransferBusy = false;
+    }
+  },
+
+  openReadingImportConfirm() {
+    settingsStore().open = false;
+    Alpine.store('dialog', {
+      open: true,
+      type: 'confirm',
+      title:
+        "Import adds new readings without replacing existing ones. Click 'Begin' to choose a file.",
+      confirmLabel: 'Begin',
+      cancelLabel: 'Cancel',
+      cancelLabelVisible: true,
+      onConfirm: () => {
+        document.getElementById('settings-reading-file-input')?.click();
+      },
+      onCancel: () => {
+        settingsStore().open = true;
+      },
+    });
+  },
+
+  async onReadingImportFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.readingTransferBusy) return;
+
+    settingsStore().open = true;
+    this.clearReadingResult();
+    this.readingTransferBusy = true;
+    this.readingProgress = { phase: 'Reading file…', current: 0, total: 1 };
+    this.readingStartedAt = Date.now();
+    this.readingElapsedMs = 0;
+    this._readingTimer = setInterval(() => {
+      this.readingElapsedMs = Date.now() - this.readingStartedAt;
+    }, 250);
+
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch (e) {
+      if (this._readingTimer) {
+        clearInterval(this._readingTimer);
+        this._readingTimer = null;
+      }
+      this.readingTransferBusy = false;
+      this.readingResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.readingResultSummary = 'Could not read the file.';
+      return;
+    }
+
+    try {
+      const { errors, importedReadings } = await importReadings(buffer, (p) => {
+        this.readingProgress = { ...p };
+      });
+      this.readingResultErrors = errors;
+      if (errors.length === 0) {
+        this.readingResultSummary = `Import finished. Added ${importedReadings} reading(s). Reopen reading lists if they look outdated.`;
+        window.dispatchEvent(new CustomEvent('readings-changed'));
+        void this.loadReadingsForExport();
+      } else {
+        this.readingResultSummary =
+          'Import finished with issues (see below). Some readings may have been added. Reopen reading lists if they look outdated.';
+        if (importedReadings > 0) {
+          window.dispatchEvent(new CustomEvent('readings-changed'));
+          void this.loadReadingsForExport();
+        }
+      }
+    } catch (e) {
+      this.readingResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.readingResultSummary = 'Reading import failed.';
+    } finally {
+      if (this._readingTimer) {
+        clearInterval(this._readingTimer);
+        this._readingTimer = null;
+      }
+      this.readingTransferBusy = false;
     }
   },
 }));

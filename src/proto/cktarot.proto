@@ -131,3 +131,9 @@ message CktarotCorrespondenceExport {
   repeated CorrespondenceGroupRow groups = 3;
   repeated CorrespondenceRow correspondences = 4;
 }
+
+message CktarotReadingExport {
+  int32 version = 1;
+  optional string exported_at = 2;
+  repeated ReadingRow readings = 3;
+}

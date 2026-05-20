@@ -221,7 +221,7 @@ export async function materializeCorrespondenceRowFromProto(
   }
 }
 
-function readingRowToProto(r: LocalReadingRow): cktarot.ReadingRow {
+export function readingRowToProto(r: LocalReadingRow): cktarot.ReadingRow {
   const row = new cktarot.ReadingRow();
   row.id = r.id;
   row.name = r.name;
@@ -230,7 +230,7 @@ function readingRowToProto(r: LocalReadingRow): cktarot.ReadingRow {
   return row;
 }
 
-function readingRowFromProto(r: cktarot.ReadingRow): LocalReadingRow {
+export function readingRowFromProto(r: cktarot.ReadingRow): LocalReadingRow {
   const bytes = r.state instanceof Uint8Array ? r.state : new Uint8Array(r.state);
   return {
     id: r.id,
