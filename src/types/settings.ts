@@ -8,6 +8,8 @@ export interface SettingsStoreState {
   showCorrespondenceThumbnailsOnCanvas: boolean;
   /** When true, the correspondence count status bar is shown on the left side of the canvas. */
   showCorrespondenceCountBarOnCanvas: boolean;
+  /** When true, the card count status bar is shown on the left side of the canvas. */
+  showCardCountBarOnCanvas: boolean;
 }
 
 /** Protobuf `CktarotBackup.version` field — must match generated backup files. */

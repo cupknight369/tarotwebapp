@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS = {
   showDeckTitleOnCanvas: true,
   showCorrespondenceThumbnailsOnCanvas: false,
   showCorrespondenceCountBarOnCanvas: true,
+  showCardCountBarOnCanvas: true,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -19,6 +20,7 @@ function loadFromStorage(): {
   showDeckTitleOnCanvas: boolean;
   showCorrespondenceThumbnailsOnCanvas: boolean;
   showCorrespondenceCountBarOnCanvas: boolean;
+  showCardCountBarOnCanvas: boolean;
 } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -32,11 +34,13 @@ function loadFromStorage(): {
     const showRaw = parsed['showDeckTitleOnCanvas'];
     const thumbRaw = parsed['showCorrespondenceThumbnailsOnCanvas'];
     const countBarRaw = parsed['showCorrespondenceCountBarOnCanvas'];
+    const cardCountBarRaw = parsed['showCardCountBarOnCanvas'];
     return {
       censored: Boolean(parsed['censored']),
       showDeckTitleOnCanvas: showRaw === undefined ? true : Boolean(showRaw),
       showCorrespondenceThumbnailsOnCanvas: thumbRaw === undefined ? false : Boolean(thumbRaw),
       showCorrespondenceCountBarOnCanvas: countBarRaw === undefined ? true : Boolean(countBarRaw),
+      showCardCountBarOnCanvas: cardCountBarRaw === undefined ? true : Boolean(cardCountBarRaw),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -52,6 +56,7 @@ export function initSettingsStore(): void {
     showDeckTitleOnCanvas,
     showCorrespondenceThumbnailsOnCanvas,
     showCorrespondenceCountBarOnCanvas,
+    showCardCountBarOnCanvas,
   } = loadFromStorage();
   Alpine.store('settings', {
     open: false,
@@ -59,6 +64,7 @@ export function initSettingsStore(): void {
     showDeckTitleOnCanvas,
     showCorrespondenceThumbnailsOnCanvas,
     showCorrespondenceCountBarOnCanvas,
+    showCardCountBarOnCanvas,
   });
   Alpine.effect(() => {
     const settings = Alpine.store('settings') as SettingsStoreState;
@@ -69,6 +75,7 @@ export function initSettingsStore(): void {
         showDeckTitleOnCanvas: settings.showDeckTitleOnCanvas,
         showCorrespondenceThumbnailsOnCanvas: settings.showCorrespondenceThumbnailsOnCanvas,
         showCorrespondenceCountBarOnCanvas: settings.showCorrespondenceCountBarOnCanvas,
+        showCardCountBarOnCanvas: settings.showCardCountBarOnCanvas,
       }),
     );
   });

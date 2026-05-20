@@ -1,3 +1,4 @@
+import type { CardCanvasCountEntry } from '../lib/cardCanvasCounts.js';
 import type {
   CorrespondenceCanvasCountEntry,
   CorrespondenceDisplay,
@@ -228,9 +229,14 @@ export type MergedThis = {
   _correspondenceBarRefreshGen: number;
   _correspondenceDisplaysHydrateGen: number;
   showCorrespondenceOnCanvas(): boolean;
+  showCorrespondenceThumbnailsOnCanvas(): boolean;
   hydrateCanvasCardCorrespondenceDisplays(): Promise<void>;
   onCorrespondencesChanged(): Promise<void>;
   refreshCorrespondenceCountBar(): Promise<void>;
+
+  cardCountBarCollapsed: boolean;
+  cardCountBarEntries: CardCanvasCountEntry[];
+  refreshCardCountBar(): void;
 
   // ScaleComponent props & methods
   scale: number;

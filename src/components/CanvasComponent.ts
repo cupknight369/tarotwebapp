@@ -1,6 +1,7 @@
 import { DraggableCard, MouseLikeEvent, MergedThis, TarotCard } from '../types/canvas.js';
 import Alpine from 'alpinejs';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
+import { aggregateCardTitleCounts, type CardCanvasCountEntry } from '../lib/cardCanvasCounts.js';
 import {
   aggregateCorrespondenceCounts,
   correspondenceMetaEqual,
@@ -76,12 +77,19 @@ Alpine.data('canvasComponent', () => ({
   _correspondenceBarRefreshGen: 0,
   _correspondenceDisplaysHydrateGen: 0,
 
+  cardCountBarCollapsed: false,
+  cardCountBarEntries: [] as CardCanvasCountEntry[],
+
   /**
    * Syncs correspondence ids/displays on canvas cards from the active deck (IndexedDB).
    * Canvas snapshots may omit displays until hydrated.
    */
   showCorrespondenceOnCanvas(this: MergedThis): boolean {
     return shouldShowCorrespondenceOnCanvas(Alpine.store('settings') as SettingsStoreState);
+  },
+
+  showCorrespondenceThumbnailsOnCanvas(this: MergedThis): boolean {
+    return (Alpine.store('settings') as SettingsStoreState).showCorrespondenceThumbnailsOnCanvas;
   },
 
   async hydrateCanvasCardCorrespondenceDisplays(this: MergedThis): Promise<void> {
@@ -148,6 +156,15 @@ Alpine.data('canvasComponent', () => ({
     if (gen === this._correspondenceBarRefreshGen) {
       this.correspondenceBarEntries = entries;
     }
+  },
+
+  refreshCardCountBar(this: MergedThis): void {
+    const settings = Alpine.store('settings') as SettingsStoreState;
+    if (!settings.showCardCountBarOnCanvas) {
+      this.cardCountBarEntries = [];
+      return;
+    }
+    this.cardCountBarEntries = aggregateCardTitleCounts(this.draggableCards);
   },
 
   activeTouchId: null as number | null,

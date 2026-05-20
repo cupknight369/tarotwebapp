@@ -80,6 +80,7 @@ describe('settingsStore.ts', () => {
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
+      showCardCountBarOnCanvas: true,
     });
     expect(setItemMock).toHaveBeenCalledWith(
       STORAGE_KEY,
@@ -88,6 +89,7 @@ describe('settingsStore.ts', () => {
         showDeckTitleOnCanvas: true,
         showCorrespondenceThumbnailsOnCanvas: false,
         showCorrespondenceCountBarOnCanvas: true,
+        showCardCountBarOnCanvas: true,
       }),
     );
   });
@@ -101,6 +103,7 @@ describe('settingsStore.ts', () => {
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
+      showCardCountBarOnCanvas: true,
     });
   });
 
@@ -118,6 +121,7 @@ describe('settingsStore.ts', () => {
       showDeckTitleOnCanvas: false,
       showCorrespondenceThumbnailsOnCanvas: true,
       showCorrespondenceCountBarOnCanvas: false,
+      showCardCountBarOnCanvas: true,
     });
   });
 
@@ -129,6 +133,7 @@ describe('settingsStore.ts', () => {
     expect(settings.showDeckTitleOnCanvas).toBe(true);
     expect(settings.showCorrespondenceThumbnailsOnCanvas).toBe(false);
     expect(settings.showCorrespondenceCountBarOnCanvas).toBe(true);
+    expect(settings.showCardCountBarOnCanvas).toBe(true);
   });
 
   it('uses Boolean when showCorrespondenceCountBarOnCanvas is present', () => {
@@ -138,6 +143,15 @@ describe('settingsStore.ts', () => {
     });
     initSettingsStore();
     expect(getSettings().showCorrespondenceCountBarOnCanvas).toBe(false);
+  });
+
+  it('uses Boolean when showCardCountBarOnCanvas is present', () => {
+    lsState.data[STORAGE_KEY] = JSON.stringify({
+      censored: false,
+      showCardCountBarOnCanvas: 0,
+    });
+    initSettingsStore();
+    expect(getSettings().showCardCountBarOnCanvas).toBe(false);
   });
 
   it('uses Boolean(showRaw) when showDeckTitleOnCanvas is present (falsy)', () => {
@@ -179,6 +193,7 @@ describe('settingsStore.ts', () => {
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
+      showCardCountBarOnCanvas: true,
     });
   });
 
@@ -191,6 +206,7 @@ describe('settingsStore.ts', () => {
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
+      showCardCountBarOnCanvas: true,
     });
   });
 
@@ -203,6 +219,7 @@ describe('settingsStore.ts', () => {
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
+      showCardCountBarOnCanvas: true,
     });
   });
 
@@ -215,6 +232,7 @@ describe('settingsStore.ts', () => {
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
+      showCardCountBarOnCanvas: true,
     });
   });
 
@@ -227,6 +245,7 @@ describe('settingsStore.ts', () => {
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
+      showCardCountBarOnCanvas: true,
     });
   });
 
@@ -237,6 +256,7 @@ describe('settingsStore.ts', () => {
     settings.showDeckTitleOnCanvas = false;
     settings.showCorrespondenceThumbnailsOnCanvas = true;
     settings.showCorrespondenceCountBarOnCanvas = false;
+    settings.showCardCountBarOnCanvas = false;
 
     const effectFn = alpineEffect.mock.calls[0][0] as () => void;
     effectFn();
@@ -248,6 +268,7 @@ describe('settingsStore.ts', () => {
         showDeckTitleOnCanvas: false,
         showCorrespondenceThumbnailsOnCanvas: true,
         showCorrespondenceCountBarOnCanvas: false,
+        showCardCountBarOnCanvas: false,
       }),
     );
   });

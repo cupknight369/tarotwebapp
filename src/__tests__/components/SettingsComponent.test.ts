@@ -48,6 +48,7 @@ function settingsState(overrides: Partial<SettingsStoreState> = {}): SettingsSto
     showDeckTitleOnCanvas: true,
     showCorrespondenceThumbnailsOnCanvas: false,
     showCorrespondenceCountBarOnCanvas: true,
+    showCardCountBarOnCanvas: true,
     ...overrides,
   };
 }

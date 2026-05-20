@@ -33,6 +33,12 @@ vi.mock('../../lib/openSettingsExportConfirm.js', () => ({
   openSettingsExportConfirm: openSettingsExportConfirmMock,
 }));
 
+const aggregateCardTitleCountsMock = vi.hoisted(() => vi.fn());
+
+vi.mock('../../lib/cardCanvasCounts.js', () => ({
+  aggregateCardTitleCounts: aggregateCardTitleCountsMock,
+}));
+
 const aggregateCorrespondenceCountsMock = vi.hoisted(() => vi.fn());
 const resolveCorrespondenceCountEntriesMock = vi.hoisted(() => vi.fn());
 
@@ -1335,6 +1341,24 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(openSettingsExportConfirmMock).toHaveBeenCalledTimes(1);
   });
 
+  describe('showCorrespondenceThumbnailsOnCanvas', () => {
+    it('reflects showCorrespondenceThumbnailsOnCanvas setting only', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      alpineStub.rawStores.settings = {
+        showCorrespondenceThumbnailsOnCanvas: false,
+        showCorrespondenceCountBarOnCanvas: true,
+      };
+      expect(c.showCorrespondenceThumbnailsOnCanvas.call(ctx)).toBe(false);
+
+      alpineStub.rawStores.settings = {
+        showCorrespondenceThumbnailsOnCanvas: true,
+        showCorrespondenceCountBarOnCanvas: false,
+      };
+      expect(c.showCorrespondenceThumbnailsOnCanvas.call(ctx)).toBe(true);
+    });
+  });
+
   describe('hydrateCanvasCardCorrespondenceDisplays', () => {
     beforeEach(() => {
       getCardsByIdsMock.mockReset();
@@ -1541,6 +1565,55 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
       expect(ctx.correspondenceBarEntries).toEqual([
         { id: 'b', title: 'New', count: 1, thumbnailUrl: null },
       ]);
+    });
+  });
+
+  describe('refreshCardCountBar', () => {
+    beforeEach(() => {
+      aggregateCardTitleCountsMock.mockReset();
+      alpineStub.rawStores.settings = {
+        showCardCountBarOnCanvas: true,
+      };
+    });
+
+    it('clears entries when setting is off', () => {
+      alpineStub.rawStores.settings = { showCardCountBarOnCanvas: false };
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.cardCountBarEntries = [{ title: 'The Fool', count: 2 }];
+      ctx.draggableCards = [mkCard('1')];
+
+      c.refreshCardCountBar.call(ctx);
+
+      expect(ctx.cardCountBarEntries).toEqual([]);
+      expect(aggregateCardTitleCountsMock).not.toHaveBeenCalled();
+    });
+
+    it('assigns aggregated entries from draggable cards', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.draggableCards = [mkCard('1'), mkCard('2')];
+      const aggregated = [
+        { title: 'The Fool', count: 2 },
+        { title: 'The Magician', count: 1 },
+      ];
+      aggregateCardTitleCountsMock.mockReturnValue(aggregated);
+
+      c.refreshCardCountBar.call(ctx);
+
+      expect(aggregateCardTitleCountsMock).toHaveBeenCalledWith(ctx.draggableCards);
+      expect(ctx.cardCountBarEntries).toEqual(aggregated);
+    });
+
+    it('clears entries when aggregation returns empty', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.draggableCards = [];
+      aggregateCardTitleCountsMock.mockReturnValue([]);
+
+      c.refreshCardCountBar.call(ctx);
+
+      expect(ctx.cardCountBarEntries).toEqual([]);
     });
   });
 });
