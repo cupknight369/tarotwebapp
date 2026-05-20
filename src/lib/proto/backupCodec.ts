@@ -11,7 +11,7 @@ import { cktarot } from '../../proto/generated/bundle.js';
 import { getCardImageRow, putLocalCardImageRow } from '../localDecks.js';
 import { getCorrespondenceImageRow, putCorrespondenceImageRow } from '../localCorrespondences.js';
 
-function deckRowToProto(d: LocalDeckRow): cktarot.DeckRow {
+export function deckRowToProto(d: LocalDeckRow): cktarot.DeckRow {
   const row = new cktarot.DeckRow();
   row.id = d.id;
   row.title = d.title;
@@ -67,7 +67,7 @@ export async function correspondenceRowToProto(
   return row;
 }
 
-async function cardRowToProto(c: LocalCardRow): Promise<cktarot.CardRow> {
+export async function cardRowToProto(c: LocalCardRow): Promise<cktarot.CardRow> {
   const row = new cktarot.CardRow();
   row.id = c.id;
   row.deckId = c.deck_id;

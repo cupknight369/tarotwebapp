@@ -24,6 +24,12 @@ const readingMocks = vi.hoisted(() => ({
   listLocalReadings: vi.fn(),
 }));
 
+const deckMocks = vi.hoisted(() => ({
+  exportDecks: vi.fn(),
+  importDecks: vi.fn(),
+  listUserCreatedDecks: vi.fn(),
+}));
+
 const alpineBundle = vi.hoisted(() => {
   const cap = (
     globalThis as unknown as VitestGlobalWithAlpineDataCapture
@@ -65,6 +71,15 @@ vi.mock('../../lib/localReadingExport.js', () => ({
 
 vi.mock('../../lib/localReadings.js', () => ({
   listLocalReadings: readingMocks.listLocalReadings,
+}));
+
+vi.mock('../../lib/localDeckExport.js', () => ({
+  exportDecks: deckMocks.exportDecks,
+  importDecks: deckMocks.importDecks,
+}));
+
+vi.mock('../../lib/localDecks.js', () => ({
+  listUserCreatedDecks: deckMocks.listUserCreatedDecks,
 }));
 
 import '../../components/SettingsComponent.js';
@@ -159,6 +174,38 @@ type SettingsCtx = {
   startReadingExport: () => Promise<void>;
   openReadingImportConfirm: () => void;
   onReadingImportFileChange: (event: Event) => Promise<void>;
+  userDecksForExport: {
+    id: string;
+    title: string;
+    description: string | null;
+    created_at: string;
+    modified_at: string;
+    from_catalog?: boolean;
+  }[];
+  selectedDeckIds: string[];
+  userDecksLoadError: string | null;
+  userDecksPending: boolean;
+  loadUserDecksForExport: () => Promise<void>;
+  isDeckSelected: (id: string) => boolean;
+  toggleDeck: (id: string) => void;
+  selectAllDecks: () => void;
+  clearDeckSelection: () => void;
+  canExportDecks: () => boolean;
+  deckTransferBusy: boolean;
+  deckProgress: { phase: string; current: number; total: number };
+  deckStartedAt: number;
+  deckElapsedMs: number;
+  deckResultErrors: string[];
+  deckResultSummary: string;
+  _deckTimer: ReturnType<typeof setInterval> | null;
+  getDeckPercent: () => number;
+  getDeckElapsedLabel: () => string;
+  getDeckEtaLabel: () => string;
+  clearDeckResult: () => void;
+  openDeckExportConfirm: () => void;
+  startDeckExport: () => Promise<void>;
+  openDeckImportConfirm: () => void;
+  onDeckImportFileChange: (event: Event) => Promise<void>;
 };
 
 function mount(): SettingsCtx {
@@ -201,6 +248,30 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     readingMocks.listLocalReadings.mockResolvedValue([
       { id: 'r1', name: 'Celtic Cross', updated_at: '2026-05-20T00:00:00.000Z' },
       { id: 'r2', name: 'Three Card', updated_at: '2026-05-19T00:00:00.000Z' },
+    ]);
+    deckMocks.exportDecks.mockResolvedValue({ errors: [] });
+    deckMocks.importDecks.mockResolvedValue({
+      errors: [],
+      importedDecks: 1,
+      importedCards: 3,
+    });
+    deckMocks.listUserCreatedDecks.mockResolvedValue([
+      {
+        id: 'd1',
+        title: 'My Deck',
+        description: null,
+        created_at: '2026-05-20T00:00:00.000Z',
+        modified_at: '2026-05-20T00:00:00.000Z',
+        from_catalog: false,
+      },
+      {
+        id: 'd2',
+        title: 'Other',
+        description: null,
+        created_at: '2026-05-19T00:00:00.000Z',
+        modified_at: '2026-05-19T00:00:00.000Z',
+        from_catalog: false,
+      },
     ]);
     vi.stubGlobal('navigator', {
       ...navigator,
@@ -246,7 +317,17 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     expect(ctx.selectedReadingIds).toEqual(['r1', 'r2']);
   });
 
-  it('isSettingsBusy is true when backup, correspondence, or reading transfer is busy', () => {
+  it('init loads user-created decks when settings opens', async () => {
+    rawStores.settings = settingsState({ open: true });
+    const ctx = mount();
+    ctx.init.call(ctx);
+    await vi.waitFor(() => expect(ctx.userDecksPending).toBe(false));
+    expect(deckMocks.listUserCreatedDecks).toHaveBeenCalled();
+    expect(ctx.userDecksForExport).toHaveLength(2);
+    expect(ctx.selectedDeckIds).toEqual(['d1', 'd2']);
+  });
+
+  it('isSettingsBusy is true when backup, correspondence, reading, or deck transfer is busy', () => {
     const ctx = mount();
     expect(ctx.isSettingsBusy.call(ctx)).toBe(false);
     ctx.backupBusy = true;
@@ -256,6 +337,9 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     expect(ctx.isSettingsBusy.call(ctx)).toBe(true);
     ctx.correspondenceTransferBusy = false;
     ctx.readingTransferBusy = true;
+    expect(ctx.isSettingsBusy.call(ctx)).toBe(true);
+    ctx.readingTransferBusy = false;
+    ctx.deckTransferBusy = true;
     expect(ctx.isSettingsBusy.call(ctx)).toBe(true);
   });
 
@@ -388,6 +472,93 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     const evt = dispatch.mock.calls[0][0] as CustomEvent;
     expect(evt.type).toBe('readings-changed');
     expect(ctx.readingResultSummary).toContain('Added 2 reading(s)');
+  });
+
+  it('toggleDeck and canExportDecks gate export', () => {
+    const ctx = mount();
+    ctx.userDecksForExport = [
+      {
+        id: 'd1',
+        title: 'A',
+        description: null,
+        created_at: '1',
+        modified_at: '1',
+        from_catalog: false,
+      },
+    ];
+    ctx.selectedDeckIds = ['d1'];
+    expect(ctx.canExportDecks.call(ctx)).toBe(true);
+    ctx.toggleDeck('d1');
+    expect(ctx.canExportDecks.call(ctx)).toBe(false);
+    ctx.selectAllDecks.call(ctx);
+    expect(ctx.selectedDeckIds).toEqual(['d1']);
+  });
+
+  it('openDeckExportConfirm no-ops when export not allowed', () => {
+    const ctx = mount();
+    ctx.userDecksForExport = [];
+    ctx.openDeckExportConfirm.call(ctx);
+    expect(rawStores.dialog).toBeUndefined();
+  });
+
+  it('startDeckExport calls exportDecks with selected deck ids', async () => {
+    vi.useFakeTimers();
+    const ctx = mount();
+    ctx.userDecksForExport = [
+      {
+        id: 'd1',
+        title: 'A',
+        description: null,
+        created_at: '1',
+        modified_at: '1',
+        from_catalog: false,
+      },
+      {
+        id: 'd2',
+        title: 'B',
+        description: null,
+        created_at: '2',
+        modified_at: '2',
+        from_catalog: false,
+      },
+    ];
+    ctx.selectedDeckIds = ['d2'];
+    ctx.userDecksPending = false;
+    await ctx.startDeckExport.call(ctx);
+    expect(deckMocks.exportDecks).toHaveBeenCalledWith(['d2'], expect.any(Function));
+    expect(ctx.deckResultSummary).toBe('Deck export finished.');
+  });
+
+  it('openDeckImportConfirm wires file input click', () => {
+    rawStores.settings = settingsState({ open: true });
+    const input = document.createElement('input');
+    input.id = 'settings-deck-file-input';
+    const clickSpy = vi.spyOn(input, 'click').mockImplementation(() => {});
+    document.body.appendChild(input);
+    const ctx = mount();
+    ctx.openDeckImportConfirm.call(ctx);
+    (rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it('onDeckImportFileChange dispatches decks-changed on success', async () => {
+    vi.useFakeTimers();
+    const dispatch = vi.fn();
+    vi.stubGlobal('window', { ...window, dispatchEvent: dispatch });
+    const file = new File([new Uint8Array([1])], 'decks.pb');
+    const input = document.createElement('input');
+    input.type = 'file';
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    Object.defineProperty(input, 'files', { value: dt.files, configurable: true });
+    const ev = new Event('change', { bubbles: true });
+    Object.defineProperty(ev, 'target', { value: input, enumerable: true });
+    const ctx = mount();
+    await ctx.onDeckImportFileChange.call(ctx, ev);
+    expect(dispatch).toHaveBeenCalled();
+    const evt = dispatch.mock.calls[0][0] as CustomEvent;
+    expect(evt.type).toBe('decks-changed');
+    expect(ctx.deckResultSummary).toContain('Added 1 deck(s) and 3 card(s)');
   });
 
   it('init effect does not refresh when settings panel is closed', () => {

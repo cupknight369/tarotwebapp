@@ -2,10 +2,12 @@ import Alpine from 'alpinejs';
 import type { BackupProgress, SettingsStoreState } from '../types/settings.js';
 import { exportLocalBackup, importLocalBackup } from '../lib/localBackup.js';
 import { exportCorrespondences, importCorrespondences } from '../lib/localCorrespondenceExport.js';
+import { exportDecks, importDecks } from '../lib/localDeckExport.js';
 import { exportReadings, importReadings } from '../lib/localReadingExport.js';
 import { listCorrespondenceGroups } from '../lib/localCorrespondences.js';
+import { listUserCreatedDecks } from '../lib/localDecks.js';
 import { listLocalReadings } from '../lib/localReadings.js';
-import type { LocalCorrespondenceGroupRow } from '../types/localDb.js';
+import type { LocalCorrespondenceGroupRow, LocalDeckRow } from '../types/localDb.js';
 import type { ReadingSummary } from '../types/readingState.js';
 
 function settingsStore(): SettingsStoreState {
@@ -35,18 +37,29 @@ Alpine.data('settingsComponent', () => ({
   readingsLoadError: null as string | null,
   readingsPending: false,
 
+  userDecksForExport: [] as LocalDeckRow[],
+  selectedDeckIds: [] as string[],
+  userDecksLoadError: null as string | null,
+  userDecksPending: false,
+
   init() {
     Alpine.effect(() => {
       if ((Alpine.store('settings') as SettingsStoreState).open) {
         void this.refreshStorageEstimate();
         void this.loadCorrespondenceGroupsForExport();
         void this.loadReadingsForExport();
+        void this.loadUserDecksForExport();
       }
     });
   },
 
   isSettingsBusy(): boolean {
-    return this.backupBusy || this.correspondenceTransferBusy || this.readingTransferBusy;
+    return (
+      this.backupBusy ||
+      this.correspondenceTransferBusy ||
+      this.readingTransferBusy ||
+      this.deckTransferBusy
+    );
   },
 
   formatStorageLine(): string {
@@ -178,6 +191,52 @@ Alpine.data('settingsComponent', () => ({
     return d.toLocaleString();
   },
 
+  async loadUserDecksForExport() {
+    this.userDecksLoadError = null;
+    this.userDecksPending = true;
+    try {
+      const decks = await listUserCreatedDecks();
+      this.userDecksForExport = decks;
+      this.selectedDeckIds = decks.map((d) => d.id);
+    } catch (e) {
+      this.userDecksForExport = [];
+      this.selectedDeckIds = [];
+      this.userDecksLoadError =
+        e instanceof Error ? e.message : 'Could not load user-created decks.';
+    } finally {
+      this.userDecksPending = false;
+    }
+  },
+
+  isDeckSelected(id: string): boolean {
+    return this.selectedDeckIds.includes(id);
+  },
+
+  toggleDeck(id: string) {
+    if (this.isDeckSelected(id)) {
+      this.selectedDeckIds = this.selectedDeckIds.filter((x) => x !== id);
+    } else {
+      this.selectedDeckIds = [...this.selectedDeckIds, id];
+    }
+  },
+
+  selectAllDecks() {
+    this.selectedDeckIds = this.userDecksForExport.map((d) => d.id);
+  },
+
+  clearDeckSelection() {
+    this.selectedDeckIds = [];
+  },
+
+  canExportDecks(): boolean {
+    return (
+      !this.deckTransferBusy &&
+      !this.userDecksPending &&
+      this.userDecksForExport.length > 0 &&
+      this.selectedDeckIds.length > 0
+    );
+  },
+
   backupBusy: false,
   backupProgress: { phase: '', current: 0, total: 1 } as BackupProgress,
   backupStartedAt: 0,
@@ -202,6 +261,14 @@ Alpine.data('settingsComponent', () => ({
   readingResultSummary: '',
   _readingTimer: null as ReturnType<typeof setInterval> | null,
 
+  deckTransferBusy: false,
+  deckProgress: { phase: '', current: 0, total: 1 } as BackupProgress,
+  deckStartedAt: 0,
+  deckElapsedMs: 0,
+  deckResultErrors: [] as string[],
+  deckResultSummary: '',
+  _deckTimer: null as ReturnType<typeof setInterval> | null,
+
   getBackupPercent() {
     const t = this.backupProgress.total;
     const c = this.backupProgress.current;
@@ -219,6 +286,13 @@ Alpine.data('settingsComponent', () => ({
   getReadingPercent() {
     const t = this.readingProgress.total;
     const c = this.readingProgress.current;
+    if (t <= 0) return 0;
+    return Math.min(100, Math.round((c / t) * 100));
+  },
+
+  getDeckPercent() {
+    const t = this.deckProgress.total;
+    const c = this.deckProgress.current;
     if (t <= 0) return 0;
     return Math.min(100, Math.round((c / t) * 100));
   },
@@ -242,6 +316,11 @@ Alpine.data('settingsComponent', () => ({
 
   getReadingElapsedLabel() {
     const s = Math.round(this.readingElapsedMs / 1000);
+    return `Elapsed: ${this.formatSeconds(s)}`;
+  },
+
+  getDeckElapsedLabel() {
+    const s = Math.round(this.deckElapsedMs / 1000);
     return `Elapsed: ${this.formatSeconds(s)}`;
   },
 
@@ -285,6 +364,16 @@ Alpine.data('settingsComponent', () => ({
     return `Est. remaining: ${this.formatSeconds(sec)}`;
   },
 
+  getDeckEtaLabel() {
+    const { current, total } = this.deckProgress;
+    if (!this.deckTransferBusy || this.deckElapsedMs <= 0 || current <= 0 || current >= total) {
+      return '';
+    }
+    const rate = this.deckElapsedMs / current;
+    const sec = Math.max(0, Math.round((rate * (total - current)) / 1000));
+    return `Est. remaining: ${this.formatSeconds(sec)}`;
+  },
+
   clearBackupResult() {
     this.backupResultSummary = '';
     this.backupResultErrors = [];
@@ -298,6 +387,11 @@ Alpine.data('settingsComponent', () => ({
   clearReadingResult() {
     this.readingResultSummary = '';
     this.readingResultErrors = [];
+  },
+
+  clearDeckResult() {
+    this.deckResultSummary = '';
+    this.deckResultErrors = [];
   },
 
   openExportConfirm() {
@@ -677,6 +771,135 @@ Alpine.data('settingsComponent', () => ({
         this._readingTimer = null;
       }
       this.readingTransferBusy = false;
+    }
+  },
+
+  openDeckExportConfirm() {
+    if (!this.canExportDecks()) return;
+    settingsStore().open = false;
+    Alpine.store('dialog', {
+      open: true,
+      type: 'confirm',
+      title: "Export selected user-created decks. Click 'Begin' to proceed.",
+      confirmLabel: 'Begin',
+      cancelLabel: 'Cancel',
+      cancelLabelVisible: true,
+      onConfirm: () => {
+        void this.startDeckExport();
+      },
+      onCancel: () => {
+        settingsStore().open = true;
+      },
+    });
+  },
+
+  async startDeckExport() {
+    if (this.deckTransferBusy || !this.canExportDecks()) return;
+    settingsStore().open = true;
+    this.clearDeckResult();
+    this.deckTransferBusy = true;
+    this.deckProgress = { phase: 'Starting…', current: 0, total: 1 };
+    this.deckStartedAt = Date.now();
+    this.deckElapsedMs = 0;
+    this._deckTimer = setInterval(() => {
+      this.deckElapsedMs = Date.now() - this.deckStartedAt;
+    }, 250);
+    try {
+      const { errors } = await exportDecks(this.selectedDeckIds, (p) => {
+        this.deckProgress = { ...p };
+      });
+      this.deckResultErrors = errors;
+      this.deckResultSummary =
+        errors.length === 0
+          ? 'Deck export finished.'
+          : 'Deck export finished with issues (see below).';
+    } catch (e) {
+      this.deckResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.deckResultSummary = 'Deck export failed.';
+    } finally {
+      if (this._deckTimer) {
+        clearInterval(this._deckTimer);
+        this._deckTimer = null;
+      }
+      this.deckTransferBusy = false;
+    }
+  },
+
+  openDeckImportConfirm() {
+    settingsStore().open = false;
+    Alpine.store('dialog', {
+      open: true,
+      type: 'confirm',
+      title:
+        "Import adds new user-created decks without replacing existing ones. Click 'Begin' to choose a file.",
+      confirmLabel: 'Begin',
+      cancelLabel: 'Cancel',
+      cancelLabelVisible: true,
+      onConfirm: () => {
+        document.getElementById('settings-deck-file-input')?.click();
+      },
+      onCancel: () => {
+        settingsStore().open = true;
+      },
+    });
+  },
+
+  async onDeckImportFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.deckTransferBusy) return;
+
+    settingsStore().open = true;
+    this.clearDeckResult();
+    this.deckTransferBusy = true;
+    this.deckProgress = { phase: 'Reading file…', current: 0, total: 1 };
+    this.deckStartedAt = Date.now();
+    this.deckElapsedMs = 0;
+    this._deckTimer = setInterval(() => {
+      this.deckElapsedMs = Date.now() - this.deckStartedAt;
+    }, 250);
+
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch (e) {
+      if (this._deckTimer) {
+        clearInterval(this._deckTimer);
+        this._deckTimer = null;
+      }
+      this.deckTransferBusy = false;
+      this.deckResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.deckResultSummary = 'Could not read the file.';
+      return;
+    }
+
+    try {
+      const { errors, importedDecks, importedCards } = await importDecks(buffer, (p) => {
+        this.deckProgress = { ...p };
+      });
+      this.deckResultErrors = errors;
+      if (errors.length === 0) {
+        this.deckResultSummary = `Import finished. Added ${importedDecks} deck(s) and ${importedCards} card(s).`;
+        window.dispatchEvent(new CustomEvent('decks-changed'));
+        void this.loadUserDecksForExport();
+      } else {
+        this.deckResultSummary =
+          'Import finished with issues (see below). Some decks or cards may have been added.';
+        if (importedDecks > 0 || importedCards > 0) {
+          window.dispatchEvent(new CustomEvent('decks-changed'));
+          void this.loadUserDecksForExport();
+        }
+      }
+    } catch (e) {
+      this.deckResultErrors = [e instanceof Error ? e.message : String(e)];
+      this.deckResultSummary = 'Deck import failed.';
+    } finally {
+      if (this._deckTimer) {
+        clearInterval(this._deckTimer);
+        this._deckTimer = null;
+      }
+      this.deckTransferBusy = false;
     }
   },
 }));

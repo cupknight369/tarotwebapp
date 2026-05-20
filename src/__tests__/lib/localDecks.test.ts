@@ -118,6 +118,61 @@ describe('localDecks.ts', () => {
     await expect(LD.listLocalDecks()).resolves.toEqual([rows[1], rows[0]]);
   });
 
+  it('isUserCreatedDeck is false only when from_catalog is true', () => {
+    expect(
+      LD.isUserCreatedDeck({
+        id: '1',
+        title: 'U',
+        description: null,
+        created_at: '1',
+        modified_at: '1',
+        from_catalog: false,
+      }),
+    ).toBe(true);
+    expect(
+      LD.isUserCreatedDeck({
+        id: '2',
+        title: 'C',
+        description: null,
+        created_at: '1',
+        modified_at: '1',
+        from_catalog: true,
+      }),
+    ).toBe(false);
+    expect(
+      LD.isUserCreatedDeck({
+        id: '3',
+        title: 'L',
+        description: null,
+        created_at: '1',
+        modified_at: '1',
+      }),
+    ).toBe(true);
+  });
+
+  it('listUserCreatedDecks excludes catalog decks', async () => {
+    const rows: LocalDeckRow[] = [
+      {
+        id: 'u',
+        title: 'User',
+        description: null,
+        created_at: '1',
+        modified_at: '1',
+        from_catalog: false,
+      },
+      {
+        id: 'c',
+        title: 'Cloud',
+        description: null,
+        created_at: '1',
+        modified_at: '1',
+        from_catalog: true,
+      },
+    ];
+    ctx.idbRequest.mockResolvedValue(rows);
+    await expect(LD.listUserCreatedDecks()).resolves.toEqual([rows[0]]);
+  });
+
   it('putLocalDeck writes row', async () => {
     ctx.idbRequest.mockResolvedValue(undefined);
     const row: LocalDeckRow = {

@@ -137,3 +137,10 @@ message CktarotReadingExport {
   optional string exported_at = 2;
   repeated ReadingRow readings = 3;
 }
+
+message CktarotDeckExport {
+  int32 version = 1;
+  optional string exported_at = 2;
+  repeated DeckRow decks = 3;
+  repeated CardRow cards = 4;
+}

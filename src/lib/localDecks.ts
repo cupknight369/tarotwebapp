@@ -50,6 +50,17 @@ export async function listLocalDecks(): Promise<LocalDeckRow[]> {
   return rows.sort((a, b) => a.title.localeCompare(b.title));
 }
 
+/** True when the deck was created by the user (not downloaded from the cloud catalog). */
+export function isUserCreatedDeck(d: LocalDeckRow): boolean {
+  return d.from_catalog !== true;
+}
+
+/** Lists on-device decks that are eligible for user deck export/import. */
+export async function listUserCreatedDecks(): Promise<LocalDeckRow[]> {
+  const decks = await listLocalDecks();
+  return decks.filter(isUserCreatedDeck);
+}
+
 export async function putLocalDeck(row: LocalDeckRow): Promise<void> {
   const db = await openTarotDb();
   const tx = db.transaction(STORE_DECKS, 'readwrite');

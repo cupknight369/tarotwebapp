@@ -73,6 +73,10 @@ Alpine.data('deckComponent', () => ({
     return this.catalogOffers.filter((c) => deckTitleMatchesSearch(this.deckSearchQuery, c.title));
   },
 
+  onDecksChanged(this: MergedThis) {
+    void this.refreshDeckLists();
+  },
+
   async refreshDeckLists(this: MergedThis) {
     const onDeviceRes = await listOnDeviceDeckEntries();
     if (!onDeviceRes.ok) {

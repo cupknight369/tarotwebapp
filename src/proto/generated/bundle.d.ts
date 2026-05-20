@@ -1597,4 +1597,119 @@ export namespace cktarot {
          */
         public static getTypeUrl(typeUrlPrefix?: string): string;
     }
+
+    /** Properties of a CktarotDeckExport. */
+    interface ICktarotDeckExport {
+
+        /** CktarotDeckExport version */
+        version?: (number|null);
+
+        /** CktarotDeckExport exportedAt */
+        exportedAt?: (string|null);
+
+        /** CktarotDeckExport decks */
+        decks?: (cktarot.IDeckRow[]|null);
+
+        /** CktarotDeckExport cards */
+        cards?: (cktarot.ICardRow[]|null);
+    }
+
+    /** Represents a CktarotDeckExport. */
+    class CktarotDeckExport implements ICktarotDeckExport {
+
+        /**
+         * Constructs a new CktarotDeckExport.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: cktarot.ICktarotDeckExport);
+
+        /** CktarotDeckExport version. */
+        public version: number;
+
+        /** CktarotDeckExport exportedAt. */
+        public exportedAt?: (string|null);
+
+        /** CktarotDeckExport decks. */
+        public decks: cktarot.IDeckRow[];
+
+        /** CktarotDeckExport cards. */
+        public cards: cktarot.ICardRow[];
+
+        /**
+         * Creates a new CktarotDeckExport instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns CktarotDeckExport instance
+         */
+        public static create(properties?: cktarot.ICktarotDeckExport): cktarot.CktarotDeckExport;
+
+        /**
+         * Encodes the specified CktarotDeckExport message. Does not implicitly {@link cktarot.CktarotDeckExport.verify|verify} messages.
+         * @param message CktarotDeckExport message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: cktarot.ICktarotDeckExport, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified CktarotDeckExport message, length delimited. Does not implicitly {@link cktarot.CktarotDeckExport.verify|verify} messages.
+         * @param message CktarotDeckExport message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: cktarot.ICktarotDeckExport, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a CktarotDeckExport message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns CktarotDeckExport
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): cktarot.CktarotDeckExport;
+
+        /**
+         * Decodes a CktarotDeckExport message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns CktarotDeckExport
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): cktarot.CktarotDeckExport;
+
+        /**
+         * Verifies a CktarotDeckExport message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a CktarotDeckExport message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns CktarotDeckExport
+         */
+        public static fromObject(object: { [k: string]: any }): cktarot.CktarotDeckExport;
+
+        /**
+         * Creates a plain object from a CktarotDeckExport message. Also converts values to other types if specified.
+         * @param message CktarotDeckExport
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: cktarot.CktarotDeckExport, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this CktarotDeckExport to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for CktarotDeckExport
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
 }
