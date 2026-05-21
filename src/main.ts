@@ -4,6 +4,7 @@ import './input.css';
 import { initAuthStore } from './stores/authStore.js';
 import { initSettingsStore } from './stores/settingsStore.js';
 import { startCardImagePrefetch } from './lib/cardImageUrls.js';
+import { initPwaClient } from './lib/pwaClient.js';
 import {
   DEFAULT_DECK_ID,
   getCardsByDeckId,
@@ -26,6 +27,8 @@ import './components/WelcomeComponent';
 import './components/AuthComponent';
 import './components/DeckEditComponent';
 import './components/CorrespondenceManagerComponent';
+
+import { registerSW } from 'virtual:pwa-register';
 
 declare global {
   interface Window {
@@ -82,6 +85,7 @@ void (async () => {
   await initAuthStore();
   startCardImagePrefetch();
   initSettingsStore();
+  initPwaClient(registerSW);
   Alpine.start();
   window.dispatchEvent(new CustomEvent('check-first-time-welcome'));
   window.dispatchEvent(new CustomEvent('cktarot-check-storage-warning'));

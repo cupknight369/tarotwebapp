@@ -159,6 +159,8 @@ export type MergedThis = {
   switchToDeck(deckId: string): Promise<void>;
   createLocalDeckAction(): Promise<void>;
   downloadCatalogDeckAction(deckId: string): Promise<void>;
+  onDeckDownloadComplete(deckId: string): Promise<void>;
+  finishDownloadedDeck(deckId: string): Promise<void>;
   removeCatalogInstallAction(deckId: string): Promise<void>;
   deleteLocalDeckAction(deckId: string): Promise<void>;
   createNewReading(): Promise<void>;

@@ -156,14 +156,25 @@ Alpine.data('deckComponent', () => ({
         cancelLabelVisible: false,
         onConfirm: () => {},
       });
+      if (downloadRes.error.kind === 'queued') {
+        await this.refreshDeckLists();
+      }
       return;
     }
+    await this.finishDownloadedDeck(deckId);
+  },
+
+  async onDeckDownloadComplete(this: MergedThis, deckId: string) {
+    await this.finishDownloadedDeck(deckId);
+  },
+
+  async finishDownloadedDeck(this: MergedThis, deckId: string) {
     await this.refreshDeckLists();
     const activeId = Alpine.store('activeDeckId') as string;
     if (activeId === deckId) {
       const cardsRes = await getCardsByDeckId(deckId);
       if (!cardsRes.ok) {
-        logError('deckComponent.downloadCatalogDeckAction.reloadCards', cardsRes.error);
+        logError('deckComponent.finishDownloadedDeck.reloadCards', cardsRes.error);
         showQueryFailureDialog(cardsRes.error);
         return;
       }

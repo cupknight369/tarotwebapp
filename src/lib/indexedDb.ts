@@ -1,8 +1,8 @@
 import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../types/localDb.js';
 
 const DB_NAME = 'tarot';
-/** v4: correspondence library + per-card correspondence ids. */
-const DB_VERSION = 4;
+/** v5: pending cloud deck download queue for PWA background sync. */
+const DB_VERSION = 5;
 
 /** IndexedDB object store for saved readings (protobuf state). */
 export const STORE_READINGS = 'readings';
@@ -18,6 +18,8 @@ export const STORE_CORRESPONDENCE_GROUPS = 'correspondenceGroups';
 export const STORE_CORRESPONDENCES = 'correspondences';
 /** IndexedDB object store for correspondence thumbnail blobs. */
 export const STORE_CORRESPONDENCE_IMAGES = 'correspondenceImages';
+/** IndexedDB object store for cloud deck downloads waiting on connectivity. */
+export const STORE_PENDING_DECK_DOWNLOADS = 'pendingDeckDownloads';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -73,6 +75,11 @@ export function openTarotDb(): Promise<IDBDatabase> {
         if (upgradeTx) {
           const gStore = upgradeTx.objectStore(STORE_CORRESPONDENCE_GROUPS);
           gStore.put({ id: DEFAULT_CORRESPONDENCE_GROUP_ID, title: 'Default' });
+        }
+      }
+      if (old < 5) {
+        if (!db.objectStoreNames.contains(STORE_PENDING_DECK_DOWNLOADS)) {
+          db.createObjectStore(STORE_PENDING_DECK_DOWNLOADS, { keyPath: 'deckId' });
         }
       }
     };

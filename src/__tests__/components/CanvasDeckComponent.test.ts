@@ -130,6 +130,7 @@ type DeckCtx = {
   switchToDeck: (deckId: string) => Promise<void>;
   createLocalDeckAction: () => Promise<void>;
   downloadCatalogDeckAction: (deckId: string) => Promise<void>;
+  onDeckDownloadComplete: (deckId: string) => Promise<void>;
   removeCatalogInstallAction: (deckId: string) => Promise<void>;
   deleteLocalDeckAction: (deckId: string) => Promise<void>;
 };
@@ -377,6 +378,25 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     expect(localMocks.createLocalDeck).toHaveBeenCalledWith('My deck', null);
     expect(ctx.newLocalDeckTitle).toBe('');
     expect(deckMocks.listOnDeviceDeckEntries).toHaveBeenCalled();
+  });
+
+  it('downloadCatalogDeckAction refreshes lists when download is queued', async () => {
+    cloudMocks.downloadCloudDeckToDevice.mockResolvedValueOnce(
+      err({ kind: 'queued', message: 'Download queued.' }),
+    );
+    const ctx = mountDeck();
+    const refreshSpy = vi.spyOn(ctx, 'refreshDeckLists');
+    await ctx.downloadCatalogDeckAction.call(ctx, 'd1');
+    expect(refreshSpy).toHaveBeenCalled();
+  });
+
+  it('onDeckDownloadComplete reloads cards when active deck matches', async () => {
+    alpineStub.rawStores.activeDeckId = 'same';
+    const ctx = mountDeck();
+    await ctx.onDeckDownloadComplete.call(ctx, 'same');
+    await flushAsyncWork();
+    expect(deckMocks.getCardsByDeckId).toHaveBeenCalledWith('same');
+    expect(ctx.shuffleDeck).toHaveBeenCalled();
   });
 
   it('downloadCatalogDeckAction opens dialog on download failure', async () => {

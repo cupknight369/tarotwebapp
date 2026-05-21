@@ -177,6 +177,7 @@ describe('indexedDb.ts', () => {
     expect(m.STORE_CORRESPONDENCE_GROUPS).toBe('correspondenceGroups');
     expect(m.STORE_CORRESPONDENCES).toBe('correspondences');
     expect(m.STORE_CORRESPONDENCE_IMAGES).toBe('correspondenceImages');
+    expect(m.STORE_PENDING_DECK_DOWNLOADS).toBe('pendingDeckDownloads');
   });
 
   it('openTarotDb rejects when indexedDB.open fails', async () => {
@@ -213,6 +214,7 @@ describe('indexedDb.ts', () => {
       STORE_CORRESPONDENCE_GROUPS,
       STORE_CORRESPONDENCES,
       STORE_CORRESPONDENCE_IMAGES,
+      STORE_PENDING_DECK_DOWNLOADS,
     } = await loadIndexedDbModule();
     const db = await openTarotDb();
     expect(db.objectStoreNames.contains(STORE_READINGS)).toBe(true);
@@ -222,9 +224,33 @@ describe('indexedDb.ts', () => {
     expect(db.objectStoreNames.contains(STORE_CORRESPONDENCE_GROUPS)).toBe(true);
     expect(db.objectStoreNames.contains(STORE_CORRESPONDENCES)).toBe(true);
     expect(db.objectStoreNames.contains(STORE_CORRESPONDENCE_IMAGES)).toBe(true);
+    expect(db.objectStoreNames.contains(STORE_PENDING_DECK_DOWNLOADS)).toBe(true);
     expect(createIndexSpy).toHaveBeenCalledWith('by_updated_at', 'updated_at');
     expect(createIndexSpy).toHaveBeenCalledWith('by_deck_id', 'deck_id');
     expect(createIndexSpy).toHaveBeenCalledWith('by_group_id', 'group_id');
+  });
+
+  it('openTarotDb migrates v4 to v5: adds pendingDeckDownloads store', async () => {
+    vi.stubGlobal(
+      'indexedDB',
+      createFakeIndexedDB({
+        persisted: {
+          version: 4,
+          stores: [
+            'readings',
+            'decks',
+            'cardImages',
+            'cards',
+            'correspondenceGroups',
+            'correspondences',
+            'correspondenceImages',
+          ],
+        },
+      }),
+    );
+    const { openTarotDb, STORE_PENDING_DECK_DOWNLOADS } = await loadIndexedDbModule();
+    const db = await openTarotDb();
+    expect(db.objectStoreNames.contains(STORE_PENDING_DECK_DOWNLOADS)).toBe(true);
   });
 
   it('openTarotDb migrates v3 to v4: adds correspondence object stores', async () => {

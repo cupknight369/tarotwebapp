@@ -110,6 +110,16 @@ vi.mock('../components/AuthComponent', () => ({}));
 vi.mock('../components/DeckEditComponent', () => ({}));
 vi.mock('../components/CorrespondenceManagerComponent', () => ({}));
 
+vi.mock('virtual:pwa-register', () => ({
+  registerSW: vi.fn(() => vi.fn()),
+}));
+
+vi.mock('../lib/pwaClient.js', () => ({
+  initPwaClient: vi.fn(),
+}));
+
+import { initPwaClient } from '../lib/pwaClient.js';
+
 async function loadMain(): Promise<void> {
   await import('../main.js');
   await Promise.resolve();
@@ -150,6 +160,7 @@ describe('main.ts bootstrap', () => {
     expect(uiMocks.initAuthStore).toHaveBeenCalledTimes(1);
     expect(uiMocks.startCardImagePrefetch).toHaveBeenCalledTimes(1);
     expect(uiMocks.initSettingsStore).toHaveBeenCalledTimes(1);
+    expect(initPwaClient).toHaveBeenCalledTimes(1);
 
     expect(alpineHoisted.stores.shuffledCards).toEqual([card]);
     expect(alpineHoisted.stores.activeDeckId).toBe('deck-local-1');
