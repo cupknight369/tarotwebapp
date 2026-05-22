@@ -42,25 +42,50 @@ Alpine.data('dialogComponent', () => ({
     }
   },
 
-  /** Closes after the current click finishes so `@click.outside` can see `open: true`. */
-  scheduleClose() {
-    queueMicrotask(() => this.close());
+  /** Handler snapshot used to skip close when a new dialog replaced this one. */
+  snapshotDialogHandlers(d: DialogStoreState | undefined) {
+    return {
+      onConfirm: d?.onConfirm,
+      onCancel: d?.onCancel,
+      onSubmit: d?.onSubmit,
+      onSubmitText: d?.onSubmitText,
+    };
+  },
+
+  /** Closes after the current click unless the dialog store was replaced (e.g. chained prompts). */
+  scheduleClose(snap = this.snapshotDialogHandlers(this.store)) {
+    queueMicrotask(() => {
+      const d = this.store;
+      if (!d?.open) return;
+      const current = this.snapshotDialogHandlers(d);
+      if (
+        current.onConfirm === snap.onConfirm &&
+        current.onCancel === snap.onCancel &&
+        current.onSubmit === snap.onSubmit &&
+        current.onSubmitText === snap.onSubmitText
+      ) {
+        this.close();
+      }
+    });
   },
 
   handleConfirm() {
     const d = this.store;
+    const snap = this.snapshotDialogHandlers(d);
     if (d?.onConfirm) d.onConfirm();
-    this.scheduleClose();
+    this.scheduleClose(snap);
   },
 
   handleCancel() {
     const d = this.store;
+    const snap = this.snapshotDialogHandlers(d);
     if (d?.onCancel) d.onCancel();
-    this.scheduleClose();
+    this.scheduleClose(snap);
   },
 
   handleInputSubmit() {
     const d = this.store;
+    const snap = this.snapshotDialogHandlers(d);
     const min = d?.inputMin ?? 0;
     const max = d?.inputMax ?? 10;
     const parsed = dialogBoundedIntSchema(min, max).safeParse(this.inputValue);
@@ -70,11 +95,12 @@ Alpine.data('dialogComponent', () => ({
     }
     this.inputError = '';
     if (d?.onSubmit) d.onSubmit(parsed.data);
-    this.scheduleClose();
+    this.scheduleClose(snap);
   },
 
   handleInputTextSubmit() {
     const d = this.store;
+    const snap = this.snapshotDialogHandlers(d);
     const parsed = readingTitleSchema.safeParse(this.inputValue ?? '');
     if (!parsed.success) {
       this.inputError = zodFirstIssue(parsed.error);
@@ -82,7 +108,7 @@ Alpine.data('dialogComponent', () => ({
     }
     this.inputError = '';
     if (d?.onSubmitText) d.onSubmitText(parsed.data);
-    this.scheduleClose();
+    this.scheduleClose(snap);
   },
 
   initInputValue() {

@@ -122,6 +122,26 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     expect(d.open).toBe(false);
   });
 
+  it('handleConfirm does not close when dialog store is replaced before scheduled close', async () => {
+    const onConfirmFirst = vi.fn(() => {
+      alpineCapture.rawStores.dialog = dialogState({
+        open: true,
+        title: 'Save current reading?',
+        onConfirm: vi.fn(),
+      });
+    });
+    const d = dialogState({ open: true, onConfirm: onConfirmFirst });
+    alpineCapture.rawStores.dialog = d;
+    const ctx = mount();
+    ctx.handleConfirm.call(ctx);
+    expect(onConfirmFirst).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    expect((alpineCapture.rawStores.dialog as DialogStoreState).open).toBe(true);
+    expect((alpineCapture.rawStores.dialog as DialogStoreState).title).toBe(
+      'Save current reading?',
+    );
+  });
+
   it('handleCancel invokes onCancel then closes', async () => {
     const onCancel = vi.fn();
     const d = dialogState({ open: true, onCancel });
