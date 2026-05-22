@@ -191,6 +191,7 @@ type StateCtx = {
   handleSaveShortcut: (event: KeyboardEvent) => void;
   handleDrawCardShortcut: (event: KeyboardEvent) => void;
   handleDrawByNameShortcut: (event: KeyboardEvent) => void;
+  handleDrawByIndexShortcut: (event: KeyboardEvent) => void;
   handleAddTextShortcut: (event: KeyboardEvent) => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
@@ -1520,6 +1521,38 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(openDrawByNameFromContextMenu).not.toHaveBeenCalled();
     expect(openDrawByNameAt).toHaveBeenCalledWith(333, 444);
+  });
+
+  it('handleDrawByIndexShortcut opens draw-by-index dialog and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const openDrawByIndexDialog = vi.fn();
+    window.draggableZoneComponent = {
+      openDrawByIndexDialog,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawByIndexShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(openDrawByIndexDialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleDrawByIndexShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('input'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const openDrawByIndexDialog = vi.fn();
+    window.draggableZoneComponent = {
+      openDrawByIndexDialog,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawByIndexShortcut.call(ctx, event);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(openDrawByIndexDialog).not.toHaveBeenCalled();
   });
 
   it('handleAddTextShortcut uses context menu coordinates when open', () => {

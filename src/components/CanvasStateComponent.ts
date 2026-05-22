@@ -660,6 +660,19 @@ Alpine.data('stateComponent', () => ({
     canvas.openDrawByNameAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
   },
 
+  handleDrawByIndexShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    window.draggableZoneComponent?.openDrawByIndexDialog();
+  },
+
   handleAddTextShortcut(this: MergedThis, event: KeyboardEvent): void {
     const target = event.target;
     if (
