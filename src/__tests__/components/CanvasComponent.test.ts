@@ -12,6 +12,11 @@ import type {
   TextLabel,
 } from '../../types/canvas.js';
 import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCapture.js';
+import {
+  isPointerInteractionLocked,
+  lockPointerInteraction,
+  resetPointerInteractionLock,
+} from '../../lib/pointerInteractionLock.js';
 
 const alpineStub = vi.hoisted(() =>
   (globalThis as unknown as VitestGlobalWithAlpineDataCapture).__vitestCreateAlpineDataCapture(
@@ -300,6 +305,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
   });
 
   afterEach(() => {
+    resetPointerInteractionLock();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -582,9 +588,12 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
       clientY: 60,
       target: ctx.viewport!,
       ctrlKey: false,
+      preventDefault: vi.fn(),
     };
     c.onMouseDown.call(ctx, ev);
+    expect(ev.preventDefault).toHaveBeenCalled();
     expect(ctx.isPanning).toBe(true);
+    expect(isPointerInteractionLocked()).toBe(true);
     expect(ctx.panStartX).toBe(50);
     expect(ctx.panStartY).toBe(60);
   });
@@ -775,8 +784,10 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     const ctx = createMerged();
     ctx.isPanning = true;
     ctx.viewport = viewport1000x800();
+    lockPointerInteraction();
     c.onMouseUp.call(ctx, { clientX: 0, clientY: 0, target: null });
     expect(ctx.isPanning).toBe(false);
+    expect(isPointerInteractionLocked()).toBe(false);
     expect(ctx.dirty).toBe(true);
   });
 

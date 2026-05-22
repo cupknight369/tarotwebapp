@@ -127,7 +127,7 @@
           </div>
 
           <div
-            class="fixed top-12 left-2 z-[9998] pointer-events-auto flex flex-row flex-wrap items-start gap-2"
+            class="fixed top-12 left-2 z-[9998] pointer-events-auto flex flex-row flex-wrap items-start gap-2 select-none"
           >
             <div
               x-cloak
@@ -162,6 +162,7 @@
                         x-show="entry.thumbnailUrl"
                         :src="entry.thumbnailUrl"
                         alt=""
+                        draggable="false"
                         class="h-9 w-9 shrink-0 rounded object-cover ring-1 ring-gray-600"
                       />
                       <span
@@ -280,6 +281,7 @@
                     <img
                       :src="getCardImg(draggableCard.card, $store.settings.censored)"
                       :alt="draggableCard.card.title"
+                      draggable="false"
                       class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
                       style="max-width: 150px; width: 150px"
                     />
@@ -298,6 +300,7 @@
                           <img
                             :src="display.thumbnailUrl"
                             alt=""
+                            draggable="false"
                             class="h-9 max-h-9 w-auto max-w-[2.5rem] rounded object-cover ring-1 ring-gray-600"
                           />
                         </template>

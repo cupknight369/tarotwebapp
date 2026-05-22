@@ -20,6 +20,11 @@ import {
 } from '../lib/storageWarning.js';
 import type { SettingsStoreState } from '../types/settings.js';
 import { clampFixedWidthPx } from '../validation/canvasLabel.js';
+import {
+  lockPointerInteraction,
+  resetPointerInteractionLock,
+  unlockPointerInteraction,
+} from '../lib/pointerInteractionLock.js';
 
 Alpine.data('canvasComponent', () => ({
   dragContainer: null as HTMLElement | null,
@@ -469,6 +474,8 @@ Alpine.data('canvasComponent', () => ({
 
     if (isOnEmpty) {
       this.selectedCardIds = [];
+      event.preventDefault?.();
+      lockPointerInteraction();
       this.isPanning = true;
       this.panStartX = event.clientX - this.offsetX;
       this.panStartY = event.clientY - this.offsetY;
@@ -564,8 +571,10 @@ Alpine.data('canvasComponent', () => ({
   onMouseUp(this: MergedThis, event: MouseLikeEvent) {
     if (event.preventDefault) event.preventDefault();
 
-    if (this.isPanning) this.dirty = true;
+    const wasPanning = this.isPanning;
+    if (wasPanning) this.dirty = true;
     this.isPanning = false;
+    if (wasPanning) unlockPointerInteraction();
     if (this.viewport) this.viewport.style.cursor = 'grab';
 
     if (this.selectionBox) {
@@ -699,6 +708,7 @@ Alpine.data('canvasComponent', () => ({
   },
 
   clearDragState(this: MergedThis) {
+    resetPointerInteractionLock();
     this.isPanning = false;
     this.draggingCard = null;
     this.dragStart = null;
