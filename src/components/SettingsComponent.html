@@ -27,6 +27,11 @@
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+      <div class="border-b border-gray-700 pb-6 mb-6">
+        <p class="text-sm font-medium text-gray-300 mb-1">IndexedDB storage (estimate)</p>
+        <p class="text-xs text-gray-400" x-text="formatStorageLine()"></p>
+      </div>
+
       <label class="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
@@ -469,8 +474,6 @@
       </div>
 
       <div class="border-t border-gray-700 mt-6 pt-6">
-        <p class="text-sm font-medium text-gray-300 mb-1">IndexedDB storage (estimate)</p>
-        <p class="text-xs text-gray-400 mb-4" x-text="formatStorageLine()"></p>
         <p class="text-sm font-medium text-gray-300 mb-3">Local backup</p>
         <p class="text-xs text-gray-500 mb-3">Export or import a backup JSON file.</p>
         <div class="flex flex-col gap-2">
