@@ -46,8 +46,24 @@ function getSwSupabaseRestConfig(): SupabaseRestConfig {
   };
 }
 
+/**
+ * PostgREST traffic to loopback Supabase must not be handled by Workbox: service-worker
+ * `fetch` to another loopback port often fails with `TypeError: Failed to fetch` in Chrome
+ * while the same URL works from the window (e.g. `http://127.0.0.1:8001` app →
+ * `http://127.0.0.1:54321` API). Hosted Supabase URLs still use NetworkFirst for offline
+ * catalog hints.
+ */
+function isLoopbackSupabaseUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+  } catch {
+    return false;
+  }
+}
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-if (supabaseUrl) {
+if (supabaseUrl && !isLoopbackSupabaseUrl(supabaseUrl)) {
   registerRoute(
     ({ url }) =>
       url.href.startsWith(`${supabaseUrl}/rest/v1/deck`) ||
