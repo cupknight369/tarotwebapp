@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ok, err } from '../../lib/result.js';
 import type { QueryFailure } from '../../lib/supabaseErrors.js';
 import type { TarotCard } from '../../types/canvas.js';
+import type { CorrespondenceGroupSection } from '../../lib/localCorrespondences.js';
 import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCapture.js';
 
 const decksMocks = vi.hoisted(() => ({
@@ -124,7 +125,10 @@ type DeckEditCtx = {
   newCardTitle: string;
   newCardNumber: number;
   cardSearchQuery: string;
+  correspondenceSearchQuery: string;
+  correspondenceSections: CorrespondenceGroupSection[];
   filteredDeckEditCards: () => TarotCard[];
+  filteredCorrespondenceSections: () => CorrespondenceGroupSection[];
   clearFileInputs: () => void;
   clearAddFileInputs: () => void;
   onClearCensorChange: () => void;
@@ -147,6 +151,22 @@ function mount(): DeckEditCtx {
     throw new Error('deckEditComponent not registered');
   }
   return f() as DeckEditCtx;
+}
+
+function corrSection(
+  groupId: string,
+  groupTitle: string,
+  items: { id: string; title: string }[],
+): CorrespondenceGroupSection {
+  return {
+    group: { id: groupId, title: groupTitle } as CorrespondenceGroupSection['group'],
+    items: items.map((item) => ({
+      id: item.id,
+      group_id: groupId,
+      title: item.title,
+      imageBlobId: 'blob',
+    })) as CorrespondenceGroupSection['items'],
+  };
 }
 
 describe('deckEditComponent (DeckEditComponent.ts)', () => {
@@ -370,6 +390,86 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     ctx.cards = [tarot({ id: 'a', title: 'Moon', num: 1 })];
     ctx.cardSearchQuery = 'xyz';
     expect(ctx.filteredDeckEditCards.call(ctx)).toEqual([]);
+  });
+
+  it('filteredCorrespondenceSections returns all sections when query is blank or whitespace', () => {
+    const ctx = mount();
+    ctx.correspondenceSections = [
+      corrSection('g1', 'Elements', [{ id: 'c1', title: 'Fire' }]),
+      corrSection('g2', 'Planets', [{ id: 'c2', title: 'Mars' }]),
+    ];
+    ctx.correspondenceSearchQuery = '';
+    expect(ctx.filteredCorrespondenceSections.call(ctx)).toHaveLength(2);
+    ctx.correspondenceSearchQuery = '   ';
+    expect(ctx.filteredCorrespondenceSections.call(ctx)).toHaveLength(2);
+  });
+
+  it('filteredCorrespondenceSections matches item title case-insensitively', () => {
+    const ctx = mount();
+    ctx.correspondenceSections = [
+      corrSection('g1', 'Elements', [
+        { id: 'c1', title: 'Fire' },
+        { id: 'c2', title: 'Water' },
+      ]),
+      corrSection('g2', 'Planets', [{ id: 'c3', title: 'Mars' }]),
+    ];
+    ctx.correspondenceSearchQuery = 'fire';
+    const sections = ctx.filteredCorrespondenceSections.call(ctx);
+    expect(sections).toHaveLength(1);
+    expect(sections[0]?.group.id).toBe('g1');
+    expect(sections[0]?.items.map((i) => i.id)).toEqual(['c1']);
+  });
+
+  it('filteredCorrespondenceSections includes all items when group title matches', () => {
+    const ctx = mount();
+    ctx.correspondenceSections = [
+      corrSection('g1', 'Elements', [
+        { id: 'c1', title: 'Fire' },
+        { id: 'c2', title: 'Water' },
+      ]),
+      corrSection('g2', 'Planets', [{ id: 'c3', title: 'Mars' }]),
+    ];
+    ctx.correspondenceSearchQuery = 'planets';
+    const sections = ctx.filteredCorrespondenceSections.call(ctx);
+    expect(sections).toHaveLength(1);
+    expect(sections[0]?.group.id).toBe('g2');
+    expect(sections[0]?.items.map((i) => i.id)).toEqual(['c3']);
+  });
+
+  it('filteredCorrespondenceSections omits groups with no matching items', () => {
+    const ctx = mount();
+    ctx.correspondenceSections = [
+      corrSection('g1', 'Elements', [{ id: 'c1', title: 'Fire' }]),
+      corrSection('g2', 'Planets', [{ id: 'c2', title: 'Mars' }]),
+    ];
+    ctx.correspondenceSearchQuery = 'xyz';
+    expect(ctx.filteredCorrespondenceSections.call(ctx)).toEqual([]);
+  });
+
+  it('onOpen clears correspondenceSearchQuery', async () => {
+    const ctx = mount();
+    ctx.correspondenceSearchQuery = '  fire  ';
+    await ctx.onOpen.call(ctx, { deckId: 'd1', deckTitle: 'T' });
+    expect(ctx.correspondenceSearchQuery).toBe('');
+  });
+
+  it('close clears correspondenceSearchQuery', async () => {
+    const ctx = mount();
+    await ctx.onOpen.call(ctx, { deckId: 'd1' });
+    ctx.correspondenceSearchQuery = 'filter-me';
+    ctx.close.call(ctx);
+    expect(ctx.correspondenceSearchQuery).toBe('');
+  });
+
+  it('selectCard clears correspondenceSearchQuery when changing selection', () => {
+    const ctx = mount();
+    ctx.cards = [tarot({ id: 'a', title: 'A', num: 1 }), tarot({ id: 'b', title: 'B', num: 2 })];
+    ctx.correspondenceSearchQuery = 'fire';
+    ctx.selectCard.call(ctx, 'a');
+    expect(ctx.correspondenceSearchQuery).toBe('');
+    ctx.correspondenceSearchQuery = 'water';
+    ctx.selectCard.call(ctx, 'b');
+    expect(ctx.correspondenceSearchQuery).toBe('');
   });
 
   it('close resets all panel state', async () => {

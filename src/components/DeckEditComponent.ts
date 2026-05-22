@@ -36,6 +36,24 @@ function cardMatchesDeckEditSearch(query: string, card: { title: string; num: nu
   return String(card.num).includes(raw);
 }
 
+/**
+ * @param query - Raw search string from the deck edit correspondence filter.
+ * @param section - Correspondence group and its items.
+ * @returns Filtered section with items whose title matches the query case-insensitively, or
+ *   all items when the group title matches; empty items when nothing matches.
+ */
+function filterCorrespondenceSectionBySearch(
+  query: string,
+  section: CorrespondenceGroupSection,
+): CorrespondenceGroupSection {
+  const raw = query.trim();
+  if (raw === '') return section;
+  const q = raw.toLowerCase();
+  if (section.group.title.toLowerCase().includes(q)) return section;
+  const items = section.items.filter((item) => item.title.toLowerCase().includes(q));
+  return { group: section.group, items };
+}
+
 function cryptoRandomInt(len: number): number {
   const buf = new Uint32Array(1);
   crypto.getRandomValues(buf);
@@ -72,12 +90,19 @@ Alpine.data('deckEditComponent', () => ({
   newCardTitle: '',
   newCardNumber: 1,
   cardSearchQuery: '',
+  correspondenceSearchQuery: '',
   correspondenceSections: [] as CorrespondenceGroupSection[],
   selectedCorrespondenceIds: [] as string[],
   correspondenceAssignError: null as string | null,
 
   filteredDeckEditCards(): TarotCard[] {
     return this.cards.filter((c) => cardMatchesDeckEditSearch(this.cardSearchQuery, c));
+  },
+
+  filteredCorrespondenceSections(): CorrespondenceGroupSection[] {
+    return this.correspondenceSections
+      .map((sec) => filterCorrespondenceSectionBySearch(this.correspondenceSearchQuery, sec))
+      .filter((sec) => sec.items.length > 0);
   },
 
   async onCorrespondencesChanged() {
@@ -196,6 +221,7 @@ Alpine.data('deckEditComponent', () => ({
     this.deleteError = null;
     this.loadError = null;
     this.cardSearchQuery = '';
+    this.correspondenceSearchQuery = '';
     this.formMode = 'edit';
     this.loading = true;
     try {
@@ -254,6 +280,7 @@ Alpine.data('deckEditComponent', () => ({
     this.newCardTitle = '';
     this.newCardNumber = 1;
     this.cardSearchQuery = '';
+    this.correspondenceSearchQuery = '';
     this.resetForm();
     this.clearAddFileInputs();
   },
@@ -298,11 +325,13 @@ Alpine.data('deckEditComponent', () => ({
   selectCard(id: string | null) {
     if (!id) {
       this.selectedCardIds = [];
+      this.correspondenceSearchQuery = '';
       this.resetForm();
       return;
     }
     this.formMode = 'edit';
     this.selectedCardIds = [id];
+    this.correspondenceSearchQuery = '';
     this.syncEditFormFromSingleSelection();
   },
 

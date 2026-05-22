@@ -108,7 +108,7 @@
       </div>
 
       <div
-        class="flex w-full shrink-0 flex-col border-gray-700 p-4 pt-12 md:w-[min(100%,22rem)] md:border-l md:pt-4"
+        class="flex min-h-0 w-full shrink-0 flex-col overflow-hidden border-gray-700 p-4 pt-12 md:w-[min(100%,22rem)] md:border-l md:pt-4"
       >
         <p class="text-sm font-medium text-gray-300" x-show="formMode === 'add'">Add card</p>
         <p
@@ -195,9 +195,9 @@
 
         <div
           x-show="formMode === 'edit' && selectedCardIds.length === 1"
-          class="mt-4 flex flex-col gap-3"
+          class="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
         >
-          <div>
+          <div class="shrink-0">
             <label class="block text-xs text-gray-400">Title</label>
             <input
               type="text"
@@ -205,7 +205,7 @@
               class="mt-1 w-full rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200 focus:border-transparent focus:ring-2 focus:ring-purple-500"
             />
           </div>
-          <div>
+          <div class="shrink-0">
             <label class="block text-xs text-gray-400">Number</label>
             <input
               type="number"
@@ -213,7 +213,7 @@
               class="mt-1 w-28 rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200 focus:border-transparent focus:ring-2 focus:ring-purple-500"
             />
           </div>
-          <div>
+          <div class="shrink-0">
             <label class="block text-xs text-gray-400">Main image</label>
             <input
               id="deck-edit-main"
@@ -222,7 +222,7 @@
               class="mt-1 w-full text-xs text-gray-300"
             />
           </div>
-          <div>
+          <div class="shrink-0">
             <label class="block text-xs text-gray-400">Censor image (optional)</label>
             <input
               id="deck-edit-censor"
@@ -232,7 +232,7 @@
               :disabled="clearCensor"
             />
           </div>
-          <label class="flex cursor-pointer items-center gap-2">
+          <label class="flex shrink-0 cursor-pointer items-center gap-2">
             <input
               type="checkbox"
               x-model="clearCensor"
@@ -241,9 +241,9 @@
             />
             <span class="text-sm text-gray-300">Remove censor image</span>
           </label>
-          <p x-show="saveError" class="text-sm text-red-400" x-text="saveError"></p>
-          <div class="mt-3 border-t border-gray-700 pt-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
+          <p x-show="saveError" class="shrink-0 text-sm text-red-400" x-text="saveError"></p>
+          <div class="flex min-h-0 flex-1 flex-col border-t border-gray-700 pt-3">
+            <div class="flex shrink-0 flex-wrap items-center justify-between gap-2">
               <p class="text-xs font-medium text-gray-400">Correspondences</p>
               <button
                 type="button"
@@ -253,36 +253,58 @@
                 Manage library…
               </button>
             </div>
-            <p class="mt-1 text-xs text-gray-500">
+            <p class="mt-1 shrink-0 text-xs text-gray-500">
               Thumbnails appear under the card on the canvas when that option is enabled in
               settings.
             </p>
+            <div class="mt-2 shrink-0">
+              <input
+                id="deck-edit-correspondence-search"
+                type="text"
+                x-model="correspondenceSearchQuery"
+                placeholder="Search correspondences…"
+                autocomplete="off"
+                class="w-full rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-xs text-gray-200 focus:border-transparent focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+            <p
+              class="mt-2 shrink-0 text-xs text-gray-500"
+              x-show="correspondenceSections.length > 0 && filteredCorrespondenceSections().length === 0"
+            >
+              No correspondences match your search.
+            </p>
             <p
               x-show="correspondenceAssignError"
-              class="mt-1 text-xs text-red-400"
+              class="mt-1 shrink-0 text-xs text-red-400"
               x-text="correspondenceAssignError"
             ></p>
-            <template x-for="sec in correspondenceSections" :key="sec.group.id">
-              <div class="mt-2">
-                <p
-                  class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
-                  x-text="sec.group.title"
-                ></p>
-                <template x-for="item in sec.items" :key="item.id">
-                  <label class="mt-1 flex cursor-pointer items-center gap-2 text-xs text-gray-300">
-                    <input
-                      type="checkbox"
-                      class="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
-                      :checked="selectedCorrespondenceIds.includes(item.id)"
-                      @change="setCorrespondenceChecked(item.id, $event.target.checked)"
-                    />
-                    <span x-text="item.title"></span>
-                  </label>
-                </template>
-              </div>
-            </template>
+            <div
+              class="mt-2 max-h-[220px] min-h-0 flex-1 overflow-y-auto rounded border border-gray-700 bg-gray-900/40 p-2"
+            >
+              <template x-for="sec in filteredCorrespondenceSections()" :key="sec.group.id">
+                <div class="mt-2 first:mt-0">
+                  <p
+                    class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+                    x-text="sec.group.title"
+                  ></p>
+                  <template x-for="item in sec.items" :key="item.id">
+                    <label
+                      class="mt-1 flex cursor-pointer items-center gap-2 text-xs text-gray-300"
+                    >
+                      <input
+                        type="checkbox"
+                        class="rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                        :checked="selectedCorrespondenceIds.includes(item.id)"
+                        @change="setCorrespondenceChecked(item.id, $event.target.checked)"
+                      />
+                      <span x-text="item.title"></span>
+                    </label>
+                  </template>
+                </div>
+              </template>
+            </div>
           </div>
-          <div class="flex flex-wrap gap-2 pt-2">
+          <div class="flex shrink-0 flex-wrap gap-2 pt-2">
             <button
               type="button"
               class="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
