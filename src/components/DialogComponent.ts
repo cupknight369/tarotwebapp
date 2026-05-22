@@ -42,16 +42,21 @@ Alpine.data('dialogComponent', () => ({
     }
   },
 
+  /** Closes after the current click finishes so `@click.outside` can see `open: true`. */
+  scheduleClose() {
+    queueMicrotask(() => this.close());
+  },
+
   handleConfirm() {
     const d = this.store;
     if (d?.onConfirm) d.onConfirm();
-    this.close();
+    this.scheduleClose();
   },
 
   handleCancel() {
     const d = this.store;
     if (d?.onCancel) d.onCancel();
-    this.close();
+    this.scheduleClose();
   },
 
   handleInputSubmit() {
@@ -65,7 +70,7 @@ Alpine.data('dialogComponent', () => ({
     }
     this.inputError = '';
     if (d?.onSubmit) d.onSubmit(parsed.data);
-    this.close();
+    this.scheduleClose();
   },
 
   handleInputTextSubmit() {
@@ -77,7 +82,7 @@ Alpine.data('dialogComponent', () => ({
     }
     this.inputError = '';
     if (d?.onSubmitText) d.onSubmitText(parsed.data);
-    this.close();
+    this.scheduleClose();
   },
 
   initInputValue() {

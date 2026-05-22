@@ -1732,6 +1732,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       },
     ]);
     const ctx = createCtx({
+      loadModalOpen: true,
       localSavedReadings: [
         { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
         { id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
@@ -1744,7 +1745,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     await p;
     expect(ctx.localSavedReadings).toHaveLength(1);
     expect(ctx.loadedReadingId).toBeNull();
+    expect(ctx.loadModalOpen).toBe(true);
     expect(readingsMocks.deleteLocalReading).toHaveBeenCalledWith('a');
+    expect(readingsMocks.listReadingsGrouped).toHaveBeenCalled();
   });
 
   it('deleteReading keeps loaded id when deleting a different reading', async () => {

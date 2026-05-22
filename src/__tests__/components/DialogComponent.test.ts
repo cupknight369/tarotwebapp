@@ -100,39 +100,47 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     expect(() => ctx.close.call(ctx)).not.toThrow();
   });
 
-  it('handleConfirm invokes onConfirm then closes', () => {
+  it('handleConfirm invokes onConfirm then closes', async () => {
     const onConfirm = vi.fn();
     const d = dialogState({ open: true, onConfirm });
     alpineCapture.rawStores.dialog = d;
     const ctx = mount();
     ctx.handleConfirm.call(ctx);
     expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
-  it('handleConfirm still closes when onConfirm is absent', () => {
+  it('handleConfirm still closes when onConfirm is absent', async () => {
     const d = dialogState({ open: true, onConfirm: undefined });
     alpineCapture.rawStores.dialog = d;
     const ctx = mount();
     ctx.handleConfirm.call(ctx);
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
-  it('handleCancel invokes onCancel then closes', () => {
+  it('handleCancel invokes onCancel then closes', async () => {
     const onCancel = vi.fn();
     const d = dialogState({ open: true, onCancel });
     alpineCapture.rawStores.dialog = d;
     const ctx = mount();
     ctx.handleCancel.call(ctx);
     expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
-  it('handleCancel still closes when onCancel is absent', () => {
+  it('handleCancel still closes when onCancel is absent', async () => {
     const d = dialogState({ open: true, onCancel: undefined });
     alpineCapture.rawStores.dialog = d;
     const ctx = mount();
     ctx.handleCancel.call(ctx);
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
@@ -164,7 +172,7 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     expect(d.open).toBe(true);
   });
 
-  it('handleInputSubmit uses default min 0 and max 10 when omitted', () => {
+  it('handleInputSubmit uses default min 0 and max 10 when omitted', async () => {
     const onSubmit = vi.fn();
     const d = dialogState({ open: true, type: 'input', onSubmit });
     alpineCapture.rawStores.dialog = d;
@@ -173,10 +181,12 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     ctx.handleInputSubmit.call(ctx);
     expect(onSubmit).toHaveBeenCalledWith(7);
     expect(ctx.inputError).toBe('');
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
-  it('handleInputSubmit clears error, calls onSubmit, and closes on success', () => {
+  it('handleInputSubmit clears error, calls onSubmit, and closes on success', async () => {
     const onSubmit = vi.fn();
     const d = dialogState({
       open: true,
@@ -192,10 +202,12 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     ctx.handleInputSubmit.call(ctx);
     expect(ctx.inputError).toBe('');
     expect(onSubmit).toHaveBeenCalledWith(5);
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
-  it('handleInputSubmit closes without calling onSubmit when handler missing', () => {
+  it('handleInputSubmit closes without calling onSubmit when handler missing', async () => {
     const d = dialogState({
       open: true,
       type: 'input',
@@ -207,6 +219,8 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     const ctx = mount();
     ctx.inputValue = '3';
     ctx.handleInputSubmit.call(ctx);
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
@@ -220,7 +234,7 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     expect(d.open).toBe(true);
   });
 
-  it('handleInputTextSubmit maps empty trimmed value to Untitled Reading', () => {
+  it('handleInputTextSubmit maps empty trimmed value to Untitled Reading', async () => {
     const onSubmitText = vi.fn();
     const d = dialogState({ open: true, type: 'inputText', onSubmitText });
     alpineCapture.rawStores.dialog = d;
@@ -229,6 +243,8 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     ctx.handleInputTextSubmit.call(ctx);
     expect(onSubmitText).toHaveBeenCalledWith('Untitled Reading');
     expect(ctx.inputError).toBe('');
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
@@ -242,7 +258,7 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     expect(onSubmitText).toHaveBeenCalledWith('Untitled Reading');
   });
 
-  it('handleInputTextSubmit passes trimmed title and closes', () => {
+  it('handleInputTextSubmit passes trimmed title and closes', async () => {
     const onSubmitText = vi.fn();
     const d = dialogState({ open: true, type: 'inputText', onSubmitText });
     alpineCapture.rawStores.dialog = d;
@@ -252,15 +268,19 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     ctx.handleInputTextSubmit.call(ctx);
     expect(onSubmitText).toHaveBeenCalledWith('My Reading');
     expect(ctx.inputError).toBe('');
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
-  it('handleInputTextSubmit closes without onSubmitText when valid', () => {
+  it('handleInputTextSubmit closes without onSubmitText when valid', async () => {
     const d = dialogState({ open: true, type: 'inputText', onSubmitText: undefined });
     alpineCapture.rawStores.dialog = d;
     const ctx = mount();
     ctx.inputValue = 'Ok';
     ctx.handleInputTextSubmit.call(ctx);
+    expect(d.open).toBe(true);
+    await Promise.resolve();
     expect(d.open).toBe(false);
   });
 
