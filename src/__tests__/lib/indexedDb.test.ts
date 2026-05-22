@@ -74,7 +74,7 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
 
   const factory = {
     cmp: (a: string, b: string): number => a.localeCompare(b),
-    open(dbName: string, newVersion: number): IDBOpenDBRequest {
+    open(dbName: string, newVersion?: number): IDBOpenDBRequest {
       const req: MutableOpenRequest = {
         error: null,
         result: null,
@@ -97,13 +97,24 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
 
         const rec = getRecord(dbName);
         const oldVersion = rec.version;
+        const targetVersion = newVersion ?? oldVersion;
+
+        if (newVersion !== undefined && newVersion < oldVersion) {
+          req.error = new DOMException(
+            'The requested version is less than the existing version.',
+            'VersionError',
+          );
+          const asReq = req as unknown as IDBOpenDBRequest;
+          req.onerror?.call(asReq, new Event('error'));
+          return;
+        }
         const names = new FakeObjectStoreNames();
         for (const s of rec.stores) names.add(s);
 
         const objectStoreNames = names as unknown as DOMStringList;
         const db = {
           name: dbName,
-          version: newVersion,
+          version: targetVersion,
           objectStoreNames,
           createObjectStore: (storeName: string, options?: IDBObjectStoreParameters) => {
             void options;
@@ -127,7 +138,7 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
 
         const asReq = req as unknown as IDBOpenDBRequest;
 
-        if (newVersion > oldVersion) {
+        if (targetVersion > oldVersion) {
           req.transaction = {
             objectStore: () => {
               const createIndex = opts.createIndexSpy ?? vi.fn();
@@ -143,11 +154,13 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
           } as unknown as IDBTransaction;
           const ev = {
             oldVersion,
-            newVersion,
+            newVersion: targetVersion,
           } as unknown as IDBVersionChangeEvent;
-          rec.version = newVersion;
+          rec.version = targetVersion;
           req.onupgradeneeded?.call(asReq, ev);
           req.transaction = null;
+        } else {
+          rec.version = targetVersion;
         }
 
         req.onsuccess?.call(asReq, new Event('success'));
@@ -179,6 +192,7 @@ describe('indexedDb.ts', () => {
     vi.stubGlobal('indexedDB', createFakeIndexedDB());
     const m = await loadIndexedDbModule();
     expect(m.STORE_READINGS).toBe('readings');
+    expect(m.STORE_READING_STATES).toBe('readingStates');
     expect(m.STORE_DECKS).toBe('decks');
     expect(m.STORE_CARDS).toBe('cards');
     expect(m.STORE_CARD_IMAGES).toBe('cardImages');
@@ -291,6 +305,110 @@ describe('indexedDb.ts', () => {
     const db = await openTarotDb();
     expect(db.objectStoreNames.contains(STORE_READING_GROUPS)).toBe(true);
     expect(db.version).toBeGreaterThanOrEqual(7);
+  });
+
+  it('openTarotDb migrates v7 to v8: adds readingStates store', async () => {
+    vi.stubGlobal(
+      'indexedDB',
+      createFakeIndexedDB({
+        persisted: {
+          version: 7,
+          stores: [
+            'readings',
+            'readingGroups',
+            'decks',
+            'cardImages',
+            'cards',
+            'correspondenceGroups',
+            'correspondences',
+            'correspondenceImages',
+            'pendingDeckDownloads',
+          ],
+        },
+      }),
+    );
+    const { openTarotDb, STORE_READING_STATES } = await loadIndexedDbModule();
+    const db = await openTarotDb();
+    expect(db.objectStoreNames.contains(STORE_READING_STATES)).toBe(true);
+    expect(db.version).toBeGreaterThanOrEqual(8);
+  });
+
+  it('openTarotDb migrates v8 to v11: re-runs inline state split repair', async () => {
+    vi.stubGlobal(
+      'indexedDB',
+      createFakeIndexedDB({
+        persisted: {
+          version: 8,
+          stores: [
+            'readings',
+            'readingStates',
+            'readingGroups',
+            'decks',
+            'cardImages',
+            'cards',
+            'correspondenceGroups',
+            'correspondences',
+            'correspondenceImages',
+            'pendingDeckDownloads',
+          ],
+        },
+      }),
+    );
+    const { openTarotDb } = await loadIndexedDbModule();
+    const db = await openTarotDb();
+    expect(db.version).toBeGreaterThanOrEqual(11);
+  });
+
+  it('openTarotDb repairs v11 missing readingStates via version bump', async () => {
+    vi.stubGlobal(
+      'indexedDB',
+      createFakeIndexedDB({
+        persisted: {
+          version: 11,
+          stores: [
+            'readings',
+            'readingGroups',
+            'decks',
+            'cardImages',
+            'cards',
+            'correspondenceGroups',
+            'correspondences',
+            'correspondenceImages',
+            'pendingDeckDownloads',
+          ],
+        },
+      }),
+    );
+    const { openTarotDb, STORE_READING_STATES } = await loadIndexedDbModule();
+    const db = await openTarotDb();
+    expect(db.objectStoreNames.contains(STORE_READING_STATES)).toBe(true);
+    expect(db.version).toBeGreaterThanOrEqual(12);
+  });
+
+  it('openTarotDb opens when persisted version is newer than DB_VERSION (VersionError fallback)', async () => {
+    vi.stubGlobal(
+      'indexedDB',
+      createFakeIndexedDB({
+        persisted: {
+          version: 12,
+          stores: [
+            'readings',
+            'readingStates',
+            'readingGroups',
+            'decks',
+            'cardImages',
+            'cards',
+            'correspondenceGroups',
+            'correspondences',
+            'correspondenceImages',
+            'pendingDeckDownloads',
+          ],
+        },
+      }),
+    );
+    const { openTarotDb } = await loadIndexedDbModule();
+    const db = await openTarotDb();
+    expect(db.version).toBe(12);
   });
 
   it('openTarotDb migrates v4 to v5: adds pendingDeckDownloads store', async () => {

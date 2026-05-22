@@ -13,6 +13,7 @@ import {
   listOnDeviceDeckEntries,
 } from './lib/decks.js';
 import { logError } from './lib/logError.js';
+import { warmReadingListCache } from './lib/localReadings.js';
 import { showQueryFailureDialog } from './lib/queryFailureUi.js';
 import './components/CanvasScaleComponent';
 import './components/CanvasCardComponent';
@@ -94,4 +95,7 @@ void (async () => {
   } catch (e) {
     logError('bootstrapDeck.unexpected', e);
   }
+  void warmReadingListCache().catch((e) => {
+    logError('warmReadingListCache', e);
+  });
 })();

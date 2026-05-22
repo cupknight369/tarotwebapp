@@ -6,6 +6,8 @@ import { DEFAULT_READING_GROUP_ID } from '../../types/localDb.js';
 const readingLibMocks = vi.hoisted(() => ({
   ensureDefaultReadingGroup: vi.fn(),
   createReadingGroup: vi.fn(),
+  listAllLocalReadingRowsWithState: vi.fn(),
+  upsertLocalReadingRow: vi.fn(),
 }));
 
 const m = vi.hoisted(() => ({
@@ -26,6 +28,9 @@ vi.mock('../../lib/logError.js', () => ({ logError: m.logError }));
 vi.mock('../../lib/localReadings.js', () => ({
   ensureDefaultReadingGroup: readingLibMocks.ensureDefaultReadingGroup,
   createReadingGroup: readingLibMocks.createReadingGroup,
+  invalidateReadingListCache: vi.fn(),
+  listAllLocalReadingRowsWithState: readingLibMocks.listAllLocalReadingRowsWithState,
+  upsertLocalReadingRow: readingLibMocks.upsertLocalReadingRow,
 }));
 
 vi.mock('../../lib/indexedDb.js', () => ({
@@ -110,6 +115,8 @@ describe('localReadingExport.ts', () => {
       id: 'new-group',
       title: 'Imported',
     });
+    readingLibMocks.listAllLocalReadingRowsWithState.mockResolvedValue([]);
+    readingLibMocks.upsertLocalReadingRow.mockResolvedValue(undefined);
     m.encodeReadingExport.mockResolvedValue(new Uint8Array([1, 2, 3]));
     m.idbRequest.mockResolvedValue(undefined);
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -134,9 +141,8 @@ describe('localReadingExport.ts', () => {
 
   it('exportReadings filters readings by selection and includes referenced groups', async () => {
     const dom = stubDomDownload();
-    m.idbRequest
-      .mockResolvedValueOnce([readingA, readingB])
-      .mockResolvedValueOnce([{ id: DEFAULT_READING_GROUP_ID, title: 'Default' }]);
+    readingLibMocks.listAllLocalReadingRowsWithState.mockResolvedValue([readingA, readingB]);
+    m.idbRequest.mockResolvedValueOnce([{ id: DEFAULT_READING_GROUP_ID, title: 'Default' }]);
 
     const r = await exportReadings(['r-a']);
 
@@ -195,7 +201,7 @@ describe('localReadingExport.ts', () => {
 
     expect(m.insertReadingFromProto).toHaveBeenCalledTimes(2);
     expect(m.insertReadingFromProto.mock.calls[0][1]).toEqual(expect.any(Map));
-    expect(m.idbRequest).toHaveBeenCalledTimes(2);
+    expect(readingLibMocks.upsertLocalReadingRow).toHaveBeenCalledTimes(2);
     expect(result.importedReadings).toBe(2);
   });
 });

@@ -35,6 +35,8 @@ const corrMocks = vi.hoisted(() => ({
 const readingMocks = vi.hoisted(() => ({
   ensureDefaultReadingGroup: vi.fn(),
   putReadingGroup: vi.fn(),
+  listAllLocalReadingRowsWithState: vi.fn(),
+  upsertLocalReadingRow: vi.fn(),
 }));
 
 vi.mock('../../lib/logError.js', () => ({ logError: m.logError }));
@@ -64,6 +66,9 @@ vi.mock('../../lib/localCorrespondences.js', () => ({
 vi.mock('../../lib/localReadings.js', () => ({
   ensureDefaultReadingGroup: readingMocks.ensureDefaultReadingGroup,
   putReadingGroup: readingMocks.putReadingGroup,
+  invalidateReadingListCache: vi.fn(),
+  listAllLocalReadingRowsWithState: readingMocks.listAllLocalReadingRowsWithState,
+  upsertLocalReadingRow: readingMocks.upsertLocalReadingRow,
 }));
 
 vi.mock('../../lib/proto/backupCodec.js', () => ({
@@ -161,6 +166,8 @@ describe('localBackup.ts', () => {
     readingMocks.ensureDefaultReadingGroup.mockResolvedValue(undefined);
     corrMocks.putCorrespondenceGroup.mockResolvedValue(undefined);
     readingMocks.putReadingGroup.mockResolvedValue(undefined);
+    readingMocks.listAllLocalReadingRowsWithState.mockResolvedValue([]);
+    readingMocks.upsertLocalReadingRow.mockResolvedValue(undefined);
     corrMocks.putCorrespondence.mockResolvedValue(undefined);
     m.materializeCorrespondenceRowFromProto.mockResolvedValue(null);
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -182,15 +189,15 @@ describe('localBackup.ts', () => {
 
   it('exportLocalBackup reads stores, encodes, and triggers download', async () => {
     const dom = stubDomDownload();
+    readingMocks.listAllLocalReadingRowsWithState.mockResolvedValue([reading]);
     let step = 0;
     m.idbRequest.mockImplementation(() => {
       step += 1;
       if (step === 1) return Promise.resolve([deck]);
       if (step === 2) return Promise.resolve([card]);
-      if (step === 3) return Promise.resolve([reading]);
+      if (step === 3) return Promise.resolve([]);
       if (step === 4) return Promise.resolve([]);
       if (step === 5) return Promise.resolve([]);
-      if (step === 6) return Promise.resolve([]);
       return Promise.reject(new Error(`unexpected idb step ${step}`));
     });
     m.encodeCktarotBackup.mockResolvedValue(new Uint8Array([7, 8]));
@@ -218,8 +225,8 @@ describe('localBackup.ts', () => {
 
   it('exportLocalBackup works without onProgress', async () => {
     stubDomDownload();
+    readingMocks.listAllLocalReadingRowsWithState.mockResolvedValue([]);
     m.idbRequest
-      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -392,23 +399,17 @@ describe('localBackup.ts', () => {
     expect(r.errors.some((e) => e.includes('reading state must be protobuf bytes'))).toBe(true);
   });
 
-  it('importLocalBackup restores readings via IndexedDB put', async () => {
+  it('importLocalBackup restores readings via upsertLocalReadingRow', async () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: {}, errors: [] });
     m.backupToDecks.mockReturnValue([]);
     m.backupToReadingGroups.mockReturnValue([]);
     m.backupToReadings.mockReturnValue([reading]);
     m.materializeCardRowFromProto.mockResolvedValue(null);
 
-    let step = 0;
-    m.idbRequest.mockImplementation(() => {
-      step += 1;
-      return Promise.resolve(undefined);
-    });
-
     const r = await importLocalBackup(new ArrayBuffer(0));
     expect(r.errors).toEqual([]);
-    expect(step).toBe(1);
-    expect(m.idbRequest).toHaveBeenCalledTimes(1);
+    expect(readingMocks.upsertLocalReadingRow).toHaveBeenCalledTimes(1);
+    expect(readingMocks.upsertLocalReadingRow).toHaveBeenCalledWith(reading);
   });
 
   it('importLocalBackup records reading import failures', async () => {
@@ -417,7 +418,7 @@ describe('localBackup.ts', () => {
     m.backupToReadingGroups.mockReturnValue([]);
     m.backupToReadings.mockReturnValue([reading]);
     m.materializeCardRowFromProto.mockResolvedValue(null);
-    m.idbRequest.mockRejectedValue(new Error('put fail'));
+    readingMocks.upsertLocalReadingRow.mockRejectedValue(new Error('put fail'));
 
     const r = await importLocalBackup(new ArrayBuffer(0));
     expect(r.errors).toEqual(['readings import id=r1: put fail']);

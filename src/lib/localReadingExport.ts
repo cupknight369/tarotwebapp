@@ -2,8 +2,14 @@ import { logError } from './logError.js';
 import type { LocalReadingGroupRow, LocalReadingRow } from '../types/localDb.js';
 import { DEFAULT_READING_GROUP_ID } from '../types/localDb.js';
 import type { BackupProgress } from '../types/settings.js';
-import { openTarotDb, STORE_READING_GROUPS, STORE_READINGS, idbRequest } from './indexedDb.js';
-import { createReadingGroup, ensureDefaultReadingGroup } from './localReadings.js';
+import { openTarotDb, STORE_READING_GROUPS, idbRequest } from './indexedDb.js';
+import {
+  createReadingGroup,
+  ensureDefaultReadingGroup,
+  invalidateReadingListCache,
+  listAllLocalReadingRowsWithState,
+  upsertLocalReadingRow,
+} from './localReadings.js';
 import {
   decodeReadingExport,
   encodeReadingExport,
@@ -69,8 +75,8 @@ export async function exportReadings(
   step += 1;
 
   try {
-    const tx = db.transaction([STORE_READINGS, STORE_READING_GROUPS], 'readonly');
-    allReadings = (await idbRequest(tx.objectStore(STORE_READINGS).getAll())) as LocalReadingRow[];
+    allReadings = await listAllLocalReadingRowsWithState();
+    const tx = db.transaction([STORE_READING_GROUPS], 'readonly');
     allGroups = (await idbRequest(
       tx.objectStore(STORE_READING_GROUPS).getAll(),
     )) as LocalReadingGroupRow[];
@@ -190,9 +196,7 @@ export async function importReadings(
     try {
       const row = insertReadingFromProto(proto, groupIdMap, errors);
       if (!row) continue;
-      const db = await openTarotDb();
-      const tx = db.transaction(STORE_READINGS, 'readwrite');
-      await idbRequest(tx.objectStore(STORE_READINGS).put(row));
+      await upsertLocalReadingRow(row);
       importedReadings += 1;
     } catch (e) {
       pushError(errors, `readings import name=${proto.name ?? ''}`, e);
@@ -203,5 +207,6 @@ export async function importReadings(
   }
 
   report('Done', total, total);
+  invalidateReadingListCache();
   return { errors, importedReadings };
 }

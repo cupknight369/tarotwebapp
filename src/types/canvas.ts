@@ -54,6 +54,7 @@ export type MergedThis = {
   loadModalRenamingGroupId: string | null;
   loadModalRenameGroupTitle: string;
   loadModalGroupError: string | null;
+  loadModalReadingsPending: boolean;
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
   _readingSaveFlashTimer: ReturnType<typeof setTimeout> | null;

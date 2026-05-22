@@ -7,13 +7,23 @@ export interface LocalReadingGroupRow {
   title: string;
 }
 
-/** Local saved reading row in IndexedDB `readings` store (`state` is protobuf bytes). */
-export interface LocalReadingRow {
+/** Metadata in IndexedDB `readings` store (title, group, timestamps — no canvas state). */
+export interface LocalReadingMetaRow {
   id: string;
   name: string;
-  state: Uint8Array;
   updated_at: string;
   group_id: string;
+}
+
+/** Protobuf canvas state in IndexedDB `readingStates` store. */
+export interface LocalReadingStateRow {
+  id: string;
+  state: Uint8Array;
+}
+
+/** Full reading row for save/load, export, and backup codecs. */
+export interface LocalReadingRow extends LocalReadingMetaRow {
+  state: Uint8Array;
 }
 
 /** Local custom deck in IndexedDB `decks` store. */

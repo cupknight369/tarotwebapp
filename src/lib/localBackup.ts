@@ -25,7 +25,13 @@ import {
   putCorrespondence,
   putCorrespondenceGroup,
 } from './localCorrespondences.js';
-import { ensureDefaultReadingGroup, putReadingGroup } from './localReadings.js';
+import {
+  ensureDefaultReadingGroup,
+  invalidateReadingListCache,
+  listAllLocalReadingRowsWithState,
+  putReadingGroup,
+  upsertLocalReadingRow,
+} from './localReadings.js';
 import {
   backupToDecks,
   backupToReadingGroups,
@@ -99,7 +105,6 @@ export async function exportLocalBackup(
     );
     decks = (await idbRequest(tx.objectStore(STORE_DECKS).getAll())) as LocalDeckRow[];
     cards = (await idbRequest(tx.objectStore(STORE_CARDS).getAll())) as LocalCardRow[];
-    readings = (await idbRequest(tx.objectStore(STORE_READINGS).getAll())) as LocalReadingRow[];
     readingGroups = (await idbRequest(
       tx.objectStore(STORE_READING_GROUPS).getAll(),
     )) as LocalReadingGroupRow[];
@@ -111,6 +116,13 @@ export async function exportLocalBackup(
     )) as LocalCorrespondenceRow[];
   } catch (e) {
     pushError(errors, 'Failed to read IndexedDB', e);
+    return { errors };
+  }
+
+  try {
+    readings = await listAllLocalReadingRowsWithState();
+  } catch (e) {
+    pushError(errors, 'Failed to read saved readings', e);
     return { errors };
   }
 
@@ -149,12 +161,6 @@ export async function exportLocalBackup(
   }
 
   return { errors };
-}
-
-async function putLocalReadingRow(row: LocalReadingRow): Promise<void> {
-  const db = await openTarotDb();
-  const tx = db.transaction(STORE_READINGS, 'readwrite');
-  await idbRequest(tx.objectStore(STORE_READINGS).put(row));
 }
 
 export async function importLocalBackup(
@@ -296,7 +302,7 @@ export async function importLocalBackup(
         throw new Error('reading state must be protobuf bytes');
       }
       const gid = validReadingGroupIds.has(row.group_id) ? row.group_id : DEFAULT_READING_GROUP_ID;
-      await putLocalReadingRow({ ...row, group_id: gid });
+      await upsertLocalReadingRow({ ...row, group_id: gid });
     } catch (e) {
       pushError(errors, `readings import id=${row.id}`, e);
     }
@@ -305,5 +311,6 @@ export async function importLocalBackup(
     await yieldToUi();
   }
 
+  invalidateReadingListCache();
   return { errors };
 }

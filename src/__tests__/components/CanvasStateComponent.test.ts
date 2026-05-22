@@ -150,6 +150,7 @@ type StateCtx = {
   loadModalEditingReadingId: string | null;
   loadModalEditingTitle: string;
   loadModalSearchQuery: string;
+  loadModalReadingsPending: boolean;
   localSavedReadings: { id: string; name: string; updated_at: string }[];
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
@@ -1211,8 +1212,11 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       loadModalEditingTitle: 'draft',
       loadModalSearchQuery: 'stale filter',
     });
-    await ctx.openLoadModal.call(ctx);
+    const openPromise = ctx.openLoadModal.call(ctx);
     expect(ctx.loadModalOpen).toBe(true);
+    expect(ctx.loadModalReadingsPending).toBe(true);
+    await openPromise;
+    expect(ctx.loadModalReadingsPending).toBe(false);
     expect(ctx.localSavedReadings).toHaveLength(1);
     expect(ctx.loadModalEditingReadingId).toBeNull();
     expect(ctx.loadModalEditingTitle).toBe('');

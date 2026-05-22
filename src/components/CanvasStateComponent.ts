@@ -72,6 +72,7 @@ Alpine.data('stateComponent', () => ({
   loadModalRenamingGroupId: null as string | null,
   loadModalRenameGroupTitle: '',
   loadModalGroupError: null as string | null,
+  loadModalReadingsPending: false,
   saveAndLoadTargetId: null as string | null,
   readingSaveFlashVisible: false,
   _readingSaveFlashTimer: null as ReturnType<typeof setTimeout> | null,
@@ -393,10 +394,12 @@ Alpine.data('stateComponent', () => ({
   },
 
   async refreshLoadModalReadings(this: MergedThis): Promise<void> {
+    this.loadModalReadingsPending = true;
     try {
-      this.loadModalGroupedSections = await localReadingsLib.listReadingsGrouped();
-      this.loadModalReadingGroups = await localReadingsLib.listReadingGroups();
-      this.localSavedReadings = this.loadModalGroupedSections.flatMap((s) => s.items);
+      const sections = await localReadingsLib.listReadingsGrouped();
+      this.loadModalGroupedSections = sections;
+      this.loadModalReadingGroups = sections.map((section) => section.group);
+      this.localSavedReadings = sections.flatMap((s) => s.items);
       this.loadModalGroupError = null;
     } catch (e) {
       logError('stateComponent.refreshLoadModalReadings', e);
@@ -410,6 +413,8 @@ Alpine.data('stateComponent', () => ({
       ];
       this.loadModalReadingGroups = [{ id: DEFAULT_READING_GROUP_ID, title: 'Default' }];
       this.localSavedReadings = fallback;
+    } finally {
+      this.loadModalReadingsPending = false;
     }
   },
 
