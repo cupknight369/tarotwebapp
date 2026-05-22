@@ -19,7 +19,7 @@ export const BACKUP_VERSION = 1 as const;
 export const CORRESPONDENCE_EXPORT_VERSION = 1 as const;
 
 /** Protobuf `CktarotReadingExport.version` field — must match reading export files. */
-export const READING_EXPORT_VERSION = 1 as const;
+export const READING_EXPORT_VERSION = 2 as const;
 
 /** Protobuf `CktarotDeckExport.version` field — must match deck export files. */
 export const DECK_EXPORT_VERSION = 1 as const;

@@ -3,9 +3,10 @@ import type {
   LocalCorrespondenceGroupRow,
   LocalCorrespondenceRow,
   LocalDeckRow,
+  LocalReadingGroupRow,
   LocalReadingRow,
 } from '../../types/localDb.js';
-import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../../types/localDb.js';
+import { DEFAULT_CORRESPONDENCE_GROUP_ID, DEFAULT_READING_GROUP_ID } from '../../types/localDb.js';
 import { BACKUP_VERSION } from '../../types/settings.js';
 import { cktarot } from '../../proto/generated/bundle.js';
 import { getCardImageRow, putLocalCardImageRow } from '../localDecks.js';
@@ -221,22 +222,39 @@ export async function materializeCorrespondenceRowFromProto(
   }
 }
 
+export function readingGroupToProto(g: LocalReadingGroupRow): cktarot.ReadingGroupRow {
+  const row = new cktarot.ReadingGroupRow();
+  row.id = g.id;
+  row.title = g.title;
+  return row;
+}
+
+export function readingGroupRowFromProto(g: cktarot.ReadingGroupRow): LocalReadingGroupRow {
+  return {
+    id: g.id,
+    title: (g.title ?? '').trim() || 'Untitled',
+  };
+}
+
 export function readingRowToProto(r: LocalReadingRow): cktarot.ReadingRow {
   const row = new cktarot.ReadingRow();
   row.id = r.id;
   row.name = r.name;
   row.state = r.state instanceof Uint8Array ? r.state : new Uint8Array(r.state);
   row.updatedAt = r.updated_at;
+  row.groupId = r.group_id ?? DEFAULT_READING_GROUP_ID;
   return row;
 }
 
 export function readingRowFromProto(r: cktarot.ReadingRow): LocalReadingRow {
   const bytes = r.state instanceof Uint8Array ? r.state : new Uint8Array(r.state);
+  const gid = r.groupId?.trim() ? r.groupId.trim() : DEFAULT_READING_GROUP_ID;
   return {
     id: r.id,
     name: r.name,
     state: bytes,
     updated_at: r.updatedAt,
+    group_id: gid,
   };
 }
 
@@ -244,6 +262,7 @@ export async function encodeCktarotBackup(payload: {
   decks: LocalDeckRow[];
   cards: LocalCardRow[];
   readings: LocalReadingRow[];
+  readingGroups: LocalReadingGroupRow[];
   correspondenceGroups: LocalCorrespondenceGroupRow[];
   correspondences: LocalCorrespondenceRow[];
   exportedAt?: string;
@@ -254,6 +273,7 @@ export async function encodeCktarotBackup(payload: {
   msg.decks = payload.decks.map(deckRowToProto);
   msg.cards = await Promise.all(payload.cards.map(cardRowToProto));
   msg.readings = payload.readings.map(readingRowToProto);
+  msg.readingGroups = payload.readingGroups.map(readingGroupToProto);
   msg.correspondenceGroups = payload.correspondenceGroups.map(correspondenceGroupToProto);
   msg.correspondences = await Promise.all(payload.correspondences.map(correspondenceRowToProto));
   return new Uint8Array(cktarot.CktarotBackup.encode(msg).finish());
@@ -277,4 +297,10 @@ export function backupToDecks(backup: cktarot.CktarotBackup): LocalDeckRow[] {
 
 export function backupToReadings(backup: cktarot.CktarotBackup): LocalReadingRow[] {
   return (backup.readings ?? []).map((r) => readingRowFromProto(r as cktarot.ReadingRow));
+}
+
+export function backupToReadingGroups(backup: cktarot.CktarotBackup): LocalReadingGroupRow[] {
+  return (backup.readingGroups ?? []).map((g) =>
+    readingGroupRowFromProto(g as cktarot.ReadingGroupRow),
+  );
 }

@@ -6,6 +6,7 @@ import type {
   LocalDeckRow,
   LocalReadingRow,
 } from '../../../types/localDb.js';
+import { DEFAULT_READING_GROUP_ID } from '../../../types/localDb.js';
 import { BACKUP_VERSION } from '../../../types/settings.js';
 import { cktarot } from '../../../proto/generated/bundle.js';
 
@@ -20,6 +21,7 @@ vi.mock('../../../lib/localDecks.js', () => ({
 import {
   backupToDecks,
   backupToReadings,
+  backupToReadingGroups,
   decodeCktarotBackup,
   encodeCktarotBackup,
   materializeCardRowFromProto,
@@ -69,6 +71,7 @@ describe('backupCodec.ts', () => {
         decks,
         cards: [],
         readings: [],
+        readingGroups: [],
         correspondenceGroups: [],
         correspondences: [],
       });
@@ -87,6 +90,7 @@ describe('backupCodec.ts', () => {
         decks: [],
         cards: [],
         readings: [],
+        readingGroups: [],
         exportedAt: '2026-01-01T00:00:00.000Z',
         correspondenceGroups: [],
         correspondences: [],
@@ -100,6 +104,7 @@ describe('backupCodec.ts', () => {
         decks: [],
         cards: [],
         readings: [],
+        readingGroups: [],
         correspondenceGroups: [],
         correspondences: [],
       });
@@ -157,6 +162,7 @@ describe('backupCodec.ts', () => {
         decks: [],
         cards,
         readings: [],
+        readingGroups: [],
         correspondenceGroups: [],
         correspondences: [],
       });
@@ -189,6 +195,7 @@ describe('backupCodec.ts', () => {
         decks: [],
         cards,
         readings: [],
+        readingGroups: [],
         correspondenceGroups: [],
         correspondences: [],
       });
@@ -219,6 +226,7 @@ describe('backupCodec.ts', () => {
         decks: [],
         cards,
         readings: [],
+        readingGroups: [],
         correspondenceGroups: [],
         correspondences: [],
       });
@@ -256,6 +264,7 @@ describe('backupCodec.ts', () => {
         decks: [],
         cards,
         readings: [],
+        readingGroups: [],
         correspondenceGroups: [],
         correspondences: [],
       });
@@ -323,6 +332,7 @@ describe('backupCodec.ts', () => {
         name: 'A',
         state: new Uint8Array([10, 11]),
         updated_at: 'u1',
+        group_id: DEFAULT_READING_GROUP_ID,
       };
       const r2 = {
         id: 'r2',
@@ -335,6 +345,7 @@ describe('backupCodec.ts', () => {
         decks: [],
         cards: [],
         readings: [r1, r2],
+        readingGroups: [{ id: DEFAULT_READING_GROUP_ID, title: 'Default' }],
         correspondenceGroups: [],
         correspondences: [],
       });
@@ -347,6 +358,10 @@ describe('backupCodec.ts', () => {
       if (!(st0 instanceof Uint8Array)) throw new Error('expected Uint8Array');
       expect([...st0]).toEqual([10, 11]);
       expect(readings[1]?.state).toBeInstanceOf(Uint8Array);
+      expect(readings[0]?.group_id).toBe(DEFAULT_READING_GROUP_ID);
+      const groups = backupToReadingGroups(backup);
+      expect(groups).toHaveLength(1);
+      expect(groups[0]?.title).toBe('Default');
     });
   });
 

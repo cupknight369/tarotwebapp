@@ -3340,6 +3340,235 @@ export const cktarot = $root.cktarot = (() => {
         return CorrespondenceRow;
     })();
 
+    cktarot.ReadingGroupRow = (function() {
+
+        /**
+         * Properties of a ReadingGroupRow.
+         * @memberof cktarot
+         * @interface IReadingGroupRow
+         * @property {string|null} [id] ReadingGroupRow id
+         * @property {string|null} [title] ReadingGroupRow title
+         */
+
+        /**
+         * Constructs a new ReadingGroupRow.
+         * @memberof cktarot
+         * @classdesc Represents a ReadingGroupRow.
+         * @implements IReadingGroupRow
+         * @constructor
+         * @param {cktarot.IReadingGroupRow=} [properties] Properties to set
+         */
+        function ReadingGroupRow(properties) {
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * ReadingGroupRow id.
+         * @member {string} id
+         * @memberof cktarot.ReadingGroupRow
+         * @instance
+         */
+        ReadingGroupRow.prototype.id = "";
+
+        /**
+         * ReadingGroupRow title.
+         * @member {string} title
+         * @memberof cktarot.ReadingGroupRow
+         * @instance
+         */
+        ReadingGroupRow.prototype.title = "";
+
+        /**
+         * Creates a new ReadingGroupRow instance using the specified properties.
+         * @function create
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {cktarot.IReadingGroupRow=} [properties] Properties to set
+         * @returns {cktarot.ReadingGroupRow} ReadingGroupRow instance
+         */
+        ReadingGroupRow.create = function create(properties) {
+            return new ReadingGroupRow(properties);
+        };
+
+        /**
+         * Encodes the specified ReadingGroupRow message. Does not implicitly {@link cktarot.ReadingGroupRow.verify|verify} messages.
+         * @function encode
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {cktarot.IReadingGroupRow} message ReadingGroupRow message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        ReadingGroupRow.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
+                writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
+            if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+                writer.uint32(/* id 2, wireType 2 =*/18).string(message.title);
+            return writer;
+        };
+
+        /**
+         * Encodes the specified ReadingGroupRow message, length delimited. Does not implicitly {@link cktarot.ReadingGroupRow.verify|verify} messages.
+         * @function encodeDelimited
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {cktarot.IReadingGroupRow} message ReadingGroupRow message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        ReadingGroupRow.encodeDelimited = function encodeDelimited(message, writer) {
+            return this.encode(message, writer).ldelim();
+        };
+
+        /**
+         * Decodes a ReadingGroupRow message from the specified reader or buffer.
+         * @function decode
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {cktarot.ReadingGroupRow} ReadingGroupRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        ReadingGroupRow.decode = function decode(reader, length, error) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.cktarot.ReadingGroupRow();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                if (tag === error)
+                    break;
+                switch (tag >>> 3) {
+                case 1: {
+                        message.id = reader.string();
+                        break;
+                    }
+                case 2: {
+                        message.title = reader.string();
+                        break;
+                    }
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Decodes a ReadingGroupRow message from the specified reader or buffer, length delimited.
+         * @function decodeDelimited
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @returns {cktarot.ReadingGroupRow} ReadingGroupRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        ReadingGroupRow.decodeDelimited = function decodeDelimited(reader) {
+            if (!(reader instanceof $Reader))
+                reader = new $Reader(reader);
+            return this.decode(reader, reader.uint32());
+        };
+
+        /**
+         * Verifies a ReadingGroupRow message.
+         * @function verify
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {Object.<string,*>} message Plain object to verify
+         * @returns {string|null} `null` if valid, otherwise the reason why it is not
+         */
+        ReadingGroupRow.verify = function verify(message) {
+            if (typeof message !== "object" || message === null)
+                return "object expected";
+            if (message.id != null && message.hasOwnProperty("id"))
+                if (!$util.isString(message.id))
+                    return "id: string expected";
+            if (message.title != null && message.hasOwnProperty("title"))
+                if (!$util.isString(message.title))
+                    return "title: string expected";
+            return null;
+        };
+
+        /**
+         * Creates a ReadingGroupRow message from a plain object. Also converts values to their respective internal types.
+         * @function fromObject
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {Object.<string,*>} object Plain object
+         * @returns {cktarot.ReadingGroupRow} ReadingGroupRow
+         */
+        ReadingGroupRow.fromObject = function fromObject(object) {
+            if (object instanceof $root.cktarot.ReadingGroupRow)
+                return object;
+            let message = new $root.cktarot.ReadingGroupRow();
+            if (object.id != null)
+                message.id = String(object.id);
+            if (object.title != null)
+                message.title = String(object.title);
+            return message;
+        };
+
+        /**
+         * Creates a plain object from a ReadingGroupRow message. Also converts values to other types if specified.
+         * @function toObject
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {cktarot.ReadingGroupRow} message ReadingGroupRow
+         * @param {$protobuf.IConversionOptions} [options] Conversion options
+         * @returns {Object.<string,*>} Plain object
+         */
+        ReadingGroupRow.toObject = function toObject(message, options) {
+            if (!options)
+                options = {};
+            let object = {};
+            if (options.defaults) {
+                object.id = "";
+                object.title = "";
+            }
+            if (message.id != null && message.hasOwnProperty("id"))
+                object.id = message.id;
+            if (message.title != null && message.hasOwnProperty("title"))
+                object.title = message.title;
+            return object;
+        };
+
+        /**
+         * Converts this ReadingGroupRow to JSON.
+         * @function toJSON
+         * @memberof cktarot.ReadingGroupRow
+         * @instance
+         * @returns {Object.<string,*>} JSON object
+         */
+        ReadingGroupRow.prototype.toJSON = function toJSON() {
+            return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+        };
+
+        /**
+         * Gets the default type url for ReadingGroupRow
+         * @function getTypeUrl
+         * @memberof cktarot.ReadingGroupRow
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        ReadingGroupRow.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/cktarot.ReadingGroupRow";
+        };
+
+        return ReadingGroupRow;
+    })();
+
     cktarot.ReadingRow = (function() {
 
         /**
@@ -3350,6 +3579,7 @@ export const cktarot = $root.cktarot = (() => {
          * @property {string|null} [name] ReadingRow name
          * @property {Uint8Array|null} [state] ReadingRow state
          * @property {string|null} [updatedAt] ReadingRow updatedAt
+         * @property {string|null} [groupId] ReadingRow groupId
          */
 
         /**
@@ -3400,6 +3630,14 @@ export const cktarot = $root.cktarot = (() => {
         ReadingRow.prototype.updatedAt = "";
 
         /**
+         * ReadingRow groupId.
+         * @member {string} groupId
+         * @memberof cktarot.ReadingRow
+         * @instance
+         */
+        ReadingRow.prototype.groupId = "";
+
+        /**
          * Creates a new ReadingRow instance using the specified properties.
          * @function create
          * @memberof cktarot.ReadingRow
@@ -3431,6 +3669,8 @@ export const cktarot = $root.cktarot = (() => {
                 writer.uint32(/* id 3, wireType 2 =*/26).bytes(message.state);
             if (message.updatedAt != null && Object.hasOwnProperty.call(message, "updatedAt"))
                 writer.uint32(/* id 4, wireType 2 =*/34).string(message.updatedAt);
+            if (message.groupId != null && Object.hasOwnProperty.call(message, "groupId"))
+                writer.uint32(/* id 5, wireType 2 =*/42).string(message.groupId);
             return writer;
         };
 
@@ -3483,6 +3723,10 @@ export const cktarot = $root.cktarot = (() => {
                         message.updatedAt = reader.string();
                         break;
                     }
+                case 5: {
+                        message.groupId = reader.string();
+                        break;
+                    }
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -3530,6 +3774,9 @@ export const cktarot = $root.cktarot = (() => {
             if (message.updatedAt != null && message.hasOwnProperty("updatedAt"))
                 if (!$util.isString(message.updatedAt))
                     return "updatedAt: string expected";
+            if (message.groupId != null && message.hasOwnProperty("groupId"))
+                if (!$util.isString(message.groupId))
+                    return "groupId: string expected";
             return null;
         };
 
@@ -3556,6 +3803,8 @@ export const cktarot = $root.cktarot = (() => {
                     message.state = object.state;
             if (object.updatedAt != null)
                 message.updatedAt = String(object.updatedAt);
+            if (object.groupId != null)
+                message.groupId = String(object.groupId);
             return message;
         };
 
@@ -3583,6 +3832,7 @@ export const cktarot = $root.cktarot = (() => {
                         object.state = $util.newBuffer(object.state);
                 }
                 object.updatedAt = "";
+                object.groupId = "";
             }
             if (message.id != null && message.hasOwnProperty("id"))
                 object.id = message.id;
@@ -3592,6 +3842,8 @@ export const cktarot = $root.cktarot = (() => {
                 object.state = options.bytes === String ? $util.base64.encode(message.state, 0, message.state.length) : options.bytes === Array ? Array.prototype.slice.call(message.state) : message.state;
             if (message.updatedAt != null && message.hasOwnProperty("updatedAt"))
                 object.updatedAt = message.updatedAt;
+            if (message.groupId != null && message.hasOwnProperty("groupId"))
+                object.groupId = message.groupId;
             return object;
         };
 
@@ -3637,6 +3889,7 @@ export const cktarot = $root.cktarot = (() => {
          * @property {Array.<cktarot.IReadingRow>|null} [readings] CktarotBackup readings
          * @property {Array.<cktarot.ICorrespondenceGroupRow>|null} [correspondenceGroups] CktarotBackup correspondenceGroups
          * @property {Array.<cktarot.ICorrespondenceRow>|null} [correspondences] CktarotBackup correspondences
+         * @property {Array.<cktarot.IReadingGroupRow>|null} [readingGroups] CktarotBackup readingGroups
          */
 
         /**
@@ -3653,6 +3906,7 @@ export const cktarot = $root.cktarot = (() => {
             this.readings = [];
             this.correspondenceGroups = [];
             this.correspondences = [];
+            this.readingGroups = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -3715,6 +3969,14 @@ export const cktarot = $root.cktarot = (() => {
          */
         CktarotBackup.prototype.correspondences = $util.emptyArray;
 
+        /**
+         * CktarotBackup readingGroups.
+         * @member {Array.<cktarot.IReadingGroupRow>} readingGroups
+         * @memberof cktarot.CktarotBackup
+         * @instance
+         */
+        CktarotBackup.prototype.readingGroups = $util.emptyArray;
+
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
 
@@ -3767,6 +4029,9 @@ export const cktarot = $root.cktarot = (() => {
             if (message.correspondences != null && message.correspondences.length)
                 for (let i = 0; i < message.correspondences.length; ++i)
                     $root.cktarot.CorrespondenceRow.encode(message.correspondences[i], writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
+            if (message.readingGroups != null && message.readingGroups.length)
+                for (let i = 0; i < message.readingGroups.length; ++i)
+                    $root.cktarot.ReadingGroupRow.encode(message.readingGroups[i], writer.uint32(/* id 8, wireType 2 =*/66).fork()).ldelim();
             return writer;
         };
 
@@ -3839,6 +4104,12 @@ export const cktarot = $root.cktarot = (() => {
                         if (!(message.correspondences && message.correspondences.length))
                             message.correspondences = [];
                         message.correspondences.push($root.cktarot.CorrespondenceRow.decode(reader, reader.uint32()));
+                        break;
+                    }
+                case 8: {
+                        if (!(message.readingGroups && message.readingGroups.length))
+                            message.readingGroups = [];
+                        message.readingGroups.push($root.cktarot.ReadingGroupRow.decode(reader, reader.uint32()));
                         break;
                     }
                 default:
@@ -3930,6 +4201,15 @@ export const cktarot = $root.cktarot = (() => {
                         return "correspondences." + error;
                 }
             }
+            if (message.readingGroups != null && message.hasOwnProperty("readingGroups")) {
+                if (!Array.isArray(message.readingGroups))
+                    return "readingGroups: array expected";
+                for (let i = 0; i < message.readingGroups.length; ++i) {
+                    let error = $root.cktarot.ReadingGroupRow.verify(message.readingGroups[i]);
+                    if (error)
+                        return "readingGroups." + error;
+                }
+            }
             return null;
         };
 
@@ -3999,6 +4279,16 @@ export const cktarot = $root.cktarot = (() => {
                     message.correspondences[i] = $root.cktarot.CorrespondenceRow.fromObject(object.correspondences[i]);
                 }
             }
+            if (object.readingGroups) {
+                if (!Array.isArray(object.readingGroups))
+                    throw TypeError(".cktarot.CktarotBackup.readingGroups: array expected");
+                message.readingGroups = [];
+                for (let i = 0; i < object.readingGroups.length; ++i) {
+                    if (typeof object.readingGroups[i] !== "object")
+                        throw TypeError(".cktarot.CktarotBackup.readingGroups: object expected");
+                    message.readingGroups[i] = $root.cktarot.ReadingGroupRow.fromObject(object.readingGroups[i]);
+                }
+            }
             return message;
         };
 
@@ -4021,6 +4311,7 @@ export const cktarot = $root.cktarot = (() => {
                 object.readings = [];
                 object.correspondenceGroups = [];
                 object.correspondences = [];
+                object.readingGroups = [];
             }
             if (options.defaults)
                 object.version = 0;
@@ -4055,6 +4346,11 @@ export const cktarot = $root.cktarot = (() => {
                 object.correspondences = [];
                 for (let j = 0; j < message.correspondences.length; ++j)
                     object.correspondences[j] = $root.cktarot.CorrespondenceRow.toObject(message.correspondences[j], options);
+            }
+            if (message.readingGroups && message.readingGroups.length) {
+                object.readingGroups = [];
+                for (let j = 0; j < message.readingGroups.length; ++j)
+                    object.readingGroups[j] = $root.cktarot.ReadingGroupRow.toObject(message.readingGroups[j], options);
             }
             return object;
         };
@@ -4429,6 +4725,7 @@ export const cktarot = $root.cktarot = (() => {
          * @property {number|null} [version] CktarotReadingExport version
          * @property {string|null} [exportedAt] CktarotReadingExport exportedAt
          * @property {Array.<cktarot.IReadingRow>|null} [readings] CktarotReadingExport readings
+         * @property {Array.<cktarot.IReadingGroupRow>|null} [groups] CktarotReadingExport groups
          */
 
         /**
@@ -4441,6 +4738,7 @@ export const cktarot = $root.cktarot = (() => {
          */
         function CktarotReadingExport(properties) {
             this.readings = [];
+            this.groups = [];
             if (properties)
                 for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                     if (properties[keys[i]] != null)
@@ -4470,6 +4768,14 @@ export const cktarot = $root.cktarot = (() => {
          * @instance
          */
         CktarotReadingExport.prototype.readings = $util.emptyArray;
+
+        /**
+         * CktarotReadingExport groups.
+         * @member {Array.<cktarot.IReadingGroupRow>} groups
+         * @memberof cktarot.CktarotReadingExport
+         * @instance
+         */
+        CktarotReadingExport.prototype.groups = $util.emptyArray;
 
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
@@ -4511,6 +4817,9 @@ export const cktarot = $root.cktarot = (() => {
             if (message.readings != null && message.readings.length)
                 for (let i = 0; i < message.readings.length; ++i)
                     $root.cktarot.ReadingRow.encode(message.readings[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+            if (message.groups != null && message.groups.length)
+                for (let i = 0; i < message.groups.length; ++i)
+                    $root.cktarot.ReadingGroupRow.encode(message.groups[i], writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
             return writer;
         };
 
@@ -4559,6 +4868,12 @@ export const cktarot = $root.cktarot = (() => {
                         if (!(message.readings && message.readings.length))
                             message.readings = [];
                         message.readings.push($root.cktarot.ReadingRow.decode(reader, reader.uint32()));
+                        break;
+                    }
+                case 4: {
+                        if (!(message.groups && message.groups.length))
+                            message.groups = [];
+                        message.groups.push($root.cktarot.ReadingGroupRow.decode(reader, reader.uint32()));
                         break;
                     }
                 default:
@@ -4614,6 +4929,15 @@ export const cktarot = $root.cktarot = (() => {
                         return "readings." + error;
                 }
             }
+            if (message.groups != null && message.hasOwnProperty("groups")) {
+                if (!Array.isArray(message.groups))
+                    return "groups: array expected";
+                for (let i = 0; i < message.groups.length; ++i) {
+                    let error = $root.cktarot.ReadingGroupRow.verify(message.groups[i]);
+                    if (error)
+                        return "groups." + error;
+                }
+            }
             return null;
         };
 
@@ -4643,6 +4967,16 @@ export const cktarot = $root.cktarot = (() => {
                     message.readings[i] = $root.cktarot.ReadingRow.fromObject(object.readings[i]);
                 }
             }
+            if (object.groups) {
+                if (!Array.isArray(object.groups))
+                    throw TypeError(".cktarot.CktarotReadingExport.groups: array expected");
+                message.groups = [];
+                for (let i = 0; i < object.groups.length; ++i) {
+                    if (typeof object.groups[i] !== "object")
+                        throw TypeError(".cktarot.CktarotReadingExport.groups: object expected");
+                    message.groups[i] = $root.cktarot.ReadingGroupRow.fromObject(object.groups[i]);
+                }
+            }
             return message;
         };
 
@@ -4659,8 +4993,10 @@ export const cktarot = $root.cktarot = (() => {
             if (!options)
                 options = {};
             let object = {};
-            if (options.arrays || options.defaults)
+            if (options.arrays || options.defaults) {
                 object.readings = [];
+                object.groups = [];
+            }
             if (options.defaults)
                 object.version = 0;
             if (message.version != null && message.hasOwnProperty("version"))
@@ -4674,6 +5010,11 @@ export const cktarot = $root.cktarot = (() => {
                 object.readings = [];
                 for (let j = 0; j < message.readings.length; ++j)
                     object.readings[j] = $root.cktarot.ReadingRow.toObject(message.readings[j], options);
+            }
+            if (message.groups && message.groups.length) {
+                object.groups = [];
+                for (let j = 0; j < message.groups.length; ++j)
+                    object.groups[j] = $root.cktarot.ReadingGroupRow.toObject(message.groups[j], options);
             }
             return object;
         };

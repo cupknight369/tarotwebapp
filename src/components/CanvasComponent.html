@@ -8,6 +8,7 @@
         @keydown.window.ctrl.n="handleDrawByNameShortcut($event)"
         @keydown.window.ctrl.t="handleAddTextShortcut($event)"
         @keydown.window.escape="handleEscapeShortcut($event)"
+        @readings-changed.window="loadModalOpen && refreshLoadModalReadings()"
         class="relative"
       >
         <div
@@ -911,7 +912,7 @@
           @click.outside="closeLoadModal()"
         >
           <div
-            class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col"
+            class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
           >
             <button
               type="button"
@@ -925,6 +926,35 @@
             <template x-if="!loadModalConfirmingForId">
               <div>
                 <p class="text-sm font-semibold text-gray-400 mb-2">This device</p>
+                <div class="shrink-0 mb-3 flex flex-wrap items-end gap-2">
+                  <div class="flex-1 min-w-[10rem]">
+                    <label for="load-modal-new-group" class="text-xs text-gray-400"
+                      >New group</label
+                    >
+                    <input
+                      id="load-modal-new-group"
+                      type="text"
+                      x-model="loadModalNewGroupTitle"
+                      placeholder="e.g. Client readings"
+                      autocomplete="off"
+                      class="mt-1 w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-gray-200 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      @keydown.enter.prevent="addLoadModalGroup()"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="shrink-0 px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 cursor-pointer"
+                    @click="addLoadModalGroup()"
+                  >
+                    Add group
+                  </button>
+                </div>
+                <p
+                  x-show="loadModalGroupError"
+                  x-cloak
+                  class="text-xs text-red-400 mb-2"
+                  x-text="loadModalGroupError"
+                ></p>
                 <div class="shrink-0 mb-3">
                   <input
                     id="load-modal-search"
@@ -935,75 +965,166 @@
                     class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-gray-200 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
-                <div class="overflow-y-auto max-h-[50vh] min-h-0 space-y-2 mb-4">
-                  <template x-for="r in filteredLoadModalReadings()" :key="r.id">
-                    <div
-                      class="flex items-center justify-between gap-2 py-2 px-3 rounded bg-gray-700/50 hover:bg-gray-700"
-                      @click.outside="loadModalEditingReadingId === r.id && cancelLoadModalTitleEdit()"
-                    >
-                      <div class="flex flex-1 min-w-0 items-center gap-1">
-                        <template x-if="loadModalEditingReadingId !== r.id">
-                          <div class="flex flex-1 min-w-0 items-center gap-1">
-                            <button
-                              type="button"
-                              class="flex-1 min-w-0 text-left text-gray-200 hover:text-white cursor-pointer"
-                              @click="onSelectReadingToLoad(r.id)"
-                            >
-                              <span x-text="r.name || 'Untitled Reading'"></span>
+                <div class="overflow-y-auto max-h-[50vh] min-h-0 space-y-3 mb-4">
+                  <template x-for="section in filteredLoadModalGroupedSections()" :key="section.group.id">
+                    <div class="rounded border border-gray-600 bg-gray-900/40">
+                      <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-700/80">
+                        <button
+                          type="button"
+                          class="shrink-0 text-gray-400 hover:text-white cursor-pointer w-5 text-center"
+                          :aria-expanded="!isLoadModalGroupCollapsed(section.group.id)"
+                          :aria-label="isLoadModalGroupCollapsed(section.group.id) ? 'Expand group' : 'Collapse group'"
+                          @click="toggleLoadModalGroupCollapsed(section.group.id)"
+                          x-text="isLoadModalGroupCollapsed(section.group.id) ? '›' : '‹'"
+                        ></button>
+                        <template x-if="loadModalRenamingGroupId !== section.group.id">
+                          <div class="flex flex-1 min-w-0 items-center justify-between gap-2">
+                            <span class="truncate text-sm font-medium text-gray-200">
+                              <span x-text="section.group.title"></span>
                               <span
-                                class="text-sm text-gray-400 ml-2"
-                                x-text="new Date(r.updated_at).toLocaleDateString()"
+                                class="text-xs font-normal text-gray-500 ml-1"
+                                x-text="'(' + section.items.length + ')'"
                               ></span>
-                            </button>
-                            <button
-                              type="button"
-                              class="shrink-0 px-2 py-1 rounded text-gray-400 hover:text-white hover:bg-gray-600 cursor-pointer"
-                              aria-label="Edit title"
-                              title="Edit title"
-                              @click.stop="startLoadModalTitleEdit(r)"
-                            >
-                              ✏
-                            </button>
+                            </span>
+                            <div class="flex shrink-0 gap-1">
+                              <button
+                                type="button"
+                                class="rounded bg-gray-700 px-2 py-0.5 text-xs text-gray-200 hover:bg-gray-600 cursor-pointer"
+                                @click="startRenameLoadModalGroup(section.group)"
+                              >
+                                Rename
+                              </button>
+                              <button
+                                type="button"
+                                class="rounded bg-gray-800 px-2 py-0.5 text-xs text-red-300 hover:bg-gray-700 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                                :disabled="section.group.id === '__cktarot_default_reading_group__'"
+                                @click="confirmDeleteLoadModalGroup(section.group)"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </div>
                         </template>
-                        <template x-if="loadModalEditingReadingId === r.id">
+                        <template x-if="loadModalRenamingGroupId === section.group.id">
                           <div class="flex flex-1 min-w-0 items-center gap-2">
                             <input
                               type="text"
-                              x-ref="loadModalTitleInput"
-                              x-model="loadModalEditingTitle"
-                              x-init="$nextTick(() => $el.focus())"
+                              x-model="loadModalRenameGroupTitle"
                               class="flex-1 min-w-0 px-2 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200 text-sm"
-                              @keydown.enter.prevent="commitLoadModalTitleEdit()"
-                              @keydown.escape.prevent="cancelLoadModalTitleEdit()"
+                              @keydown.enter.prevent="saveRenameLoadModalGroup()"
+                              @keydown.escape.prevent="cancelRenameLoadModalGroup()"
                             />
                             <button
                               type="button"
-                              class="shrink-0 px-2 py-1 rounded text-green-400 hover:bg-gray-600 cursor-pointer"
-                              aria-label="Save title"
-                              title="Save title"
-                              @click.stop="commitLoadModalTitleEdit()"
+                              class="shrink-0 px-2 py-0.5 rounded text-green-400 hover:bg-gray-600 cursor-pointer text-xs"
+                              @click="saveRenameLoadModalGroup()"
                             >
-                              ✓
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              class="shrink-0 px-2 py-0.5 rounded text-gray-400 hover:bg-gray-600 cursor-pointer text-xs"
+                              @click="cancelRenameLoadModalGroup()"
+                            >
+                              Cancel
                             </button>
                           </div>
                         </template>
                       </div>
-                      <button
-                        type="button"
-                        class="shrink-0 px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
-                        @click.stop="deleteReading(r.id)"
-                        title="Delete"
+                      <div
+                        x-show="!isLoadModalGroupCollapsed(section.group.id)"
+                        class="divide-y divide-gray-700/60"
                       >
-                        ×
-                      </button>
+                        <template x-for="r in section.items" :key="r.id">
+                          <div
+                            class="flex items-center justify-between gap-2 py-2 px-3 hover:bg-gray-700/40"
+                            @click.outside="loadModalEditingReadingId === r.id && cancelLoadModalTitleEdit()"
+                          >
+                            <div class="flex flex-1 min-w-0 items-center gap-2">
+                              <template x-if="loadModalEditingReadingId !== r.id">
+                                <div class="flex flex-1 min-w-0 items-center gap-2">
+                                  <button
+                                    type="button"
+                                    class="flex-1 min-w-0 text-left text-gray-200 hover:text-white cursor-pointer"
+                                    @click="onSelectReadingToLoad(r.id)"
+                                  >
+                                    <span x-text="r.name || 'Untitled Reading'"></span>
+                                    <span
+                                      class="text-sm text-gray-400 ml-2"
+                                      x-text="new Date(r.updated_at).toLocaleDateString()"
+                                    ></span>
+                                  </button>
+                                  <select
+                                    class="shrink-0 max-w-[7rem] rounded bg-gray-700 border border-gray-600 text-gray-200 text-xs px-1 py-1 cursor-pointer"
+                                    :value="r.group_id"
+                                    @change="assignReadingGroup(r.id, $event.target.value)"
+                                    @click.stop
+                                  >
+                                    <template
+                                      x-for="g in loadModalReadingGroups"
+                                      :key="g.id"
+                                    >
+                                      <option :value="g.id" x-text="g.title"></option>
+                                    </template>
+                                  </select>
+                                  <button
+                                    type="button"
+                                    class="shrink-0 px-2 py-1 rounded text-gray-400 hover:text-white hover:bg-gray-600 cursor-pointer"
+                                    aria-label="Edit title"
+                                    title="Edit title"
+                                    @click.stop="startLoadModalTitleEdit(r)"
+                                  >
+                                    ✏
+                                  </button>
+                                </div>
+                              </template>
+                              <template x-if="loadModalEditingReadingId === r.id">
+                                <div class="flex flex-1 min-w-0 items-center gap-2">
+                                  <input
+                                    type="text"
+                                    x-ref="loadModalTitleInput"
+                                    x-model="loadModalEditingTitle"
+                                    x-init="$nextTick(() => $el.focus())"
+                                    class="flex-1 min-w-0 px-2 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200 text-sm"
+                                    @keydown.enter.prevent="commitLoadModalTitleEdit()"
+                                    @keydown.escape.prevent="cancelLoadModalTitleEdit()"
+                                  />
+                                  <button
+                                    type="button"
+                                    class="shrink-0 px-2 py-1 rounded text-green-400 hover:bg-gray-600 cursor-pointer"
+                                    aria-label="Save title"
+                                    title="Save title"
+                                    @click.stop="commitLoadModalTitleEdit()"
+                                  >
+                                    ✓
+                                  </button>
+                                </div>
+                              </template>
+                            </div>
+                            <button
+                              type="button"
+                              class="shrink-0 px-2 py-1 rounded text-sm text-red-400 hover:bg-gray-600 cursor-pointer"
+                              @click.stop="deleteReading(r.id)"
+                              title="Delete"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </template>
+                        <p
+                          x-show="section.items.length === 0"
+                          class="text-gray-500 py-2 px-3 text-xs"
+                        >
+                          No readings in this group.
+                        </p>
+                      </div>
                     </div>
                   </template>
                   <p x-show="localSavedReadings.length === 0" class="text-gray-400 py-2 text-sm">
                     No saved readings yet.
                   </p>
                   <p
-                    x-show="localSavedReadings.length > 0 && filteredLoadModalReadings().length === 0"
+                    x-show="localSavedReadings.length > 0 && filteredLoadModalGroupedSections().length === 0"
                     class="text-gray-400 py-2 text-sm"
                   >
                     No readings match your search.

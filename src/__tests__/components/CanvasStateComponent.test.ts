@@ -9,12 +9,19 @@ import type { DraggableCard, TarotCard, TextLabel } from '../../types/canvas.js'
 import type { QueryFailure } from '../../lib/supabaseErrors.js';
 import type { SavedReadingState } from '../../types/readingState.js';
 import type { LocalCardRow } from '../../types/localDb.js';
+import { DEFAULT_READING_GROUP_ID } from '../../types/localDb.js';
 import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCapture.js';
 
 const readingsMocks = vi.hoisted(() => ({
   saveLocalReading: vi.fn(),
   loadLocalReading: vi.fn(),
   listLocalReadings: vi.fn(),
+  listReadingsGrouped: vi.fn(),
+  listReadingGroups: vi.fn(),
+  createReadingGroup: vi.fn(),
+  putReadingGroup: vi.fn(),
+  deleteReadingGroup: vi.fn(),
+  assignReadingToGroup: vi.fn(),
   renameLocalReading: vi.fn(),
   deleteLocalReading: vi.fn(),
 }));
@@ -47,6 +54,12 @@ vi.mock('../../lib/localReadings.js', () => ({
   saveLocalReading: readingsMocks.saveLocalReading,
   loadLocalReading: readingsMocks.loadLocalReading,
   listLocalReadings: readingsMocks.listLocalReadings,
+  listReadingsGrouped: readingsMocks.listReadingsGrouped,
+  listReadingGroups: readingsMocks.listReadingGroups,
+  createReadingGroup: readingsMocks.createReadingGroup,
+  putReadingGroup: readingsMocks.putReadingGroup,
+  deleteReadingGroup: readingsMocks.deleteReadingGroup,
+  assignReadingToGroup: readingsMocks.assignReadingToGroup,
   renameLocalReading: readingsMocks.renameLocalReading,
   deleteLocalReading: readingsMocks.deleteLocalReading,
 }));
@@ -258,6 +271,11 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     readingsMocks.saveLocalReading.mockResolvedValue({ id: 'saved-id' });
     readingsMocks.loadLocalReading.mockResolvedValue(null);
     readingsMocks.listLocalReadings.mockResolvedValue([]);
+    readingsMocks.listReadingsGrouped.mockResolvedValue([]);
+    readingsMocks.listReadingGroups.mockResolvedValue([
+      { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+    ]);
+    readingsMocks.assignReadingToGroup.mockResolvedValue({});
     readingsMocks.renameLocalReading.mockResolvedValue({ updated_at: '2024-03-15T10:00:00.000Z' });
     readingsMocks.deleteLocalReading.mockResolvedValue({});
     createObjectURLSpy = vi.fn(() => 'blob:unit-test');
@@ -1182,7 +1200,12 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   });
 
   it('openLoadModal and closeLoadModal manage flags', async () => {
-    readingsMocks.listLocalReadings.mockResolvedValue([{ id: '1', name: 'A', updated_at: 't' }]);
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: '1', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID }],
+      },
+    ]);
     const ctx = createCtx({
       loadModalEditingReadingId: 'stale',
       loadModalEditingTitle: 'draft',
@@ -1202,8 +1225,8 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   describe('filteredLoadModalReadings', () => {
     it('returns all readings when search is blank or whitespace', () => {
       const list = [
-        { id: '1', name: 'Alpha', updated_at: 't1' },
-        { id: '2', name: 'Beta', updated_at: 't2' },
+        { id: '1', name: 'Alpha', updated_at: 't1', group_id: DEFAULT_READING_GROUP_ID },
+        { id: '2', name: 'Beta', updated_at: 't2', group_id: DEFAULT_READING_GROUP_ID },
       ];
       const ctx = createCtx({ localSavedReadings: list, loadModalSearchQuery: '' });
       expect(ctx.filteredLoadModalReadings.call(ctx)).toEqual(list);
@@ -1214,13 +1237,13 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     it('matches title case-insensitively by substring', () => {
       const ctx = createCtx({
         localSavedReadings: [
-          { id: '1', name: 'Foo Bar', updated_at: 't' },
-          { id: '2', name: 'Other', updated_at: 't' },
+          { id: '1', name: 'Foo Bar', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+          { id: '2', name: 'Other', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
         ],
         loadModalSearchQuery: 'FOO',
       });
       expect(ctx.filteredLoadModalReadings.call(ctx)).toEqual([
-        { id: '1', name: 'Foo Bar', updated_at: 't' },
+        { id: '1', name: 'Foo Bar', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
       ]);
     });
 
@@ -1628,6 +1651,12 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
 
   it('commitLoadModalTitleEdit updates list and clears editing on success', async () => {
     readingsMocks.renameLocalReading.mockResolvedValue({ updated_at: 'new-ts' });
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: '1', name: 'Hi', updated_at: 'new-ts', group_id: DEFAULT_READING_GROUP_ID }],
+      },
+    ]);
     const ctx = createCtx({
       loadModalEditingReadingId: '1',
       loadModalEditingTitle: '  Hi  ',
@@ -1635,7 +1664,12 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     });
     await ctx.commitLoadModalTitleEdit.call(ctx);
     expect(readingsMocks.renameLocalReading).toHaveBeenCalledWith('1', 'Hi');
-    expect(ctx.localSavedReadings[0]).toEqual({ id: '1', name: 'Hi', updated_at: 'new-ts' });
+    expect(ctx.localSavedReadings[0]).toEqual({
+      id: '1',
+      name: 'Hi',
+      updated_at: 'new-ts',
+      group_id: DEFAULT_READING_GROUP_ID,
+    });
     expect(ctx.loadModalEditingReadingId).toBeNull();
     expect(ctx.loadModalEditingTitle).toBe('');
   });
@@ -1691,10 +1725,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   });
 
   it('deleteReading removes row and clears loaded id when matching', async () => {
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID }],
+      },
+    ]);
     const ctx = createCtx({
       localSavedReadings: [
-        { id: 'a', name: 'A', updated_at: 't' },
-        { id: 'b', name: 'B', updated_at: 't' },
+        { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+        { id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
       ],
       loadedReadingId: 'a',
     });
@@ -1708,10 +1748,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   });
 
   it('deleteReading keeps loaded id when deleting a different reading', async () => {
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID }],
+      },
+    ]);
     const ctx = createCtx({
       localSavedReadings: [
-        { id: 'a', name: 'A', updated_at: 't' },
-        { id: 'b', name: 'B', updated_at: 't' },
+        { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+        { id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
       ],
       loadedReadingId: 'a',
     });
@@ -1720,7 +1766,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
     await p;
     expect(ctx.loadedReadingId).toBe('a');
-    expect(ctx.localSavedReadings).toEqual([{ id: 'a', name: 'A', updated_at: 't' }]);
+    expect(ctx.localSavedReadings).toEqual([
+      { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+    ]);
   });
 
   it('deleteReading clears title edit state when deleting the edited reading', async () => {
@@ -1735,6 +1783,50 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     await p;
     expect(ctx.loadModalEditingReadingId).toBeNull();
     expect(ctx.loadModalEditingTitle).toBe('');
+  });
+
+  it('toggleLoadModalGroupCollapsed tracks collapsed state per group', () => {
+    const ctx = createCtx();
+    expect(ctx.isLoadModalGroupCollapsed.call(ctx, 'g1')).toBe(false);
+    ctx.toggleLoadModalGroupCollapsed.call(ctx, 'g1');
+    expect(ctx.isLoadModalGroupCollapsed.call(ctx, 'g1')).toBe(true);
+    ctx.toggleLoadModalGroupCollapsed.call(ctx, 'g1');
+    expect(ctx.isLoadModalGroupCollapsed.call(ctx, 'g1')).toBe(false);
+  });
+
+  it('filteredLoadModalGroupedSections filters by group title or reading title', () => {
+    const sections = [
+      {
+        group: { id: 'g1', title: 'Client Work' },
+        items: [
+          { id: 'r1', name: 'Spread A', updated_at: 't', group_id: 'g1' },
+          { id: 'r2', name: 'Other', updated_at: 't', group_id: 'g1' },
+        ],
+      },
+      {
+        group: { id: 'g2', title: 'Personal' },
+        items: [{ id: 'r3', name: 'Daily', updated_at: 't', group_id: 'g2' }],
+      },
+    ];
+    const ctx = createCtx({ loadModalGroupedSections: sections, loadModalSearchQuery: 'client' });
+    const out = ctx.filteredLoadModalGroupedSections.call(ctx);
+    expect(out).toHaveLength(1);
+    expect(out[0].group.title).toBe('Client Work');
+    expect(out[0].items).toHaveLength(2);
+  });
+
+  it('assignReadingGroup refreshes grouped sections after success', async () => {
+    readingsMocks.assignReadingToGroup.mockResolvedValue({});
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: 'r1', name: 'Moved', updated_at: 't', group_id: 'g2' }],
+      },
+    ]);
+    const ctx = createCtx();
+    await ctx.assignReadingGroup.call(ctx, 'r1', 'g2');
+    expect(readingsMocks.assignReadingToGroup).toHaveBeenCalledWith('r1', 'g2');
+    expect(ctx.localSavedReadings[0]?.name).toBe('Moved');
   });
 });
 

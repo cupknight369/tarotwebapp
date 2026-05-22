@@ -5,7 +5,8 @@ import type {
 } from '../lib/correspondenceCanvasCounts.js';
 
 export type { CorrespondenceDisplay };
-import type { SavedReadingState } from './readingState.js';
+import type { ReadingGroupSection, SavedReadingState } from './readingState.js';
+import type { LocalReadingGroupRow } from './localDb.js';
 
 export interface MouseLikeEvent {
   clientX: number;
@@ -45,7 +46,14 @@ export type MergedThis = {
   loadModalEditingReadingId: string | null;
   loadModalEditingTitle: string;
   loadModalSearchQuery: string;
-  localSavedReadings: { id: string; name: string; updated_at: string }[];
+  localSavedReadings: { id: string; name: string; updated_at: string; group_id: string }[];
+  loadModalGroupedSections: ReadingGroupSection[];
+  loadModalReadingGroups: LocalReadingGroupRow[];
+  loadModalCollapsedGroupIds: Record<string, boolean>;
+  loadModalNewGroupTitle: string;
+  loadModalRenamingGroupId: string | null;
+  loadModalRenameGroupTitle: string;
+  loadModalGroupError: string | null;
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
   _readingSaveFlashTimer: ReturnType<typeof setTimeout> | null;
@@ -167,7 +175,17 @@ export type MergedThis = {
   saveCurrentReading(name?: string): Promise<{ ok: boolean; error?: string }>;
   loadReadingById(id: string): Promise<void>;
   openLoadModal(): Promise<void>;
-  filteredLoadModalReadings(): { id: string; name: string; updated_at: string }[];
+  refreshLoadModalReadings(): Promise<void>;
+  filteredLoadModalGroupedSections(): ReadingGroupSection[];
+  filteredLoadModalReadings(): { id: string; name: string; updated_at: string; group_id: string }[];
+  isLoadModalGroupCollapsed(groupId: string): boolean;
+  toggleLoadModalGroupCollapsed(groupId: string): void;
+  addLoadModalGroup(): Promise<void>;
+  startRenameLoadModalGroup(g: LocalReadingGroupRow): void;
+  cancelRenameLoadModalGroup(): void;
+  saveRenameLoadModalGroup(): Promise<void>;
+  confirmDeleteLoadModalGroup(g: LocalReadingGroupRow): Promise<void>;
+  assignReadingGroup(readingId: string, groupId: string): Promise<void>;
   closeLoadModal(): void;
   onSelectReadingToLoad(id: string): Promise<void>;
   saveAndLoad(id: string): Promise<void>;

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LocalCardRow, LocalDeckRow, LocalReadingRow } from '../../types/localDb.js';
+import { DEFAULT_READING_GROUP_ID } from '../../types/localDb.js';
 
 const m = vi.hoisted(() => ({
   logError: vi.fn(),
@@ -12,6 +13,11 @@ const m = vi.hoisted(() => ({
   decodeCktarotBackup: vi.fn(),
   backupToDecks: vi.fn(),
   backupToReadings: vi.fn(),
+  backupToReadingGroups: vi.fn(),
+  readingGroupRowFromProto: vi.fn((g: { id: string; title?: string }) => ({
+    id: g.id,
+    title: g.title ?? 'G',
+  })),
   materializeCardRowFromProto: vi.fn(),
   correspondenceGroupRowFromProto: vi.fn((g: { id: string; title?: string }) => ({
     id: g.id,
@@ -26,6 +32,11 @@ const corrMocks = vi.hoisted(() => ({
   putCorrespondence: vi.fn(),
 }));
 
+const readingMocks = vi.hoisted(() => ({
+  ensureDefaultReadingGroup: vi.fn(),
+  putReadingGroup: vi.fn(),
+}));
+
 vi.mock('../../lib/logError.js', () => ({ logError: m.logError }));
 
 vi.mock('../../lib/indexedDb.js', () => ({
@@ -34,6 +45,7 @@ vi.mock('../../lib/indexedDb.js', () => ({
   STORE_DECKS: 'decks',
   STORE_CARDS: 'cards',
   STORE_READINGS: 'readings',
+  STORE_READING_GROUPS: 'readingGroups',
   STORE_CORRESPONDENCE_GROUPS: 'correspondenceGroups',
   STORE_CORRESPONDENCES: 'correspondences',
 }));
@@ -49,13 +61,20 @@ vi.mock('../../lib/localCorrespondences.js', () => ({
   putCorrespondence: corrMocks.putCorrespondence,
 }));
 
+vi.mock('../../lib/localReadings.js', () => ({
+  ensureDefaultReadingGroup: readingMocks.ensureDefaultReadingGroup,
+  putReadingGroup: readingMocks.putReadingGroup,
+}));
+
 vi.mock('../../lib/proto/backupCodec.js', () => ({
   encodeCktarotBackup: m.encodeCktarotBackup,
   decodeCktarotBackup: m.decodeCktarotBackup,
   backupToDecks: m.backupToDecks,
   backupToReadings: m.backupToReadings,
+  backupToReadingGroups: m.backupToReadingGroups,
   materializeCardRowFromProto: m.materializeCardRowFromProto,
   correspondenceGroupRowFromProto: m.correspondenceGroupRowFromProto,
+  readingGroupRowFromProto: m.readingGroupRowFromProto,
   materializeCorrespondenceRowFromProto: m.materializeCorrespondenceRowFromProto,
 }));
 
@@ -87,6 +106,7 @@ const reading: LocalReadingRow = {
   name: 'R',
   state: new Uint8Array([9, 9]),
   updated_at: 'u',
+  group_id: DEFAULT_READING_GROUP_ID,
 };
 
 function fakeDb(): IDBDatabase {
@@ -138,7 +158,9 @@ describe('localBackup.ts', () => {
     m.putLocalDeck.mockResolvedValue(undefined);
     m.putLocalCard.mockResolvedValue(undefined);
     corrMocks.ensureDefaultCorrespondenceGroup.mockResolvedValue(undefined);
+    readingMocks.ensureDefaultReadingGroup.mockResolvedValue(undefined);
     corrMocks.putCorrespondenceGroup.mockResolvedValue(undefined);
+    readingMocks.putReadingGroup.mockResolvedValue(undefined);
     corrMocks.putCorrespondence.mockResolvedValue(undefined);
     m.materializeCorrespondenceRowFromProto.mockResolvedValue(null);
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -168,6 +190,7 @@ describe('localBackup.ts', () => {
       if (step === 3) return Promise.resolve([reading]);
       if (step === 4) return Promise.resolve([]);
       if (step === 5) return Promise.resolve([]);
+      if (step === 6) return Promise.resolve([]);
       return Promise.reject(new Error(`unexpected idb step ${step}`));
     });
     m.encodeCktarotBackup.mockResolvedValue(new Uint8Array([7, 8]));
@@ -181,6 +204,7 @@ describe('localBackup.ts', () => {
         decks: [deck],
         cards: [card],
         readings: [reading],
+        readingGroups: [],
         correspondenceGroups: [],
         correspondences: [],
         exportedAt: expect.any(String) as string,
@@ -195,6 +219,7 @@ describe('localBackup.ts', () => {
   it('exportLocalBackup works without onProgress', async () => {
     stubDomDownload();
     m.idbRequest
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -223,6 +248,7 @@ describe('localBackup.ts', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     m.encodeCktarotBackup.mockRejectedValue(new Error('encode'));
     const r = await exportLocalBackup();
@@ -235,6 +261,7 @@ describe('localBackup.ts', () => {
       throw new Error('no anchor');
     });
     m.idbRequest
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -276,6 +303,7 @@ describe('localBackup.ts', () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: {}, errors: [] });
     m.backupToDecks.mockReturnValue([deck]);
     m.backupToReadings.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.materializeCardRowFromProto.mockResolvedValue(null);
 
     const onProgress = vi.fn();
@@ -290,6 +318,7 @@ describe('localBackup.ts', () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: {}, errors: [] });
     m.backupToDecks.mockReturnValue([deck]);
     m.backupToReadings.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.putLocalDeck.mockRejectedValue(new Error('deck fail'));
     m.materializeCardRowFromProto.mockResolvedValue(null);
 
@@ -301,6 +330,7 @@ describe('localBackup.ts', () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: {}, errors: [] });
     m.backupToDecks.mockReturnValue([deck]);
     m.backupToReadings.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.putLocalDeck.mockRejectedValue('x');
     m.materializeCardRowFromProto.mockResolvedValue(null);
 
@@ -312,6 +342,7 @@ describe('localBackup.ts', () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: { cards: [{}] }, errors: [] });
     m.backupToDecks.mockReturnValue([]);
     m.backupToReadings.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.materializeCardRowFromProto.mockResolvedValue(card);
 
     const r = await importLocalBackup(new ArrayBuffer(0));
@@ -323,6 +354,7 @@ describe('localBackup.ts', () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: { cards: [{}] }, errors: [] });
     m.backupToDecks.mockReturnValue([]);
     m.backupToReadings.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.materializeCardRowFromProto.mockResolvedValue(null);
 
     await importLocalBackup(new ArrayBuffer(0));
@@ -334,6 +366,7 @@ describe('localBackup.ts', () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: { cards: [proto] }, errors: [] });
     m.backupToDecks.mockReturnValue([]);
     m.backupToReadings.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.materializeCardRowFromProto.mockRejectedValue(new Error('mat'));
 
     const r = await importLocalBackup(new ArrayBuffer(0));
@@ -343,6 +376,7 @@ describe('localBackup.ts', () => {
   it('importLocalBackup rejects reading state that is not Uint8Array', async () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: {}, errors: [] });
     m.backupToDecks.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.materializeCardRowFromProto.mockResolvedValue(null);
     m.backupToReadings.mockReturnValue([
       {
@@ -350,6 +384,7 @@ describe('localBackup.ts', () => {
         name: 'n',
         state: new ArrayBuffer(0) as unknown as Uint8Array,
         updated_at: 'u',
+        group_id: DEFAULT_READING_GROUP_ID,
       },
     ]);
 
@@ -360,6 +395,7 @@ describe('localBackup.ts', () => {
   it('importLocalBackup restores readings via IndexedDB put', async () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: {}, errors: [] });
     m.backupToDecks.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.backupToReadings.mockReturnValue([reading]);
     m.materializeCardRowFromProto.mockResolvedValue(null);
 
@@ -378,6 +414,7 @@ describe('localBackup.ts', () => {
   it('importLocalBackup records reading import failures', async () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: {}, errors: [] });
     m.backupToDecks.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.backupToReadings.mockReturnValue([reading]);
     m.materializeCardRowFromProto.mockResolvedValue(null);
     m.idbRequest.mockRejectedValue(new Error('put fail'));
@@ -390,6 +427,7 @@ describe('localBackup.ts', () => {
     m.decodeCktarotBackup.mockReturnValue({ backup: {}, errors: [] });
     m.backupToDecks.mockReturnValue([]);
     m.backupToReadings.mockReturnValue([]);
+    m.backupToReadingGroups.mockReturnValue([]);
     m.materializeCardRowFromProto.mockResolvedValue(null);
     await expect(importLocalBackup(new ArrayBuffer(0))).resolves.toEqual({ errors: [] });
   });

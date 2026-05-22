@@ -1126,6 +1126,109 @@ export namespace cktarot {
         public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
+    /** Properties of a ReadingGroupRow. */
+    interface IReadingGroupRow {
+
+        /** ReadingGroupRow id */
+        id?: (string|null);
+
+        /** ReadingGroupRow title */
+        title?: (string|null);
+    }
+
+    /** Represents a ReadingGroupRow. */
+    class ReadingGroupRow implements IReadingGroupRow {
+
+        /**
+         * Constructs a new ReadingGroupRow.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: cktarot.IReadingGroupRow);
+
+        /** ReadingGroupRow id. */
+        public id: string;
+
+        /** ReadingGroupRow title. */
+        public title: string;
+
+        /**
+         * Creates a new ReadingGroupRow instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns ReadingGroupRow instance
+         */
+        public static create(properties?: cktarot.IReadingGroupRow): cktarot.ReadingGroupRow;
+
+        /**
+         * Encodes the specified ReadingGroupRow message. Does not implicitly {@link cktarot.ReadingGroupRow.verify|verify} messages.
+         * @param message ReadingGroupRow message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: cktarot.IReadingGroupRow, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified ReadingGroupRow message, length delimited. Does not implicitly {@link cktarot.ReadingGroupRow.verify|verify} messages.
+         * @param message ReadingGroupRow message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: cktarot.IReadingGroupRow, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a ReadingGroupRow message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns ReadingGroupRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): cktarot.ReadingGroupRow;
+
+        /**
+         * Decodes a ReadingGroupRow message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns ReadingGroupRow
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): cktarot.ReadingGroupRow;
+
+        /**
+         * Verifies a ReadingGroupRow message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a ReadingGroupRow message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns ReadingGroupRow
+         */
+        public static fromObject(object: { [k: string]: any }): cktarot.ReadingGroupRow;
+
+        /**
+         * Creates a plain object from a ReadingGroupRow message. Also converts values to other types if specified.
+         * @param message ReadingGroupRow
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: cktarot.ReadingGroupRow, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this ReadingGroupRow to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for ReadingGroupRow
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
     /** Properties of a ReadingRow. */
     interface IReadingRow {
 
@@ -1140,6 +1243,9 @@ export namespace cktarot {
 
         /** ReadingRow updatedAt */
         updatedAt?: (string|null);
+
+        /** ReadingRow groupId */
+        groupId?: (string|null);
     }
 
     /** Represents a ReadingRow. */
@@ -1162,6 +1268,9 @@ export namespace cktarot {
 
         /** ReadingRow updatedAt. */
         public updatedAt: string;
+
+        /** ReadingRow groupId. */
+        public groupId: string;
 
         /**
          * Creates a new ReadingRow instance using the specified properties.
@@ -1264,6 +1373,9 @@ export namespace cktarot {
 
         /** CktarotBackup correspondences */
         correspondences?: (cktarot.ICorrespondenceRow[]|null);
+
+        /** CktarotBackup readingGroups */
+        readingGroups?: (cktarot.IReadingGroupRow[]|null);
     }
 
     /** Represents a CktarotBackup. */
@@ -1295,6 +1407,9 @@ export namespace cktarot {
 
         /** CktarotBackup correspondences. */
         public correspondences: cktarot.ICorrespondenceRow[];
+
+        /** CktarotBackup readingGroups. */
+        public readingGroups: cktarot.IReadingGroupRow[];
 
         /**
          * Creates a new CktarotBackup instance using the specified properties.
@@ -1500,6 +1615,9 @@ export namespace cktarot {
 
         /** CktarotReadingExport readings */
         readings?: (cktarot.IReadingRow[]|null);
+
+        /** CktarotReadingExport groups */
+        groups?: (cktarot.IReadingGroupRow[]|null);
     }
 
     /** Represents a CktarotReadingExport. */
@@ -1519,6 +1637,9 @@ export namespace cktarot {
 
         /** CktarotReadingExport readings. */
         public readings: cktarot.IReadingRow[];
+
+        /** CktarotReadingExport groups. */
+        public groups: cktarot.IReadingGroupRow[];
 
         /**
          * Creates a new CktarotReadingExport instance using the specified properties.

@@ -1,9 +1,19 @@
+/** Stable id for the built-in reading group (always present after DB init). */
+export const DEFAULT_READING_GROUP_ID = '__cktarot_default_reading_group__';
+
+/** User-defined or built-in reading group in IndexedDB. */
+export interface LocalReadingGroupRow {
+  id: string;
+  title: string;
+}
+
 /** Local saved reading row in IndexedDB `readings` store (`state` is protobuf bytes). */
 export interface LocalReadingRow {
   id: string;
   name: string;
   state: Uint8Array;
   updated_at: string;
+  group_id: string;
 }
 
 /** Local custom deck in IndexedDB `decks` store. */

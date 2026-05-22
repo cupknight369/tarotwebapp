@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LocalReadingRow } from '../../types/localDb.js';
+import { DEFAULT_READING_GROUP_ID } from '../../types/localDb.js';
 import type { SavedReadingState } from '../../types/readingState.js';
 
 type IdbPayload =
@@ -36,6 +37,7 @@ vi.mock('../../lib/indexedDb.js', () => ({
   openTarotDb: ctx.openTarotDb,
   idbRequest: ctx.idbRequest,
   STORE_READINGS: 'readings',
+  STORE_READING_GROUPS: 'readingGroups',
 }));
 
 vi.mock('../../lib/proto/savedReadingCodec.js', () => ({
@@ -44,12 +46,20 @@ vi.mock('../../lib/proto/savedReadingCodec.js', () => ({
 }));
 
 import {
+  assignReadingToGroup,
+  createReadingGroup,
   deleteLocalReading,
+  deleteReadingGroup,
   listLocalReadings,
+  listReadingGroups,
+  listReadingsGrouped,
   loadLocalReading,
+  putReadingGroup,
   renameLocalReading,
   saveLocalReading,
 } from '../../lib/localReadings.js';
+
+const gid = DEFAULT_READING_GROUP_ID;
 
 const emptyState: SavedReadingState = {
   viewport: { scale: 1, offsetX: 0, offsetY: 0 },
@@ -69,6 +79,14 @@ describe('localReadings.ts', () => {
     ctx.openTarotDb.mockResolvedValue(ctx.fakeDb());
     ctx.decodeSavedReadingState.mockReturnValue(decodedState);
     ctx.encodeSavedReadingState.mockReturnValue(new Uint8Array([1, 2, 3]));
+    ctx.idbRequest.mockImplementation((req: IdbPayload | { t: string }) => {
+      if (typeof req === 'object' && req !== null && 't' in req && req.t === 'get') {
+        if (req.key === DEFAULT_READING_GROUP_ID) {
+          return Promise.resolve({ id: DEFAULT_READING_GROUP_ID, title: 'Default' });
+        }
+      }
+      return Promise.resolve(undefined);
+    });
     vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('new-reading-id');
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-03-15T10:00:00.000Z'));
@@ -81,27 +99,57 @@ describe('localReadings.ts', () => {
 
   it('listLocalReadings sorts three rows by updated_at descending', async () => {
     const rows: LocalReadingRow[] = [
-      { id: 'old', name: 'O', state: new Uint8Array(), updated_at: '2020-01-01T00:00:00.000Z' },
-      { id: 'mid', name: 'M', state: new Uint8Array(), updated_at: '2023-01-01T00:00:00.000Z' },
-      { id: 'new', name: 'N', state: new Uint8Array(), updated_at: '2025-01-01T00:00:00.000Z' },
+      {
+        id: 'old',
+        name: 'O',
+        state: new Uint8Array(),
+        updated_at: '2020-01-01T00:00:00.000Z',
+        group_id: gid,
+      },
+      {
+        id: 'mid',
+        name: 'M',
+        state: new Uint8Array(),
+        updated_at: '2023-01-01T00:00:00.000Z',
+        group_id: gid,
+      },
+      {
+        id: 'new',
+        name: 'N',
+        state: new Uint8Array(),
+        updated_at: '2025-01-01T00:00:00.000Z',
+        group_id: gid,
+      },
     ];
     ctx.idbRequest.mockResolvedValue(rows);
     await expect(listLocalReadings()).resolves.toEqual([
-      { id: 'new', name: 'N', updated_at: '2025-01-01T00:00:00.000Z' },
-      { id: 'mid', name: 'M', updated_at: '2023-01-01T00:00:00.000Z' },
-      { id: 'old', name: 'O', updated_at: '2020-01-01T00:00:00.000Z' },
+      { id: 'new', name: 'N', updated_at: '2025-01-01T00:00:00.000Z', group_id: gid },
+      { id: 'mid', name: 'M', updated_at: '2023-01-01T00:00:00.000Z', group_id: gid },
+      { id: 'old', name: 'O', updated_at: '2020-01-01T00:00:00.000Z', group_id: gid },
     ]);
   });
 
   it('listLocalReadings maps rows and sorts by updated_at descending', async () => {
     const rows: LocalReadingRow[] = [
-      { id: 'a', name: 'Old', state: new Uint8Array(), updated_at: '2024-01-01T00:00:00.000Z' },
-      { id: 'b', name: 'New', state: new Uint8Array(), updated_at: '2024-06-01T00:00:00.000Z' },
+      {
+        id: 'a',
+        name: 'Old',
+        state: new Uint8Array(),
+        updated_at: '2024-01-01T00:00:00.000Z',
+        group_id: gid,
+      },
+      {
+        id: 'b',
+        name: 'New',
+        state: new Uint8Array(),
+        updated_at: '2024-06-01T00:00:00.000Z',
+        group_id: gid,
+      },
     ];
     ctx.idbRequest.mockResolvedValue(rows);
     await expect(listLocalReadings()).resolves.toEqual([
-      { id: 'b', name: 'New', updated_at: '2024-06-01T00:00:00.000Z' },
-      { id: 'a', name: 'Old', updated_at: '2024-01-01T00:00:00.000Z' },
+      { id: 'b', name: 'New', updated_at: '2024-06-01T00:00:00.000Z', group_id: gid },
+      { id: 'a', name: 'Old', updated_at: '2024-01-01T00:00:00.000Z', group_id: gid },
     ]);
   });
 
@@ -112,8 +160,20 @@ describe('localReadings.ts', () => {
 
   it('listLocalReadings includes both rows when updated_at ties (sort comparator always returns -1)', async () => {
     const rows: LocalReadingRow[] = [
-      { id: 'first', name: 'A', state: new Uint8Array(), updated_at: '2024-01-01T00:00:00.000Z' },
-      { id: 'second', name: 'B', state: new Uint8Array(), updated_at: '2024-01-01T00:00:00.000Z' },
+      {
+        id: 'first',
+        name: 'A',
+        state: new Uint8Array(),
+        updated_at: '2024-01-01T00:00:00.000Z',
+        group_id: gid,
+      },
+      {
+        id: 'second',
+        name: 'B',
+        state: new Uint8Array(),
+        updated_at: '2024-01-01T00:00:00.000Z',
+        group_id: gid,
+      },
     ];
     ctx.idbRequest.mockResolvedValue(rows);
     const out = await listLocalReadings();
@@ -134,6 +194,7 @@ describe('localReadings.ts', () => {
       name: 'My Reading',
       state: bytes,
       updated_at: 'u',
+      group_id: gid,
     };
     ctx.idbRequest.mockResolvedValue(row);
     await expect(loadLocalReading('r1')).resolves.toEqual({
@@ -150,6 +211,7 @@ describe('localReadings.ts', () => {
       name: 'X',
       state: buf as unknown as Uint8Array,
       updated_at: 'u',
+      group_id: gid,
     } as LocalReadingRow;
     ctx.idbRequest.mockResolvedValue(row);
     await loadLocalReading('r2');
@@ -166,6 +228,7 @@ describe('localReadings.ts', () => {
       name: '',
       state: new Uint8Array(),
       updated_at: 'u',
+      group_id: gid,
     });
     await expect(loadLocalReading('e')).resolves.toMatchObject({ name: '' });
   });
@@ -176,6 +239,7 @@ describe('localReadings.ts', () => {
       name: null as unknown as string,
       state: new Uint8Array(),
       updated_at: 'u',
+      group_id: gid,
     } as LocalReadingRow);
     await expect(loadLocalReading('a')).resolves.toMatchObject({ name: 'Untitled Reading' });
 
@@ -184,6 +248,7 @@ describe('localReadings.ts', () => {
       name: undefined as unknown as string,
       state: new Uint8Array(),
       updated_at: 'u',
+      group_id: gid,
     } as LocalReadingRow);
     await expect(loadLocalReading('b')).resolves.toMatchObject({ name: 'Untitled Reading' });
   });
@@ -193,14 +258,14 @@ describe('localReadings.ts', () => {
     const r = await saveLocalReading(emptyState, 'Hello');
     expect(r).toEqual({ id: 'new-reading-id' });
     expect(ctx.encodeSavedReadingState).toHaveBeenCalledWith(emptyState);
-    expect(ctx.idbRequest).toHaveBeenCalledTimes(1);
+    expect(ctx.idbRequest).toHaveBeenCalledTimes(3);
   });
 
   it('saveLocalReading defaults name when name argument is omitted', async () => {
     ctx.idbRequest.mockResolvedValue(undefined);
     const r = await saveLocalReading(emptyState);
     expect(r).toEqual({ id: 'new-reading-id' });
-    expect(ctx.idbRequest).toHaveBeenCalledTimes(1);
+    expect(ctx.idbRequest).toHaveBeenCalledTimes(3);
   });
 
   it('saveLocalReading catches encodeSavedReadingState throw', async () => {
@@ -221,7 +286,7 @@ describe('localReadings.ts', () => {
     ctx.idbRequest.mockResolvedValue(undefined);
     const r = await saveLocalReading(emptyState, 'N', 'fixed-id');
     expect(r).toEqual({ id: 'fixed-id' });
-    expect(ctx.idbRequest).toHaveBeenCalledTimes(1);
+    expect(ctx.idbRequest).toHaveBeenCalledTimes(4);
   });
 
   it('saveLocalReading preserves existing name when updating without name param', async () => {
@@ -230,11 +295,12 @@ describe('localReadings.ts', () => {
       name: 'Preserved',
       state: new Uint8Array(),
       updated_at: 'old',
+      group_id: gid,
     };
     ctx.idbRequest.mockResolvedValueOnce(existing).mockResolvedValueOnce(undefined);
     const r = await saveLocalReading(emptyState, undefined, 'keep');
     expect(r).toEqual({ id: 'keep' });
-    expect(ctx.idbRequest).toHaveBeenCalledTimes(2);
+    expect(ctx.idbRequest).toHaveBeenCalledTimes(3);
   });
 
   it('saveLocalReading keeps default name when updating without name and existing has no name', async () => {
@@ -244,19 +310,20 @@ describe('localReadings.ts', () => {
         name: '',
         state: new Uint8Array(),
         updated_at: 'o',
+        group_id: gid,
       } as LocalReadingRow)
       .mockResolvedValueOnce(undefined);
     const r = await saveLocalReading(emptyState, undefined, 'k');
     expect(r).toEqual({ id: 'k' });
     expect(ctx.encodeSavedReadingState).toHaveBeenCalled();
-    expect(ctx.idbRequest).toHaveBeenCalledTimes(2);
+    expect(ctx.idbRequest).toHaveBeenCalledTimes(3);
   });
 
   it('saveLocalReading uses Untitled when update has no name and get returns undefined', async () => {
     ctx.idbRequest.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined);
     const r = await saveLocalReading(emptyState, undefined, 'ghost');
     expect(r).toEqual({ id: 'ghost' });
-    expect(ctx.idbRequest).toHaveBeenCalledTimes(2);
+    expect(ctx.idbRequest).toHaveBeenCalledTimes(4);
   });
 
   it('saveLocalReading returns error message on thrown Error', async () => {
@@ -293,6 +360,7 @@ describe('localReadings.ts', () => {
       name: 'Old',
       state: new Uint8Array([1, 2, 3]),
       updated_at: '2020-01-01T00:00:00.000Z',
+      group_id: gid,
     };
     ctx.idbRequest.mockResolvedValueOnce(existing).mockResolvedValueOnce(undefined);
     await expect(renameLocalReading('rid', '  New  ')).resolves.toEqual({
@@ -309,6 +377,7 @@ describe('localReadings.ts', () => {
       name: 'O',
       state: new Uint8Array(),
       updated_at: 'u',
+      group_id: gid,
     };
     ctx.idbRequest.mockResolvedValueOnce(existing).mockRejectedValueOnce(new Error('put fail'));
     await expect(renameLocalReading('r', 'X')).resolves.toEqual({ error: 'put fail' });
@@ -319,5 +388,111 @@ describe('localReadings.ts', () => {
     await expect(deleteLocalReading('del-me')).resolves.toEqual({});
     expect(ctx.idbRequest).toHaveBeenCalledTimes(1);
     expect((ctx.idbRequest.mock.calls[0]?.[0] as IdbPayload).t).toBe('delete');
+  });
+
+  it('createReadingGroup stores a new group row', async () => {
+    ctx.idbRequest.mockResolvedValue(undefined);
+    const g = await createReadingGroup('  Client  ');
+    expect(g.title).toBe('Client');
+    expect(g.id).toBeTruthy();
+  });
+
+  it('listReadingGroups puts default group first', async () => {
+    ctx.idbRequest.mockResolvedValue([
+      { id: 'g2', title: 'Beta' },
+      { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+    ]);
+    const groups = await listReadingGroups();
+    expect(groups[0].id).toBe(DEFAULT_READING_GROUP_ID);
+  });
+
+  it('listReadingsGrouped assigns orphan readings to default group', async () => {
+    let getAllCalls = 0;
+    ctx.idbRequest.mockImplementation((req: unknown) => {
+      if (typeof req === 'object' && req !== null && 't' in req) {
+        const payload = req as IdbPayload;
+        if (payload.t === 'get' && payload.key === DEFAULT_READING_GROUP_ID) {
+          return Promise.resolve({ id: DEFAULT_READING_GROUP_ID, title: 'Default' });
+        }
+        if (payload.t === 'storeGetAll') {
+          getAllCalls += 1;
+          if (getAllCalls === 1) {
+            return Promise.resolve([{ id: DEFAULT_READING_GROUP_ID, title: 'Default' }]);
+          }
+          return Promise.resolve([
+            {
+              id: 'r1',
+              name: 'One',
+              state: new Uint8Array(),
+              updated_at: '2024-01-01T00:00:00.000Z',
+              group_id: 'missing-group',
+            },
+          ]);
+        }
+      }
+      return Promise.resolve(undefined);
+    });
+    const sections = await listReadingsGrouped();
+    const defaultSection = sections.find((s) => s.group.id === DEFAULT_READING_GROUP_ID);
+    expect(defaultSection?.items).toHaveLength(1);
+    expect(defaultSection?.items[0]?.group_id).toBe('missing-group');
+  });
+
+  it('listReadingsGrouped shows readings when groups store returns empty', async () => {
+    let getAllCalls = 0;
+    ctx.idbRequest.mockImplementation((req: unknown) => {
+      if (typeof req === 'object' && req !== null && 't' in req) {
+        const payload = req as IdbPayload;
+        if (payload.t === 'get' && payload.key === DEFAULT_READING_GROUP_ID) {
+          return Promise.resolve(undefined);
+        }
+        if (payload.t === 'storeGetAll') {
+          getAllCalls += 1;
+          if (getAllCalls === 1) {
+            return Promise.resolve([]);
+          }
+          return Promise.resolve([
+            {
+              id: 'r1',
+              name: 'One',
+              state: new Uint8Array(),
+              updated_at: '2024-01-01T00:00:00.000Z',
+            },
+          ]);
+        }
+        if (payload.t === 'put') {
+          return Promise.resolve(undefined);
+        }
+      }
+      return Promise.resolve(undefined);
+    });
+    const sections = await listReadingsGrouped();
+    expect(sections).toHaveLength(1);
+    expect(sections[0]?.group.id).toBe(DEFAULT_READING_GROUP_ID);
+    expect(sections[0]?.items).toHaveLength(1);
+    expect(sections[0]?.items[0]?.name).toBe('One');
+  });
+
+  it('assignReadingToGroup returns error when reading is missing', async () => {
+    ctx.idbRequest
+      .mockResolvedValueOnce({ id: DEFAULT_READING_GROUP_ID, title: 'Default' })
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce([{ id: DEFAULT_READING_GROUP_ID, title: 'Default' }]);
+    await expect(assignReadingToGroup('missing', DEFAULT_READING_GROUP_ID)).resolves.toEqual({
+      error: 'Reading not found',
+    });
+  });
+
+  it('deleteReadingGroup throws for default group', async () => {
+    ctx.idbRequest.mockResolvedValue({ id: DEFAULT_READING_GROUP_ID, title: 'Default' });
+    await expect(deleteReadingGroup(DEFAULT_READING_GROUP_ID)).rejects.toThrow(
+      'Cannot delete the built-in default group.',
+    );
+  });
+
+  it('putReadingGroup writes group row', async () => {
+    ctx.idbRequest.mockResolvedValue(undefined);
+    await putReadingGroup({ id: 'g1', title: 'Mine' });
+    expect(ctx.idbRequest).toHaveBeenCalled();
   });
 });

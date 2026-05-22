@@ -21,7 +21,7 @@ const correspondenceMocks = vi.hoisted(() => ({
 const readingMocks = vi.hoisted(() => ({
   exportReadings: vi.fn(),
   importReadings: vi.fn(),
-  listLocalReadings: vi.fn(),
+  listReadingsGrouped: vi.fn(),
 }));
 
 const deckMocks = vi.hoisted(() => ({
@@ -70,7 +70,7 @@ vi.mock('../../lib/localReadingExport.js', () => ({
 }));
 
 vi.mock('../../lib/localReadings.js', () => ({
-  listLocalReadings: readingMocks.listLocalReadings,
+  listReadingsGrouped: readingMocks.listReadingsGrouped,
 }));
 
 vi.mock('../../lib/localDeckExport.js', () => ({
@@ -83,7 +83,7 @@ vi.mock('../../lib/localDecks.js', () => ({
 }));
 
 import '../../components/SettingsComponent.js';
-import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../../types/localDb.js';
+import { DEFAULT_CORRESPONDENCE_GROUP_ID, DEFAULT_READING_GROUP_ID } from '../../types/localDb.js';
 
 const rawStores = alpineBundle.cap.rawStores;
 
@@ -245,9 +245,24 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
       errors: [],
       importedReadings: 2,
     });
-    readingMocks.listLocalReadings.mockResolvedValue([
-      { id: 'r1', name: 'Celtic Cross', updated_at: '2026-05-20T00:00:00.000Z' },
-      { id: 'r2', name: 'Three Card', updated_at: '2026-05-19T00:00:00.000Z' },
+    readingMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [
+          {
+            id: 'r1',
+            name: 'Celtic Cross',
+            updated_at: '2026-05-20T00:00:00.000Z',
+            group_id: DEFAULT_READING_GROUP_ID,
+          },
+          {
+            id: 'r2',
+            name: 'Three Card',
+            updated_at: '2026-05-19T00:00:00.000Z',
+            group_id: DEFAULT_READING_GROUP_ID,
+          },
+        ],
+      },
     ]);
     deckMocks.exportDecks.mockResolvedValue({ errors: [] });
     deckMocks.importDecks.mockResolvedValue({
@@ -312,8 +327,9 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     const ctx = mount();
     ctx.init.call(ctx);
     await vi.waitFor(() => expect(ctx.readingsPending).toBe(false));
-    expect(readingMocks.listLocalReadings).toHaveBeenCalled();
+    expect(readingMocks.listReadingsGrouped).toHaveBeenCalled();
     expect(ctx.readingsForExport).toHaveLength(2);
+    expect(ctx.readingExportSections).toHaveLength(1);
     expect(ctx.selectedReadingIds).toEqual(['r1', 'r2']);
   });
 
@@ -412,13 +428,39 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
 
   it('toggleReading and canExportReadings gate export', () => {
     const ctx = mount();
-    ctx.readingsForExport = [{ id: 'r1', name: 'A', updated_at: '2026-05-20T00:00:00.000Z' }];
+    ctx.readingsForExport = [
+      {
+        id: 'r1',
+        name: 'A',
+        updated_at: '2026-05-20T00:00:00.000Z',
+        group_id: DEFAULT_READING_GROUP_ID,
+      },
+    ];
     ctx.selectedReadingIds = ['r1'];
     expect(ctx.canExportReadings.call(ctx)).toBe(true);
     ctx.toggleReading('r1');
     expect(ctx.canExportReadings.call(ctx)).toBe(false);
     ctx.selectAllReadings.call(ctx);
     expect(ctx.selectedReadingIds).toEqual(['r1']);
+  });
+
+  it('toggleReadingGroupExport selects and deselects all readings in a group', () => {
+    const ctx = mount();
+    ctx.readingExportSections = [
+      {
+        group: { id: 'g1', title: 'Client' },
+        items: [
+          { id: 'r1', name: 'A', updated_at: 't', group_id: 'g1' },
+          { id: 'r2', name: 'B', updated_at: 't', group_id: 'g1' },
+        ],
+      },
+    ];
+    ctx.readingsForExport = ctx.readingExportSections[0].items;
+    ctx.selectedReadingIds = [];
+    ctx.toggleReadingGroupExport('g1');
+    expect(ctx.selectedReadingIds).toEqual(['r1', 'r2']);
+    ctx.toggleReadingGroupExport('g1');
+    expect(ctx.selectedReadingIds).toEqual([]);
   });
 
   it('openReadingExportConfirm no-ops when export not allowed', () => {

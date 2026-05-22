@@ -1,11 +1,14 @@
-import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../types/localDb.js';
+import { DEFAULT_CORRESPONDENCE_GROUP_ID, DEFAULT_READING_GROUP_ID } from '../types/localDb.js';
+import type { LocalReadingRow } from '../types/localDb.js';
 
 const DB_NAME = 'tarot';
-/** v5: pending cloud deck download queue for PWA background sync. */
-const DB_VERSION = 5;
+/** v7: repair migration when `readingGroups` store is missing at v6. */
+const DB_VERSION = 7;
 
 /** IndexedDB object store for saved readings (protobuf state). */
 export const STORE_READINGS = 'readings';
+/** IndexedDB object store for reading group rows. */
+export const STORE_READING_GROUPS = 'readingGroups';
 /** IndexedDB object store for on-device deck metadata. */
 export const STORE_DECKS = 'decks';
 /** IndexedDB object store for on-device card rows. */
@@ -23,15 +26,51 @@ export const STORE_PENDING_DECK_DOWNLOADS = 'pendingDeckDownloads';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+function backfillReadingGroupIds(readingsStore: IDBObjectStore): void {
+  if (typeof readingsStore.openCursor !== 'function') return;
+  const cursorReq = readingsStore.openCursor();
+  cursorReq.onsuccess = () => {
+    const cursor = cursorReq.result;
+    if (!cursor) return;
+    const row = cursor.value as LocalReadingRow;
+    if (!row.group_id) {
+      const updateReq = cursor.update({ ...row, group_id: DEFAULT_READING_GROUP_ID });
+      updateReq.onsuccess = () => cursor.continue();
+    } else {
+      cursor.continue();
+    }
+  };
+}
+
 /**
- * Opens (and upgrades when needed) the single tarot IndexedDB database.
+ * Creates the reading groups store (if needed), seeds Default, and backfills reading rows.
  *
- * @returns A shared promise resolving to the database connection.
+ * @param db - Database being upgraded.
+ * @param upgradeTx - Active upgrade transaction, when available.
  */
-export function openTarotDb(): Promise<IDBDatabase> {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
+function migrateReadingGroups(db: IDBDatabase, upgradeTx: IDBTransaction | null): void {
+  if (!db.objectStoreNames.contains(STORE_READING_GROUPS)) {
+    db.createObjectStore(STORE_READING_GROUPS, { keyPath: 'id' });
+  }
+  if (!upgradeTx) return;
+  const gStore = upgradeTx.objectStore(STORE_READING_GROUPS);
+  gStore.put({ id: DEFAULT_READING_GROUP_ID, title: 'Default' });
+  const readingsStore = upgradeTx.objectStore(STORE_READINGS);
+  if (readingsStore.indexNames && !readingsStore.indexNames.contains('by_group_id')) {
+    readingsStore.createIndex('by_group_id', 'group_id');
+  }
+  backfillReadingGroupIds(readingsStore);
+}
+
+/**
+ * Opens the database at a specific version and runs schema upgrades.
+ *
+ * @param version - Target IndexedDB version.
+ * @returns Promise resolving to the opened database.
+ */
+function openTarotDbAtVersion(version: number): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, version);
     req.onerror = () => reject(req.error ?? new Error('indexedDB.open failed'));
     req.onsuccess = () => resolve(req.result);
     req.onupgradeneeded = (ev) => {
@@ -82,8 +121,48 @@ export function openTarotDb(): Promise<IDBDatabase> {
           db.createObjectStore(STORE_PENDING_DECK_DOWNLOADS, { keyPath: 'deckId' });
         }
       }
+      if (old < 6) {
+        migrateReadingGroups(db, req.transaction);
+      }
+      if (old < 7) {
+        migrateReadingGroups(db, req.transaction);
+      }
     };
   });
+}
+
+/**
+ * Re-opens the database when a cached connection lacks the reading groups store.
+ *
+ * @param db - Opened database connection.
+ * @param allowRetry - When false, missing store throws instead of retrying.
+ * @returns A connection that includes {@link STORE_READING_GROUPS}.
+ */
+async function ensureReadingGroupsStorePresent(
+  db: IDBDatabase,
+  allowRetry = true,
+): Promise<IDBDatabase> {
+  if (db.objectStoreNames.contains(STORE_READING_GROUPS)) {
+    return db;
+  }
+  if (!allowRetry) {
+    throw new Error('readingGroups object store missing after IndexedDB repair');
+  }
+  db.close();
+  dbPromise = openTarotDbAtVersion(Math.max(db.version + 1, DB_VERSION));
+  const repaired = await dbPromise;
+  return ensureReadingGroupsStorePresent(repaired, false);
+}
+
+/**
+ * Opens (and upgrades when needed) the single tarot IndexedDB database.
+ *
+ * @returns A shared promise resolving to the database connection.
+ */
+export function openTarotDb(): Promise<IDBDatabase> {
+  if (!dbPromise) {
+    dbPromise = openTarotDbAtVersion(DB_VERSION).then((db) => ensureReadingGroupsStorePresent(db));
+  }
   return dbPromise;
 }
 

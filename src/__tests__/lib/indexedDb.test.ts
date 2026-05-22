@@ -129,9 +129,17 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
 
         if (newVersion > oldVersion) {
           req.transaction = {
-            objectStore: () => ({
-              put: vi.fn(),
-            }),
+            objectStore: () => {
+              const createIndex = opts.createIndexSpy ?? vi.fn();
+              return {
+                put: vi.fn(),
+                createIndex,
+                indexNames: {
+                  contains: vi.fn(() => false),
+                },
+                getAll: vi.fn(() => ({ onsuccess: null, result: [] })),
+              };
+            },
           } as unknown as IDBTransaction;
           const ev = {
             oldVersion,
@@ -178,6 +186,7 @@ describe('indexedDb.ts', () => {
     expect(m.STORE_CORRESPONDENCES).toBe('correspondences');
     expect(m.STORE_CORRESPONDENCE_IMAGES).toBe('correspondenceImages');
     expect(m.STORE_PENDING_DECK_DOWNLOADS).toBe('pendingDeckDownloads');
+    expect(m.STORE_READING_GROUPS).toBe('readingGroups');
   });
 
   it('openTarotDb rejects when indexedDB.open fails', async () => {
@@ -228,6 +237,60 @@ describe('indexedDb.ts', () => {
     expect(createIndexSpy).toHaveBeenCalledWith('by_updated_at', 'updated_at');
     expect(createIndexSpy).toHaveBeenCalledWith('by_deck_id', 'deck_id');
     expect(createIndexSpy).toHaveBeenCalledWith('by_group_id', 'group_id');
+  });
+
+  it('openTarotDb migrates v5 to v6: adds readingGroups store and by_group_id index on readings', async () => {
+    const createIndexSpy = vi.fn();
+    vi.stubGlobal(
+      'indexedDB',
+      createFakeIndexedDB({
+        createIndexSpy,
+        persisted: {
+          version: 5,
+          stores: [
+            'readings',
+            'decks',
+            'cardImages',
+            'cards',
+            'correspondenceGroups',
+            'correspondences',
+            'correspondenceImages',
+            'pendingDeckDownloads',
+          ],
+        },
+      }),
+    );
+    const { openTarotDb, STORE_READING_GROUPS } = await loadIndexedDbModule();
+    const db = await openTarotDb();
+    expect(db.objectStoreNames.contains(STORE_READING_GROUPS)).toBe(true);
+    expect(createIndexSpy).toHaveBeenCalledWith('by_group_id', 'group_id');
+  });
+
+  it('openTarotDb repairs v6 without readingGroups store via v7 upgrade', async () => {
+    const createIndexSpy = vi.fn();
+    vi.stubGlobal(
+      'indexedDB',
+      createFakeIndexedDB({
+        createIndexSpy,
+        persisted: {
+          version: 6,
+          stores: [
+            'readings',
+            'decks',
+            'cardImages',
+            'cards',
+            'correspondenceGroups',
+            'correspondences',
+            'correspondenceImages',
+            'pendingDeckDownloads',
+          ],
+        },
+      }),
+    );
+    const { openTarotDb, STORE_READING_GROUPS } = await loadIndexedDbModule();
+    const db = await openTarotDb();
+    expect(db.objectStoreNames.contains(STORE_READING_GROUPS)).toBe(true);
+    expect(db.version).toBeGreaterThanOrEqual(7);
   });
 
   it('openTarotDb migrates v4 to v5: adds pendingDeckDownloads store', async () => {

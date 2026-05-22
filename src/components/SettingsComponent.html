@@ -205,8 +205,8 @@
       <div class="border-t border-gray-700 mt-6 pt-6">
         <p class="text-sm font-medium text-gray-300 mb-1">Reading data</p>
         <p class="text-xs text-gray-500 mb-3">
-          Export selected readings to a file, or import to add copies without replacing existing
-          entries.
+          Export selected readings or whole groups to a file, or import to add copies without
+          replacing existing entries.
         </p>
         <p x-show="readingsPending" x-cloak class="text-xs text-gray-400 mb-2">Loading readings…</p>
         <p
@@ -238,30 +238,72 @@
               </button>
             </span>
           </div>
-          <ul
-            class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
+          <div
+            class="max-h-40 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
           >
-            <template x-for="r in readingsForExport" :key="r.id">
-              <li>
-                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
-                  <input
-                    type="checkbox"
-                    class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-                    :checked="isReadingSelected(r.id)"
-                    :disabled="isSettingsBusy()"
-                    @change="toggleReading(r.id)"
-                  />
-                  <span class="min-w-0">
-                    <span x-text="r.name" class="block truncate"></span>
-                    <span
-                      x-text="formatReadingUpdatedAt(r.updated_at)"
-                      class="block text-xs text-gray-500 truncate"
-                    ></span>
-                  </span>
-                </label>
-              </li>
+            <template x-for="section in readingExportSections" :key="section.group.id">
+              <div class="rounded border border-gray-700/80 bg-gray-800/40">
+                <div class="flex items-center gap-2 px-2 py-1.5 border-b border-gray-700/60">
+                  <button
+                    type="button"
+                    class="shrink-0 text-gray-400 hover:text-white cursor-pointer w-4 text-center text-xs"
+                    :aria-expanded="!isSettingsReadingGroupCollapsed(section.group.id)"
+                    @click="toggleSettingsReadingGroupCollapsed(section.group.id)"
+                    x-text="isSettingsReadingGroupCollapsed(section.group.id) ? '›' : '‹'"
+                  ></button>
+                  <label
+                    class="flex flex-1 min-w-0 items-center gap-2 cursor-pointer text-sm text-gray-200"
+                  >
+                    <input
+                      type="checkbox"
+                      class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+                      :checked="isReadingGroupExportSelected(section.group.id)"
+                      :disabled="isSettingsBusy() || section.items.length === 0"
+                      @change="toggleReadingGroupExport(section.group.id)"
+                    />
+                    <span class="truncate">
+                      <span x-text="section.group.title"></span>
+                      <span
+                        class="text-xs text-gray-500 ml-1"
+                        x-text="'(' + section.items.length + ')'"
+                      ></span>
+                    </span>
+                  </label>
+                </div>
+                <ul
+                  x-show="!isSettingsReadingGroupCollapsed(section.group.id)"
+                  class="space-y-1 py-1 px-1"
+                >
+                  <template x-for="r in section.items" :key="r.id">
+                    <li>
+                      <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200 pl-6">
+                        <input
+                          type="checkbox"
+                          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+                          :checked="isReadingSelected(r.id)"
+                          :disabled="isSettingsBusy()"
+                          @change="toggleReading(r.id)"
+                        />
+                        <span class="min-w-0">
+                          <span x-text="r.name" class="block truncate"></span>
+                          <span
+                            x-text="formatReadingUpdatedAt(r.updated_at)"
+                            class="block text-xs text-gray-500 truncate"
+                          ></span>
+                        </span>
+                      </label>
+                    </li>
+                  </template>
+                  <li
+                    x-show="section.items.length === 0"
+                    class="text-xs text-gray-500 pl-6 py-1"
+                  >
+                    No readings in this group.
+                  </li>
+                </ul>
+              </div>
             </template>
-          </ul>
+          </div>
         </div>
         <div class="flex flex-col gap-2">
           <button

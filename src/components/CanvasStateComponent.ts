@@ -1,6 +1,8 @@
 import Alpine from 'alpinejs';
 import type { MergedThis, TarotCard } from '../types/canvas.js';
-import type { SavedReadingState } from '../types/readingState.js';
+import type { ReadingGroupSection, SavedReadingState } from '../types/readingState.js';
+import type { LocalReadingGroupRow } from '../types/localDb.js';
+import { DEFAULT_READING_GROUP_ID } from '../types/localDb.js';
 import type { DialogStoreState } from '../types/dialog.js';
 import * as localReadingsLib from '../lib/localReadings.js';
 import { getCardsByIds } from '../lib/decks.js';
@@ -8,6 +10,8 @@ import { logError } from '../lib/logError.js';
 import { showQueryFailureDialog } from '../lib/queryFailureUi.js';
 import { getCardImageRow, getLocalCardsByIds } from '../lib/localDecks.js';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
+import { readingGroupCreateSchema } from '../validation/readings.js';
+import { zodFirstIssue } from '../validation/zodErrors.js';
 
 /** Opens the global confirm dialog for a failed reading save. */
 function openSaveFailureDialog(message: string): void {
@@ -35,6 +39,23 @@ function savedReadingTitleMatchesSearch(query: string, name: string): boolean {
   return displayTitle.toLowerCase().includes(q);
 }
 
+/**
+ * @param query - Raw search string from the load modal.
+ * @param section - Reading group and its items.
+ * @returns Filtered section when group title or reading title matches; empty items otherwise.
+ */
+function filterReadingSectionBySearch(
+  query: string,
+  section: ReadingGroupSection,
+): ReadingGroupSection {
+  const raw = query.trim();
+  if (raw === '') return section;
+  const q = raw.toLowerCase();
+  if (section.group.title.toLowerCase().includes(q)) return section;
+  const items = section.items.filter((item) => savedReadingTitleMatchesSearch(query, item.name));
+  return { group: section.group, items };
+}
+
 Alpine.data('stateComponent', () => ({
   dirty: false,
   loadedReadingId: null as string | null,
@@ -43,7 +64,14 @@ Alpine.data('stateComponent', () => ({
   loadModalEditingReadingId: null as string | null,
   loadModalEditingTitle: '',
   loadModalSearchQuery: '',
-  localSavedReadings: [] as { id: string; name: string; updated_at: string }[],
+  localSavedReadings: [] as { id: string; name: string; updated_at: string; group_id: string }[],
+  loadModalGroupedSections: [] as ReadingGroupSection[],
+  loadModalReadingGroups: [] as LocalReadingGroupRow[],
+  loadModalCollapsedGroupIds: {} as Record<string, boolean>,
+  loadModalNewGroupTitle: '',
+  loadModalRenamingGroupId: null as string | null,
+  loadModalRenameGroupTitle: '',
+  loadModalGroupError: null as string | null,
   saveAndLoadTargetId: null as string | null,
   readingSaveFlashVisible: false,
   _readingSaveFlashTimer: null as ReturnType<typeof setTimeout> | null,
@@ -360,13 +388,142 @@ Alpine.data('stateComponent', () => ({
     this.loadModalSearchQuery = '';
     this.loadModalOpen = true;
     this.loadModalConfirmingForId = null;
-    this.localSavedReadings = await localReadingsLib.listLocalReadings();
+    this.loadModalGroupError = null;
+    await this.refreshLoadModalReadings();
   },
 
-  filteredLoadModalReadings(this: MergedThis): { id: string; name: string; updated_at: string }[] {
+  async refreshLoadModalReadings(this: MergedThis): Promise<void> {
+    try {
+      this.loadModalGroupedSections = await localReadingsLib.listReadingsGrouped();
+      this.loadModalReadingGroups = await localReadingsLib.listReadingGroups();
+      this.localSavedReadings = this.loadModalGroupedSections.flatMap((s) => s.items);
+      this.loadModalGroupError = null;
+    } catch (e) {
+      logError('stateComponent.refreshLoadModalReadings', e);
+      this.loadModalGroupError = 'Could not load saved readings.';
+      const fallback = await localReadingsLib.listLocalReadings();
+      this.loadModalGroupedSections = [
+        {
+          group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+          items: fallback,
+        },
+      ];
+      this.loadModalReadingGroups = [{ id: DEFAULT_READING_GROUP_ID, title: 'Default' }];
+      this.localSavedReadings = fallback;
+    }
+  },
+
+  filteredLoadModalGroupedSections(this: MergedThis): ReadingGroupSection[] {
+    return this.loadModalGroupedSections
+      .map((sec) => filterReadingSectionBySearch(this.loadModalSearchQuery, sec))
+      .filter((sec) => sec.items.length > 0 || this.loadModalSearchQuery.trim() === '');
+  },
+
+  filteredLoadModalReadings(this: MergedThis): {
+    id: string;
+    name: string;
+    updated_at: string;
+    group_id: string;
+  }[] {
     return this.localSavedReadings.filter((r) =>
       savedReadingTitleMatchesSearch(this.loadModalSearchQuery, r.name),
     );
+  },
+
+  isLoadModalGroupCollapsed(this: MergedThis, groupId: string): boolean {
+    return this.loadModalCollapsedGroupIds[groupId] === true;
+  },
+
+  toggleLoadModalGroupCollapsed(this: MergedThis, groupId: string): void {
+    const collapsed = this.isLoadModalGroupCollapsed(groupId);
+    this.loadModalCollapsedGroupIds = {
+      ...this.loadModalCollapsedGroupIds,
+      [groupId]: !collapsed,
+    };
+  },
+
+  async addLoadModalGroup(this: MergedThis): Promise<void> {
+    const parsed = readingGroupCreateSchema.safeParse({ title: this.loadModalNewGroupTitle });
+    if (!parsed.success) {
+      this.loadModalGroupError = zodFirstIssue(parsed.error);
+      return;
+    }
+    this.loadModalGroupError = null;
+    try {
+      await localReadingsLib.createReadingGroup(parsed.data.title);
+      this.loadModalNewGroupTitle = '';
+      await this.refreshLoadModalReadings();
+    } catch (e) {
+      this.loadModalGroupError = e instanceof Error ? e.message : 'Could not create group';
+      logError('stateComponent.addLoadModalGroup', e);
+    }
+  },
+
+  startRenameLoadModalGroup(this: MergedThis, g: LocalReadingGroupRow): void {
+    this.loadModalRenamingGroupId = g.id;
+    this.loadModalRenameGroupTitle = g.title;
+    this.loadModalGroupError = null;
+  },
+
+  cancelRenameLoadModalGroup(this: MergedThis): void {
+    this.loadModalRenamingGroupId = null;
+    this.loadModalRenameGroupTitle = '';
+  },
+
+  async saveRenameLoadModalGroup(this: MergedThis): Promise<void> {
+    if (!this.loadModalRenamingGroupId) return;
+    const parsed = readingGroupCreateSchema.safeParse({ title: this.loadModalRenameGroupTitle });
+    if (!parsed.success) {
+      this.loadModalGroupError = zodFirstIssue(parsed.error);
+      return;
+    }
+    this.loadModalGroupError = null;
+    try {
+      await localReadingsLib.putReadingGroup({
+        id: this.loadModalRenamingGroupId,
+        title: parsed.data.title,
+      });
+      this.cancelRenameLoadModalGroup();
+      await this.refreshLoadModalReadings();
+    } catch (e) {
+      this.loadModalGroupError = e instanceof Error ? e.message : 'Rename failed';
+      logError('stateComponent.saveRenameLoadModalGroup', e);
+    }
+  },
+
+  async confirmDeleteLoadModalGroup(this: MergedThis, g: LocalReadingGroupRow): Promise<void> {
+    if (g.id === DEFAULT_READING_GROUP_ID) return;
+    const ok = await new Promise<boolean>((resolve) => {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'confirm',
+        title: `Delete group “${g.title}”? Readings move to Default.`,
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        cancelLabelVisible: true,
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!ok) return;
+    this.loadModalGroupError = null;
+    try {
+      await localReadingsLib.deleteReadingGroup(g.id);
+      await this.refreshLoadModalReadings();
+    } catch (e) {
+      this.loadModalGroupError = e instanceof Error ? e.message : 'Delete failed';
+      logError('stateComponent.confirmDeleteLoadModalGroup', e);
+    }
+  },
+
+  async assignReadingGroup(this: MergedThis, readingId: string, groupId: string): Promise<void> {
+    const result = await localReadingsLib.assignReadingToGroup(readingId, groupId);
+    if (result.error) {
+      this.loadModalGroupError = result.error;
+      return;
+    }
+    this.loadModalGroupError = null;
+    await this.refreshLoadModalReadings();
   },
 
   closeLoadModal(this: MergedThis): void {
@@ -626,14 +783,7 @@ Alpine.data('stateComponent', () => ({
       openSaveFailureDialog(result.error);
       return;
     }
-    const idx = this.localSavedReadings.findIndex((x) => x.id === id);
-    if (idx !== -1) {
-      this.localSavedReadings[idx] = {
-        ...this.localSavedReadings[idx],
-        name: trimmed,
-        updated_at: result.updated_at,
-      };
-    }
+    await this.refreshLoadModalReadings();
     this.loadModalEditingReadingId = null;
     this.loadModalEditingTitle = '';
   },
@@ -657,7 +807,7 @@ Alpine.data('stateComponent', () => ({
     });
     if (!confirmed) return;
     await localReadingsLib.deleteLocalReading(id);
-    this.localSavedReadings = this.localSavedReadings.filter((r) => r.id !== id);
+    await this.refreshLoadModalReadings();
     if (this.loadModalEditingReadingId === id) {
       this.loadModalEditingReadingId = null;
       this.loadModalEditingTitle = '';

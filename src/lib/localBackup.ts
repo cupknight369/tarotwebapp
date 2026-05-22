@@ -4,9 +4,10 @@ import type {
   LocalCorrespondenceGroupRow,
   LocalCorrespondenceRow,
   LocalDeckRow,
+  LocalReadingGroupRow,
   LocalReadingRow,
 } from '../types/localDb.js';
-import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../types/localDb.js';
+import { DEFAULT_CORRESPONDENCE_GROUP_ID, DEFAULT_READING_GROUP_ID } from '../types/localDb.js';
 import type { BackupProgress } from '../types/settings.js';
 import {
   openTarotDb,
@@ -15,6 +16,7 @@ import {
   STORE_CORRESPONDENCES,
   STORE_DECKS,
   STORE_READINGS,
+  STORE_READING_GROUPS,
   idbRequest,
 } from './indexedDb.js';
 import { putLocalCard, putLocalDeck } from './localDecks.js';
@@ -23,14 +25,17 @@ import {
   putCorrespondence,
   putCorrespondenceGroup,
 } from './localCorrespondences.js';
+import { ensureDefaultReadingGroup, putReadingGroup } from './localReadings.js';
 import {
   backupToDecks,
+  backupToReadingGroups,
   backupToReadings,
   correspondenceGroupRowFromProto,
   decodeCktarotBackup,
   encodeCktarotBackup,
   materializeCardRowFromProto,
   materializeCorrespondenceRowFromProto,
+  readingGroupRowFromProto,
 } from './proto/backupCodec.js';
 import { cktarot } from '../proto/generated/bundle.js';
 
@@ -61,8 +66,9 @@ export async function exportLocalBackup(
 
   try {
     await ensureDefaultCorrespondenceGroup();
+    await ensureDefaultReadingGroup();
   } catch (e) {
-    pushError(errors, 'Failed to prepare correspondence data', e);
+    pushError(errors, 'Failed to prepare local data', e);
     return { errors };
   }
 
@@ -70,6 +76,7 @@ export async function exportLocalBackup(
   let decks: LocalDeckRow[] = [];
   let cards: LocalCardRow[] = [];
   let readings: LocalReadingRow[] = [];
+  let readingGroups: LocalReadingGroupRow[] = [];
   let correspondenceGroups: LocalCorrespondenceGroupRow[] = [];
   let correspondences: LocalCorrespondenceRow[] = [];
 
@@ -84,6 +91,7 @@ export async function exportLocalBackup(
         STORE_DECKS,
         STORE_CARDS,
         STORE_READINGS,
+        STORE_READING_GROUPS,
         STORE_CORRESPONDENCE_GROUPS,
         STORE_CORRESPONDENCES,
       ],
@@ -92,6 +100,9 @@ export async function exportLocalBackup(
     decks = (await idbRequest(tx.objectStore(STORE_DECKS).getAll())) as LocalDeckRow[];
     cards = (await idbRequest(tx.objectStore(STORE_CARDS).getAll())) as LocalCardRow[];
     readings = (await idbRequest(tx.objectStore(STORE_READINGS).getAll())) as LocalReadingRow[];
+    readingGroups = (await idbRequest(
+      tx.objectStore(STORE_READING_GROUPS).getAll(),
+    )) as LocalReadingGroupRow[];
     correspondenceGroups = (await idbRequest(
       tx.objectStore(STORE_CORRESPONDENCE_GROUPS).getAll(),
     )) as LocalCorrespondenceGroupRow[];
@@ -111,6 +122,7 @@ export async function exportLocalBackup(
       decks,
       cards,
       readings,
+      readingGroups,
       correspondenceGroups,
       correspondences,
       exportedAt: new Date().toISOString(),
@@ -167,16 +179,50 @@ export async function importLocalBackup(
 
   const decks = backupToDecks(backup);
   const readings = backupToReadings(backup);
+  const readingGroups = backupToReadingGroups(backup);
   const cardProtos = (backup.cards ?? []) as cktarot.CardRow[];
   const groupProtos = (backup.correspondenceGroups ?? []) as cktarot.CorrespondenceGroupRow[];
+  const readingGroupProtos = (backup.readingGroups ?? []) as cktarot.ReadingGroupRow[];
   const corrProtos = (backup.correspondences ?? []) as cktarot.CorrespondenceRow[];
 
   const total =
-    1 + groupProtos.length + corrProtos.length + decks.length + cardProtos.length + readings.length;
+    1 +
+    groupProtos.length +
+    readingGroupProtos.length +
+    corrProtos.length +
+    decks.length +
+    cardProtos.length +
+    readings.length;
 
   let step = 0;
   report('Parsing backup', step, total);
   step += 1;
+
+  for (let i = 0; i < readingGroupProtos.length; i++) {
+    const gp = readingGroupProtos[i];
+    try {
+      await putReadingGroup(readingGroupRowFromProto(gp));
+    } catch (e) {
+      pushError(errors, `reading_groups import id=${gp.id}`, e);
+    }
+    step += 1;
+    report(`Restoring reading groups (${i + 1}/${readingGroupProtos.length})`, step, total);
+    await yieldToUi();
+  }
+
+  try {
+    await ensureDefaultReadingGroup();
+  } catch (e) {
+    pushError(errors, 'reading_groups ensure default', e);
+  }
+
+  const validReadingGroupIds = new Set<string>([DEFAULT_READING_GROUP_ID]);
+  for (const g of readingGroupProtos) {
+    if (g.id) validReadingGroupIds.add(g.id);
+  }
+  for (const g of readingGroups) {
+    validReadingGroupIds.add(g.id);
+  }
 
   for (let i = 0; i < groupProtos.length; i++) {
     const gp = groupProtos[i];
@@ -249,7 +295,8 @@ export async function importLocalBackup(
       if (!(row.state instanceof Uint8Array)) {
         throw new Error('reading state must be protobuf bytes');
       }
-      await putLocalReadingRow(row);
+      const gid = validReadingGroupIds.has(row.group_id) ? row.group_id : DEFAULT_READING_GROUP_ID;
+      await putLocalReadingRow({ ...row, group_id: gid });
     } catch (e) {
       pushError(errors, `readings import id=${row.id}`, e);
     }

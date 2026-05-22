@@ -6,9 +6,13 @@ import { exportDecks, importDecks } from '../lib/localDeckExport.js';
 import { exportReadings, importReadings } from '../lib/localReadingExport.js';
 import { listCorrespondenceGroups } from '../lib/localCorrespondences.js';
 import { listUserCreatedDecks } from '../lib/localDecks.js';
-import { listLocalReadings } from '../lib/localReadings.js';
-import type { LocalCorrespondenceGroupRow, LocalDeckRow } from '../types/localDb.js';
-import type { ReadingSummary } from '../types/readingState.js';
+import { listReadingsGrouped } from '../lib/localReadings.js';
+import type {
+  LocalCorrespondenceGroupRow,
+  LocalDeckRow,
+  LocalReadingGroupRow,
+} from '../types/localDb.js';
+import type { ReadingGroupSection, ReadingSummary } from '../types/readingState.js';
 
 function settingsStore(): SettingsStoreState {
   return Alpine.store('settings') as SettingsStoreState;
@@ -33,6 +37,9 @@ Alpine.data('settingsComponent', () => ({
   correspondenceGroupsPending: false,
 
   readingsForExport: [] as ReadingSummary[],
+  readingExportSections: [] as ReadingGroupSection[],
+  readingGroupsForExport: [] as LocalReadingGroupRow[],
+  settingsCollapsedReadingGroupIds: {} as Record<string, boolean>,
   selectedReadingIds: [] as string[],
   readingsLoadError: null as string | null,
   readingsPending: false,
@@ -144,15 +151,56 @@ Alpine.data('settingsComponent', () => ({
     this.readingsLoadError = null;
     this.readingsPending = true;
     try {
-      const readings = await listLocalReadings();
+      const sections = await listReadingsGrouped();
+      this.readingExportSections = sections;
+      this.readingGroupsForExport = sections.map((s) => s.group);
+      const readings = sections.flatMap((s) => s.items);
       this.readingsForExport = readings;
       this.selectedReadingIds = readings.map((r) => r.id);
     } catch (e) {
+      this.readingExportSections = [];
+      this.readingGroupsForExport = [];
       this.readingsForExport = [];
       this.selectedReadingIds = [];
       this.readingsLoadError = e instanceof Error ? e.message : 'Could not load readings.';
     } finally {
       this.readingsPending = false;
+    }
+  },
+
+  isSettingsReadingGroupCollapsed(groupId: string): boolean {
+    return this.settingsCollapsedReadingGroupIds[groupId] === true;
+  },
+
+  toggleSettingsReadingGroupCollapsed(groupId: string) {
+    const collapsed = this.isSettingsReadingGroupCollapsed(groupId);
+    this.settingsCollapsedReadingGroupIds = {
+      ...this.settingsCollapsedReadingGroupIds,
+      [groupId]: !collapsed,
+    };
+  },
+
+  readingsInExportGroup(groupId: string): ReadingSummary[] {
+    const section = this.readingExportSections.find((s) => s.group.id === groupId);
+    return section?.items ?? [];
+  },
+
+  isReadingGroupExportSelected(groupId: string): boolean {
+    const items = this.readingsInExportGroup(groupId);
+    if (items.length === 0) return false;
+    return items.every((r) => this.selectedReadingIds.includes(r.id));
+  },
+
+  toggleReadingGroupExport(groupId: string) {
+    const items = this.readingsInExportGroup(groupId);
+    const ids = items.map((r) => r.id);
+    if (ids.length === 0) return;
+    if (this.isReadingGroupExportSelected(groupId)) {
+      const remove = new Set(ids);
+      this.selectedReadingIds = this.selectedReadingIds.filter((id) => !remove.has(id));
+    } else {
+      const merged = new Set([...this.selectedReadingIds, ...ids]);
+      this.selectedReadingIds = [...merged];
     }
   },
 

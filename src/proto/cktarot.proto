@@ -108,11 +108,17 @@ message CorrespondenceRow {
   optional string thumbnail_mime_type = 6;
 }
 
+message ReadingGroupRow {
+  string id = 1;
+  string title = 2;
+}
+
 message ReadingRow {
   string id = 1;
   string name = 2;
   bytes state = 3;
   string updated_at = 4;
+  string group_id = 5;
 }
 
 message CktarotBackup {
@@ -123,6 +129,7 @@ message CktarotBackup {
   repeated ReadingRow readings = 5;
   repeated CorrespondenceGroupRow correspondence_groups = 6;
   repeated CorrespondenceRow correspondences = 7;
+  repeated ReadingGroupRow reading_groups = 8;
 }
 
 message CktarotCorrespondenceExport {
@@ -136,6 +143,7 @@ message CktarotReadingExport {
   int32 version = 1;
   optional string exported_at = 2;
   repeated ReadingRow readings = 3;
+  repeated ReadingGroupRow groups = 4;
 }
 
 message CktarotDeckExport {

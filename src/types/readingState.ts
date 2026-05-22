@@ -43,8 +43,17 @@ export interface SavedReadingState {
   }>;
 }
 
+import type { LocalReadingGroupRow } from './localDb.js';
+
 export interface ReadingSummary {
   id: string;
   name: string;
   updated_at: string;
+  group_id: string;
+}
+
+/** Group with its readings for list UI. */
+export interface ReadingGroupSection {
+  group: LocalReadingGroupRow;
+  items: ReadingSummary[];
 }
