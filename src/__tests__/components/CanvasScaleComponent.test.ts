@@ -17,6 +17,7 @@ vi.mock('alpinejs', () => ({
 }));
 
 import '../../components/CanvasScaleComponent.js';
+import { wheelEventToZoomFactor } from '../../components/CanvasScaleComponent.js';
 
 type ScaleCtx = {
   scale: number;
@@ -46,12 +47,14 @@ function wheelEvent(opts: {
   clientX: number;
   clientY: number;
   deltaY: number;
+  deltaMode?: number;
   currentTarget: HTMLElement;
 }): WheelEvent {
   const ev = new WheelEvent('wheel', {
     clientX: opts.clientX,
     clientY: opts.clientY,
     deltaY: opts.deltaY,
+    deltaMode: opts.deltaMode ?? WheelEvent.DOM_DELTA_PIXEL,
     bubbles: true,
     cancelable: true,
   });
@@ -82,6 +85,23 @@ describe('scaleComponent (CanvasScaleComponent.ts)', () => {
     expect(s).toContain('transform-origin: 0 0');
   });
 
+  it('wheelEventToZoomFactor returns 1 for zero delta', () => {
+    const ev = new WheelEvent('wheel', { deltaY: 0 });
+    expect(wheelEventToZoomFactor(ev)).toBe(1);
+  });
+
+  it('wheelEventToZoomFactor scales gently for small trackpad deltas', () => {
+    const ev = new WheelEvent('wheel', { deltaY: -2, deltaMode: WheelEvent.DOM_DELTA_PIXEL });
+    const factor = wheelEventToZoomFactor(ev);
+    expect(factor).toBeGreaterThan(1);
+    expect(factor).toBeLessThan(1.01);
+  });
+
+  it('wheelEventToZoomFactor caps large wheel deltas', () => {
+    const ev = new WheelEvent('wheel', { deltaY: -500, deltaMode: WheelEvent.DOM_DELTA_PIXEL });
+    expect(wheelEventToZoomFactor(ev)).toBe(1.025);
+  });
+
   it('onWheel prevents default and zooms in when deltaY is negative', () => {
     const c = mountScale();
     const el = document.createElement('div');
@@ -96,12 +116,33 @@ describe('scaleComponent (CanvasScaleComponent.ts)', () => {
       y: 20,
       toJSON: () => ({}),
     } as DOMRect);
-    const ev = wheelEvent({ clientX: 50, clientY: 60, deltaY: -1, currentTarget: el });
+    const ev = wheelEvent({ clientX: 50, clientY: 60, deltaY: -100, currentTarget: el });
     const pd = vi.spyOn(ev, 'preventDefault');
     c.onWheel.call(c, ev);
     expect(pd).toHaveBeenCalled();
     expect(c.scale).toBeGreaterThan(1);
+    expect(c.scale).toBeLessThan(1.05);
     expect(c.dirty).toBe(true);
+  });
+
+  it('onWheel ignores zero delta without marking dirty', () => {
+    const c = mountScale();
+    const el = document.createElement('div');
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 80,
+      right: 100,
+      bottom: 80,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    const ev = wheelEvent({ clientX: 50, clientY: 60, deltaY: 0, currentTarget: el });
+    c.onWheel.call(c, ev);
+    expect(c.scale).toBe(1);
+    expect(c.dirty).toBe(false);
   });
 
   it('onWheel zooms out when deltaY is positive', () => {
@@ -121,9 +162,10 @@ describe('scaleComponent (CanvasScaleComponent.ts)', () => {
       y: 0,
       toJSON: () => ({}),
     } as DOMRect);
-    const ev = wheelEvent({ clientX: 100, clientY: 100, deltaY: 1, currentTarget: el });
+    const ev = wheelEvent({ clientX: 100, clientY: 100, deltaY: 100, currentTarget: el });
     c.onWheel.call(c, ev);
     expect(c.scale).toBeLessThan(2);
+    expect(c.scale).toBeCloseTo(1.95, 5);
     expect(c.dirty).toBe(true);
   });
 
