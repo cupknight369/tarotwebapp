@@ -9,475 +9,480 @@
   aria-labelledby="settings-title"
 >
   <div
-    class="relative bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto"
+    class="relative mx-4 flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-lg border border-gray-700 bg-gray-800 shadow-xl"
   >
-    <button
-      type="button"
-      class="cursor-pointer absolute top-2 right-2 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-      aria-label="Close"
-      :disabled="isSettingsBusy()"
-      :class="isSettingsBusy() ? 'opacity-40 cursor-not-allowed' : ''"
-      @click="$store.settings.open = false"
-    >
-      <span class="text-xl leading-none">×</span>
-    </button>
-
-    <p id="settings-title" class="text-xl font-bold text-gray-200 pr-8 mb-6">App Settings</p>
-    <label class="flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        x-model="$store.settings.censored"
-        :disabled="isSettingsBusy()"
-        class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-      />
-      <span class="text-gray-200">Censored</span>
-    </label>
-    <label class="flex items-center gap-2 cursor-pointer mt-4">
-      <input
-        type="checkbox"
-        x-model="$store.settings.showDeckTitleOnCanvas"
-        :disabled="isSettingsBusy()"
-        class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-      />
-      <span class="text-gray-200">Show active deck on canvas</span>
-    </label>
-    <label class="flex items-center gap-2 cursor-pointer mt-4">
-      <input
-        type="checkbox"
-        x-model="$store.settings.showCorrespondenceThumbnailsOnCanvas"
-        :disabled="isSettingsBusy()"
-        class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-      />
-      <span class="text-gray-200">Show correspondence thumbnails</span>
-    </label>
-    <label class="flex items-center gap-2 cursor-pointer mt-4">
-      <input
-        type="checkbox"
-        x-model="$store.settings.showCorrespondenceCountBarOnCanvas"
-        :disabled="isSettingsBusy()"
-        class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-      />
-      <span class="text-gray-200">Show correspondence count on canvas</span>
-    </label>
-    <label class="flex items-center gap-2 cursor-pointer mt-4">
-      <input
-        type="checkbox"
-        x-model="$store.settings.showCardCountBarOnCanvas"
-        :disabled="isSettingsBusy()"
-        class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-      />
-      <span class="text-gray-200">Show card count on canvas</span>
-    </label>
-
-    <div class="mt-4">
+    <div class="relative shrink-0 border-b border-gray-700 px-6 pb-4 pt-6">
       <button
         type="button"
-        class="cursor-pointer w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="cursor-pointer absolute right-2 top-2 rounded p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+        aria-label="Close"
         :disabled="isSettingsBusy()"
-        @click="$dispatch('open-correspondence-manager')"
+        :class="isSettingsBusy() ? 'opacity-40 cursor-not-allowed' : ''"
+        @click="$store.settings.open = false"
       >
-        Manage correspondences…
+        <span class="text-xl leading-none">×</span>
       </button>
+
+      <p id="settings-title" class="pr-8 text-xl font-bold text-gray-200">App Settings</p>
     </div>
 
-    <div class="border-t border-gray-700 mt-6 pt-6">
-      <p class="text-sm font-medium text-gray-300 mb-1">Correspondence data</p>
-      <p class="text-xs text-gray-500 mb-3">
-        Export selected groups to a file, or import to add copies without replacing existing
-        entries.
-      </p>
-      <p x-show="correspondenceGroupsPending" x-cloak class="text-xs text-gray-400 mb-2">
-        Loading groups…
-      </p>
-      <p
-        x-show="correspondenceGroupsLoadError"
-        x-cloak
-        class="text-xs text-red-400 mb-2"
-        x-text="correspondenceGroupsLoadError"
-      ></p>
-      <div
-        x-show="correspondenceGroups.length && !correspondenceGroupsPending"
-        x-cloak
-        class="mb-3"
-      >
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <span class="text-xs text-gray-400">Groups to export</span>
-          <span class="text-xs shrink-0">
-            <button
-              type="button"
-              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
-              :disabled="isSettingsBusy()"
-              @click="selectAllCorrespondenceGroups()"
-            >
-              Select all
-            </button>
-            <span class="text-gray-600 mx-1">·</span>
-            <button
-              type="button"
-              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
-              :disabled="isSettingsBusy()"
-              @click="clearCorrespondenceGroupSelection()"
-            >
-              Clear all
-            </button>
-          </span>
-        </div>
-        <ul
-          class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
-        >
-          <template x-for="g in correspondenceGroups" :key="g.id">
-            <li>
-              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
-                <input
-                  type="checkbox"
-                  class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-                  :checked="isCorrespondenceGroupSelected(g.id)"
-                  :disabled="isSettingsBusy()"
-                  @change="toggleCorrespondenceGroup(g.id)"
-                />
-                <span x-text="g.title"></span>
-              </label>
-            </li>
-          </template>
-        </ul>
-      </div>
-      <div class="flex flex-col gap-2">
-        <button
-          type="button"
-          class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="!canExportCorrespondences() || isSettingsBusy()"
-          @click="openCorrespondenceExportConfirm()"
-        >
-          Export correspondences…
-        </button>
-        <button
-          type="button"
-          class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+    <div class="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          x-model="$store.settings.censored"
           :disabled="isSettingsBusy()"
-          @click="openCorrespondenceImportConfirm()"
+          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+        />
+        <span class="text-gray-200">Censored</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer mt-4">
+        <input
+          type="checkbox"
+          x-model="$store.settings.showDeckTitleOnCanvas"
+          :disabled="isSettingsBusy()"
+          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+        />
+        <span class="text-gray-200">Show active deck on canvas</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer mt-4">
+        <input
+          type="checkbox"
+          x-model="$store.settings.showCorrespondenceThumbnailsOnCanvas"
+          :disabled="isSettingsBusy()"
+          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+        />
+        <span class="text-gray-200">Show correspondence thumbnails</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer mt-4">
+        <input
+          type="checkbox"
+          x-model="$store.settings.showCorrespondenceCountBarOnCanvas"
+          :disabled="isSettingsBusy()"
+          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+        />
+        <span class="text-gray-200">Show correspondence count on canvas</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer mt-4">
+        <input
+          type="checkbox"
+          x-model="$store.settings.showCardCountBarOnCanvas"
+          :disabled="isSettingsBusy()"
+          class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+        />
+        <span class="text-gray-200">Show card count on canvas</span>
+      </label>
+
+      <div class="mt-4">
+        <button
+          type="button"
+          class="cursor-pointer w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="isSettingsBusy()"
+          @click="$dispatch('open-correspondence-manager')"
         >
-          Import correspondences…
+          Manage correspondences…
         </button>
       </div>
-      <input
-        id="settings-correspondence-file-input"
-        type="file"
-        accept="application/octet-stream,.pb"
-        class="sr-only"
-        :disabled="isSettingsBusy()"
-        @change="onCorrespondenceImportFileChange($event)"
-      />
 
-      <div x-show="correspondenceTransferBusy" x-cloak class="mt-4 space-y-2">
-        <div class="h-2 bg-gray-700 rounded overflow-hidden">
-          <div
-            class="h-full bg-purple-600 transition-[width] duration-150"
-            :style="`width: ${getCorrespondencePercent()}%`"
-          ></div>
-        </div>
-        <p class="text-xs text-gray-400" x-text="correspondenceProgress.phase"></p>
-        <p class="text-xs text-gray-500">
-          <span x-text="getCorrespondenceElapsedLabel()"></span>
-          <span
-            x-show="getCorrespondenceEtaLabel()"
-            x-text="' · ' + getCorrespondenceEtaLabel()"
-          ></span>
+      <div class="border-t border-gray-700 mt-6 pt-6">
+        <p class="text-sm font-medium text-gray-300 mb-1">Correspondence data</p>
+        <p class="text-xs text-gray-500 mb-3">
+          Export selected groups to a file, or import to add copies without replacing existing
+          entries.
         </p>
-      </div>
-
-      <div x-show="correspondenceResultSummary" x-cloak class="mt-4 space-y-2">
-        <p class="text-sm text-gray-300" x-text="correspondenceResultSummary"></p>
-        <ul
-          x-show="correspondenceResultErrors.length"
-          class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
-        >
-          <template x-for="(err, idx) in correspondenceResultErrors" :key="idx">
-            <li x-text="err"></li>
-          </template>
-        </ul>
-      </div>
-    </div>
-
-    <div class="border-t border-gray-700 mt-6 pt-6">
-      <p class="text-sm font-medium text-gray-300 mb-1">Reading data</p>
-      <p class="text-xs text-gray-500 mb-3">
-        Export selected readings to a file, or import to add copies without replacing existing
-        entries.
-      </p>
-      <p x-show="readingsPending" x-cloak class="text-xs text-gray-400 mb-2">Loading readings…</p>
-      <p
-        x-show="readingsLoadError"
-        x-cloak
-        class="text-xs text-red-400 mb-2"
-        x-text="readingsLoadError"
-      ></p>
-      <div x-show="readingsForExport.length && !readingsPending" x-cloak class="mb-3">
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <span class="text-xs text-gray-400">Readings to export</span>
-          <span class="text-xs shrink-0">
-            <button
-              type="button"
-              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
-              :disabled="isSettingsBusy()"
-              @click="selectAllReadings()"
-            >
-              Select all
-            </button>
-            <span class="text-gray-600 mx-1">·</span>
-            <button
-              type="button"
-              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
-              :disabled="isSettingsBusy()"
-              @click="clearReadingSelection()"
-            >
-              Clear all
-            </button>
-          </span>
-        </div>
-        <ul
-          class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
-        >
-          <template x-for="r in readingsForExport" :key="r.id">
-            <li>
-              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
-                <input
-                  type="checkbox"
-                  class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-                  :checked="isReadingSelected(r.id)"
-                  :disabled="isSettingsBusy()"
-                  @change="toggleReading(r.id)"
-                />
-                <span class="min-w-0">
-                  <span x-text="r.name" class="block truncate"></span>
-                  <span
-                    x-text="formatReadingUpdatedAt(r.updated_at)"
-                    class="block text-xs text-gray-500 truncate"
-                  ></span>
-                </span>
-              </label>
-            </li>
-          </template>
-        </ul>
-      </div>
-      <div class="flex flex-col gap-2">
-        <button
-          type="button"
-          class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="!canExportReadings() || isSettingsBusy()"
-          @click="openReadingExportConfirm()"
-        >
-          Export readings…
-        </button>
-        <button
-          type="button"
-          class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="isSettingsBusy()"
-          @click="openReadingImportConfirm()"
-        >
-          Import readings…
-        </button>
-      </div>
-      <input
-        id="settings-reading-file-input"
-        type="file"
-        accept="application/octet-stream,.pb"
-        class="sr-only"
-        :disabled="isSettingsBusy()"
-        @change="onReadingImportFileChange($event)"
-      />
-
-      <div x-show="readingTransferBusy" x-cloak class="mt-4 space-y-2">
-        <div class="h-2 bg-gray-700 rounded overflow-hidden">
-          <div
-            class="h-full bg-purple-600 transition-[width] duration-150"
-            :style="`width: ${getReadingPercent()}%`"
-          ></div>
-        </div>
-        <p class="text-xs text-gray-400" x-text="readingProgress.phase"></p>
-        <p class="text-xs text-gray-500">
-          <span x-text="getReadingElapsedLabel()"></span>
-          <span x-show="getReadingEtaLabel()" x-text="' · ' + getReadingEtaLabel()"></span>
+        <p x-show="correspondenceGroupsPending" x-cloak class="text-xs text-gray-400 mb-2">
+          Loading groups…
         </p>
-      </div>
-
-      <div x-show="readingResultSummary" x-cloak class="mt-4 space-y-2">
-        <p class="text-sm text-gray-300" x-text="readingResultSummary"></p>
-        <ul
-          x-show="readingResultErrors.length"
-          class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
+        <p
+          x-show="correspondenceGroupsLoadError"
+          x-cloak
+          class="text-xs text-red-400 mb-2"
+          x-text="correspondenceGroupsLoadError"
+        ></p>
+        <div
+          x-show="correspondenceGroups.length && !correspondenceGroupsPending"
+          x-cloak
+          class="mb-3"
         >
-          <template x-for="(err, idx) in readingResultErrors" :key="idx">
-            <li x-text="err"></li>
-          </template>
-        </ul>
-      </div>
-    </div>
-
-    <div class="border-t border-gray-700 mt-6 pt-6">
-      <p class="text-sm font-medium text-gray-300 mb-1">Deck data</p>
-      <p class="text-xs text-gray-500 mb-3">
-        Export selected user-created decks to a file, or import to add copies without replacing
-        existing entries. Cloud-downloaded decks cannot be exported or imported.
-      </p>
-      <p x-show="userDecksPending" x-cloak class="text-xs text-gray-400 mb-2">Loading decks…</p>
-      <p
-        x-show="userDecksLoadError"
-        x-cloak
-        class="text-xs text-red-400 mb-2"
-        x-text="userDecksLoadError"
-      ></p>
-      <div x-show="userDecksForExport.length && !userDecksPending" x-cloak class="mb-3">
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <span class="text-xs text-gray-400">Decks to export</span>
-          <span class="text-xs shrink-0">
-            <button
-              type="button"
-              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
-              :disabled="isSettingsBusy()"
-              @click="selectAllDecks()"
-            >
-              Select all
-            </button>
-            <span class="text-gray-600 mx-1">·</span>
-            <button
-              type="button"
-              class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
-              :disabled="isSettingsBusy()"
-              @click="clearDeckSelection()"
-            >
-              Clear all
-            </button>
-          </span>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-xs text-gray-400">Groups to export</span>
+            <span class="text-xs shrink-0">
+              <button
+                type="button"
+                class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+                :disabled="isSettingsBusy()"
+                @click="selectAllCorrespondenceGroups()"
+              >
+                Select all
+              </button>
+              <span class="text-gray-600 mx-1">·</span>
+              <button
+                type="button"
+                class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+                :disabled="isSettingsBusy()"
+                @click="clearCorrespondenceGroupSelection()"
+              >
+                Clear all
+              </button>
+            </span>
+          </div>
+          <ul
+            class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
+          >
+            <template x-for="g in correspondenceGroups" :key="g.id">
+              <li>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
+                  <input
+                    type="checkbox"
+                    class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+                    :checked="isCorrespondenceGroupSelected(g.id)"
+                    :disabled="isSettingsBusy()"
+                    @change="toggleCorrespondenceGroup(g.id)"
+                  />
+                  <span x-text="g.title"></span>
+                </label>
+              </li>
+            </template>
+          </ul>
         </div>
-        <ul
-          class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
-        >
-          <template x-for="d in userDecksForExport" :key="d.id">
-            <li>
-              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
-                <input
-                  type="checkbox"
-                  class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
-                  :checked="isDeckSelected(d.id)"
-                  :disabled="isSettingsBusy()"
-                  @change="toggleDeck(d.id)"
-                />
-                <span x-text="d.title" class="block truncate"></span>
-              </label>
-            </li>
-          </template>
-        </ul>
-      </div>
-      <div class="flex flex-col gap-2">
-        <button
-          type="button"
-          class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="!canExportDecks() || isSettingsBusy()"
-          @click="openDeckExportConfirm()"
-        >
-          Export decks…
-        </button>
-        <button
-          type="button"
-          class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        <div class="flex flex-col gap-2">
+          <button
+            type="button"
+            class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canExportCorrespondences() || isSettingsBusy()"
+            @click="openCorrespondenceExportConfirm()"
+          >
+            Export correspondences…
+          </button>
+          <button
+            type="button"
+            class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="isSettingsBusy()"
+            @click="openCorrespondenceImportConfirm()"
+          >
+            Import correspondences…
+          </button>
+        </div>
+        <input
+          id="settings-correspondence-file-input"
+          type="file"
+          accept="application/octet-stream,.pb"
+          class="sr-only"
           :disabled="isSettingsBusy()"
-          @click="openDeckImportConfirm()"
-        >
-          Import decks…
-        </button>
-      </div>
-      <input
-        id="settings-deck-file-input"
-        type="file"
-        accept="application/octet-stream,.pb"
-        class="sr-only"
-        :disabled="isSettingsBusy()"
-        @change="onDeckImportFileChange($event)"
-      />
+          @change="onCorrespondenceImportFileChange($event)"
+        />
 
-      <div x-show="deckTransferBusy" x-cloak class="mt-4 space-y-2">
-        <div class="h-2 bg-gray-700 rounded overflow-hidden">
-          <div
-            class="h-full bg-purple-600 transition-[width] duration-150"
-            :style="`width: ${getDeckPercent()}%`"
-          ></div>
+        <div x-show="correspondenceTransferBusy" x-cloak class="mt-4 space-y-2">
+          <div class="h-2 bg-gray-700 rounded overflow-hidden">
+            <div
+              class="h-full bg-purple-600 transition-[width] duration-150"
+              :style="`width: ${getCorrespondencePercent()}%`"
+            ></div>
+          </div>
+          <p class="text-xs text-gray-400" x-text="correspondenceProgress.phase"></p>
+          <p class="text-xs text-gray-500">
+            <span x-text="getCorrespondenceElapsedLabel()"></span>
+            <span
+              x-show="getCorrespondenceEtaLabel()"
+              x-text="' · ' + getCorrespondenceEtaLabel()"
+            ></span>
+          </p>
         </div>
-        <p class="text-xs text-gray-400" x-text="deckProgress.phase"></p>
-        <p class="text-xs text-gray-500">
-          <span x-text="getDeckElapsedLabel()"></span>
-          <span x-show="getDeckEtaLabel()" x-text="' · ' + getDeckEtaLabel()"></span>
+
+        <div x-show="correspondenceResultSummary" x-cloak class="mt-4 space-y-2">
+          <p class="text-sm text-gray-300" x-text="correspondenceResultSummary"></p>
+          <ul
+            x-show="correspondenceResultErrors.length"
+            class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
+          >
+            <template x-for="(err, idx) in correspondenceResultErrors" :key="idx">
+              <li x-text="err"></li>
+            </template>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-700 mt-6 pt-6">
+        <p class="text-sm font-medium text-gray-300 mb-1">Reading data</p>
+        <p class="text-xs text-gray-500 mb-3">
+          Export selected readings to a file, or import to add copies without replacing existing
+          entries.
         </p>
-      </div>
-
-      <div x-show="deckResultSummary" x-cloak class="mt-4 space-y-2">
-        <p class="text-sm text-gray-300" x-text="deckResultSummary"></p>
-        <ul
-          x-show="deckResultErrors.length"
-          class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
-        >
-          <template x-for="(err, idx) in deckResultErrors" :key="idx">
-            <li x-text="err"></li>
-          </template>
-        </ul>
-      </div>
-    </div>
-
-    <div class="border-t border-gray-700 mt-6 pt-6">
-      <p class="text-sm font-medium text-gray-300 mb-1">IndexedDB storage (estimate)</p>
-      <p class="text-xs text-gray-400 mb-4" x-text="formatStorageLine()"></p>
-      <p class="text-sm font-medium text-gray-300 mb-3">Local backup</p>
-      <p class="text-xs text-gray-500 mb-3">Export or import a backup JSON file.</p>
-      <div class="flex flex-col gap-2">
-        <button
-          type="button"
-          class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="isSettingsBusy()"
-          @click="openExportConfirm()"
-        >
-          Export local data…
-        </button>
-        <button
-          type="button"
-          class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="isSettingsBusy()"
-          @click="openImportConfirm()"
-        >
-          Import from backup…
-        </button>
-      </div>
-      <input
-        id="settings-backup-file-input"
-        type="file"
-        accept="application/octet-stream,.pb"
-        class="sr-only"
-        :disabled="isSettingsBusy()"
-        @change="onImportFileChange($event)"
-      />
-
-      <div x-show="backupBusy" x-cloak class="mt-4 space-y-2">
-        <div class="h-2 bg-gray-700 rounded overflow-hidden">
-          <div
-            class="h-full bg-purple-600 transition-[width] duration-150"
-            :style="`width: ${getBackupPercent()}%`"
-          ></div>
+        <p x-show="readingsPending" x-cloak class="text-xs text-gray-400 mb-2">Loading readings…</p>
+        <p
+          x-show="readingsLoadError"
+          x-cloak
+          class="text-xs text-red-400 mb-2"
+          x-text="readingsLoadError"
+        ></p>
+        <div x-show="readingsForExport.length && !readingsPending" x-cloak class="mb-3">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-xs text-gray-400">Readings to export</span>
+            <span class="text-xs shrink-0">
+              <button
+                type="button"
+                class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+                :disabled="isSettingsBusy()"
+                @click="selectAllReadings()"
+              >
+                Select all
+              </button>
+              <span class="text-gray-600 mx-1">·</span>
+              <button
+                type="button"
+                class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+                :disabled="isSettingsBusy()"
+                @click="clearReadingSelection()"
+              >
+                Clear all
+              </button>
+            </span>
+          </div>
+          <ul
+            class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
+          >
+            <template x-for="r in readingsForExport" :key="r.id">
+              <li>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
+                  <input
+                    type="checkbox"
+                    class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+                    :checked="isReadingSelected(r.id)"
+                    :disabled="isSettingsBusy()"
+                    @change="toggleReading(r.id)"
+                  />
+                  <span class="min-w-0">
+                    <span x-text="r.name" class="block truncate"></span>
+                    <span
+                      x-text="formatReadingUpdatedAt(r.updated_at)"
+                      class="block text-xs text-gray-500 truncate"
+                    ></span>
+                  </span>
+                </label>
+              </li>
+            </template>
+          </ul>
         </div>
-        <p class="text-xs text-gray-400" x-text="backupProgress.phase"></p>
-        <p class="text-xs text-gray-500">
-          <span x-text="getElapsedLabel()"></span>
-          <span x-show="getEtaLabel()" x-text="' · ' + getEtaLabel()"></span>
-        </p>
+        <div class="flex flex-col gap-2">
+          <button
+            type="button"
+            class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canExportReadings() || isSettingsBusy()"
+            @click="openReadingExportConfirm()"
+          >
+            Export readings…
+          </button>
+          <button
+            type="button"
+            class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="isSettingsBusy()"
+            @click="openReadingImportConfirm()"
+          >
+            Import readings…
+          </button>
+        </div>
+        <input
+          id="settings-reading-file-input"
+          type="file"
+          accept="application/octet-stream,.pb"
+          class="sr-only"
+          :disabled="isSettingsBusy()"
+          @change="onReadingImportFileChange($event)"
+        />
+
+        <div x-show="readingTransferBusy" x-cloak class="mt-4 space-y-2">
+          <div class="h-2 bg-gray-700 rounded overflow-hidden">
+            <div
+              class="h-full bg-purple-600 transition-[width] duration-150"
+              :style="`width: ${getReadingPercent()}%`"
+            ></div>
+          </div>
+          <p class="text-xs text-gray-400" x-text="readingProgress.phase"></p>
+          <p class="text-xs text-gray-500">
+            <span x-text="getReadingElapsedLabel()"></span>
+            <span x-show="getReadingEtaLabel()" x-text="' · ' + getReadingEtaLabel()"></span>
+          </p>
+        </div>
+
+        <div x-show="readingResultSummary" x-cloak class="mt-4 space-y-2">
+          <p class="text-sm text-gray-300" x-text="readingResultSummary"></p>
+          <ul
+            x-show="readingResultErrors.length"
+            class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
+          >
+            <template x-for="(err, idx) in readingResultErrors" :key="idx">
+              <li x-text="err"></li>
+            </template>
+          </ul>
+        </div>
       </div>
 
-      <div x-show="backupResultSummary" x-cloak class="mt-4 space-y-2">
-        <p class="text-sm text-gray-300" x-text="backupResultSummary"></p>
-        <ul
-          x-show="backupResultErrors.length"
-          class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
-        >
-          <template x-for="(err, idx) in backupResultErrors" :key="idx">
-            <li x-text="err"></li>
-          </template>
-        </ul>
+      <div class="border-t border-gray-700 mt-6 pt-6">
+        <p class="text-sm font-medium text-gray-300 mb-1">Deck data</p>
+        <p class="text-xs text-gray-500 mb-3">
+          Export selected user-created decks to a file, or import to add copies without replacing
+          existing entries. Cloud-downloaded decks cannot be exported or imported.
+        </p>
+        <p x-show="userDecksPending" x-cloak class="text-xs text-gray-400 mb-2">Loading decks…</p>
+        <p
+          x-show="userDecksLoadError"
+          x-cloak
+          class="text-xs text-red-400 mb-2"
+          x-text="userDecksLoadError"
+        ></p>
+        <div x-show="userDecksForExport.length && !userDecksPending" x-cloak class="mb-3">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-xs text-gray-400">Decks to export</span>
+            <span class="text-xs shrink-0">
+              <button
+                type="button"
+                class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+                :disabled="isSettingsBusy()"
+                @click="selectAllDecks()"
+              >
+                Select all
+              </button>
+              <span class="text-gray-600 mx-1">·</span>
+              <button
+                type="button"
+                class="cursor-pointer text-purple-400 hover:text-purple-300 disabled:opacity-50"
+                :disabled="isSettingsBusy()"
+                @click="clearDeckSelection()"
+              >
+                Clear all
+              </button>
+            </span>
+          </div>
+          <ul
+            class="max-h-32 overflow-y-auto space-y-2 rounded border border-gray-700 bg-gray-900/50 p-2"
+          >
+            <template x-for="d in userDecksForExport" :key="d.id">
+              <li>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-200">
+                  <input
+                    type="checkbox"
+                    class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+                    :checked="isDeckSelected(d.id)"
+                    :disabled="isSettingsBusy()"
+                    @change="toggleDeck(d.id)"
+                  />
+                  <span x-text="d.title" class="block truncate"></span>
+                </label>
+              </li>
+            </template>
+          </ul>
+        </div>
+        <div class="flex flex-col gap-2">
+          <button
+            type="button"
+            class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canExportDecks() || isSettingsBusy()"
+            @click="openDeckExportConfirm()"
+          >
+            Export decks…
+          </button>
+          <button
+            type="button"
+            class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="isSettingsBusy()"
+            @click="openDeckImportConfirm()"
+          >
+            Import decks…
+          </button>
+        </div>
+        <input
+          id="settings-deck-file-input"
+          type="file"
+          accept="application/octet-stream,.pb"
+          class="sr-only"
+          :disabled="isSettingsBusy()"
+          @change="onDeckImportFileChange($event)"
+        />
+
+        <div x-show="deckTransferBusy" x-cloak class="mt-4 space-y-2">
+          <div class="h-2 bg-gray-700 rounded overflow-hidden">
+            <div
+              class="h-full bg-purple-600 transition-[width] duration-150"
+              :style="`width: ${getDeckPercent()}%`"
+            ></div>
+          </div>
+          <p class="text-xs text-gray-400" x-text="deckProgress.phase"></p>
+          <p class="text-xs text-gray-500">
+            <span x-text="getDeckElapsedLabel()"></span>
+            <span x-show="getDeckEtaLabel()" x-text="' · ' + getDeckEtaLabel()"></span>
+          </p>
+        </div>
+
+        <div x-show="deckResultSummary" x-cloak class="mt-4 space-y-2">
+          <p class="text-sm text-gray-300" x-text="deckResultSummary"></p>
+          <ul
+            x-show="deckResultErrors.length"
+            class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
+          >
+            <template x-for="(err, idx) in deckResultErrors" :key="idx">
+              <li x-text="err"></li>
+            </template>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-700 mt-6 pt-6">
+        <p class="text-sm font-medium text-gray-300 mb-1">IndexedDB storage (estimate)</p>
+        <p class="text-xs text-gray-400 mb-4" x-text="formatStorageLine()"></p>
+        <p class="text-sm font-medium text-gray-300 mb-3">Local backup</p>
+        <p class="text-xs text-gray-500 mb-3">Export or import a backup JSON file.</p>
+        <div class="flex flex-col gap-2">
+          <button
+            type="button"
+            class="cursor-pointer px-3 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="isSettingsBusy()"
+            @click="openExportConfirm()"
+          >
+            Export local data…
+          </button>
+          <button
+            type="button"
+            class="cursor-pointer px-3 py-2 rounded-lg bg-gray-700 text-gray-200 text-sm border border-gray-600 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="isSettingsBusy()"
+            @click="openImportConfirm()"
+          >
+            Import from backup…
+          </button>
+        </div>
+        <input
+          id="settings-backup-file-input"
+          type="file"
+          accept="application/octet-stream,.pb"
+          class="sr-only"
+          :disabled="isSettingsBusy()"
+          @change="onImportFileChange($event)"
+        />
+
+        <div x-show="backupBusy" x-cloak class="mt-4 space-y-2">
+          <div class="h-2 bg-gray-700 rounded overflow-hidden">
+            <div
+              class="h-full bg-purple-600 transition-[width] duration-150"
+              :style="`width: ${getBackupPercent()}%`"
+            ></div>
+          </div>
+          <p class="text-xs text-gray-400" x-text="backupProgress.phase"></p>
+          <p class="text-xs text-gray-500">
+            <span x-text="getElapsedLabel()"></span>
+            <span x-show="getEtaLabel()" x-text="' · ' + getEtaLabel()"></span>
+          </p>
+        </div>
+
+        <div x-show="backupResultSummary" x-cloak class="mt-4 space-y-2">
+          <p class="text-sm text-gray-300" x-text="backupResultSummary"></p>
+          <ul
+            x-show="backupResultErrors.length"
+            class="text-xs text-red-400 max-h-32 overflow-y-auto list-disc pl-4 space-y-1"
+          >
+            <template x-for="(err, idx) in backupResultErrors" :key="idx">
+              <li x-text="err"></li>
+            </template>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
