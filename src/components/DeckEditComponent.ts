@@ -15,8 +15,9 @@ import {
   type CorrespondenceGroupSection,
 } from '../lib/localCorrespondences.js';
 import type { TarotCard } from '../types/canvas.js';
-import { addLocalCardFormSchema, saveLocalCardFormSchema } from '../validation/decks.js';
+import { addLocalCardFormSchema, deckCardNumberSchema, saveLocalCardFormSchema, DECK_CARD_NUMBER_MIN, DECK_CARD_NUMBER_MAX } from '../validation/decks.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
+import { numericInputStepDelta, stepBoundedIntegerString } from '../lib/numericInput.js';
 
 type OpenDeckEditDetail = { deckId?: string; deckTitle?: string };
 
@@ -86,9 +87,11 @@ Alpine.data('deckEditComponent', () => ({
   selectedCardIds: [] as string[],
   editTitle: '',
   editNumber: 1,
+  editNumberDraft: '1',
   clearCensor: false,
   newCardTitle: '',
   newCardNumber: 1,
+  newCardNumberDraft: '1',
   cardSearchQuery: '',
   correspondenceSearchQuery: '',
   correspondenceSections: [] as CorrespondenceGroupSection[],
@@ -179,9 +182,65 @@ Alpine.data('deckEditComponent', () => ({
     }
   },
 
+  setNewCardNumber(value: number) {
+    this.newCardNumber = value;
+    this.newCardNumberDraft = String(value);
+  },
+
+  setEditNumber(value: number) {
+    this.editNumber = value;
+    this.editNumberDraft = String(value);
+  },
+
+  applyNewCardNumberDraft() {
+    const parsed = deckCardNumberSchema.safeParse(this.newCardNumberDraft);
+    if (!parsed.success) {
+      this.newCardNumberDraft = String(this.newCardNumber);
+      return;
+    }
+    this.setNewCardNumber(parsed.data);
+  },
+
+  applyEditNumberDraft() {
+    const parsed = deckCardNumberSchema.safeParse(this.editNumberDraft);
+    if (!parsed.success) {
+      this.editNumberDraft = String(this.editNumber);
+      return;
+    }
+    this.setEditNumber(parsed.data);
+  },
+
+  handleNewCardNumberKeydown(e: KeyboardEvent) {
+    const delta = numericInputStepDelta(e.key);
+    if (delta === null) return;
+    e.preventDefault();
+    this.newCardNumberDraft = stepBoundedIntegerString(
+      this.newCardNumberDraft,
+      delta,
+      DECK_CARD_NUMBER_MIN,
+      DECK_CARD_NUMBER_MAX,
+      DECK_CARD_NUMBER_MIN,
+    );
+    this.applyNewCardNumberDraft();
+  },
+
+  handleEditNumberKeydown(e: KeyboardEvent) {
+    const delta = numericInputStepDelta(e.key);
+    if (delta === null) return;
+    e.preventDefault();
+    this.editNumberDraft = stepBoundedIntegerString(
+      this.editNumberDraft,
+      delta,
+      DECK_CARD_NUMBER_MIN,
+      DECK_CARD_NUMBER_MAX,
+      DECK_CARD_NUMBER_MIN,
+    );
+    this.applyEditNumberDraft();
+  },
+
   resetForm() {
     this.editTitle = '';
-    this.editNumber = 1;
+    this.setEditNumber(1);
     this.clearCensor = false;
     this.clearFileInputs();
   },
@@ -191,7 +250,7 @@ Alpine.data('deckEditComponent', () => ({
     this.selectedCardIds = [];
     this.addError = null;
     this.newCardTitle = '';
-    this.newCardNumber = 1;
+    this.setNewCardNumber(1);
     this.clearAddFileInputs();
     this.resetForm();
   },
@@ -206,7 +265,7 @@ Alpine.data('deckEditComponent', () => ({
       this.formMode = 'add';
       this.selectedCardIds = [];
       this.newCardTitle = '';
-      this.newCardNumber = 1;
+      this.setNewCardNumber(1);
     }
   },
 
@@ -235,7 +294,7 @@ Alpine.data('deckEditComponent', () => ({
         this.resetForm();
         this.formMode = 'add';
         this.newCardTitle = '';
-        this.newCardNumber = 1;
+        this.setNewCardNumber(1);
         this.clearAddFileInputs();
         return;
       }
@@ -278,7 +337,7 @@ Alpine.data('deckEditComponent', () => ({
     this.loadError = null;
     this.formMode = 'edit';
     this.newCardTitle = '';
-    this.newCardNumber = 1;
+    this.setNewCardNumber(1);
     this.cardSearchQuery = '';
     this.correspondenceSearchQuery = '';
     this.resetForm();
@@ -298,12 +357,12 @@ Alpine.data('deckEditComponent', () => ({
     const card = this.cards.find((c) => c.id === id);
     if (!card) {
       this.editTitle = '';
-      this.editNumber = 1;
+      this.setEditNumber(1);
       this.selectedCorrespondenceIds = [];
       return;
     }
     this.editTitle = card.title;
-    this.editNumber = card.num;
+    this.setEditNumber(card.num);
     void this.loadCorrespondenceSelection();
   },
 
@@ -376,7 +435,7 @@ Alpine.data('deckEditComponent', () => ({
       this.resetForm();
       this.formMode = 'add';
       this.newCardTitle = '';
-      this.newCardNumber = 1;
+      this.setNewCardNumber(1);
       this.clearAddFileInputs();
     } else {
       this.cards = cardsRes.value;
@@ -399,6 +458,7 @@ Alpine.data('deckEditComponent', () => ({
 
   async submitAddCard() {
     if (!this.deckId) return;
+    this.applyNewCardNumberDraft();
     const mainInput = document.getElementById('deck-edit-add-main') as HTMLInputElement | null;
     const censorInput = document.getElementById('deck-edit-add-censor') as HTMLInputElement | null;
     const mainFile = mainInput?.files?.[0];
@@ -426,7 +486,7 @@ Alpine.data('deckEditComponent', () => ({
       });
       this.clearAddFileInputs();
       this.newCardTitle = '';
-      this.newCardNumber = 1;
+      this.setNewCardNumber(1);
       this.localEmpty = false;
       const cardsRes = await getCardsByDeckId(deckId);
       if (!cardsRes.ok) {
@@ -455,6 +515,7 @@ Alpine.data('deckEditComponent', () => ({
       this.formMode !== 'edit'
     )
       return;
+    this.applyEditNumberDraft();
     const mainInput = document.getElementById('deck-edit-main') as HTMLInputElement | null;
     const censorInput = document.getElementById('deck-edit-censor') as HTMLInputElement | null;
     const mainFile = mainInput?.files?.[0];

@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import { DialogStoreState } from '../types/dialog.js';
 import { dialogBoundedIntSchema, readingTitleSchema } from '../validation/dialog.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
+import { numericInputStepDelta, stepBoundedIntegerString } from '../lib/numericInput.js';
 
 const DEFAULT_DIALOG_STATE: DialogStoreState = {
   open: false,
@@ -121,5 +122,15 @@ Alpine.data('dialogComponent', () => ({
     const d = this.store;
     this.inputError = '';
     this.inputValue = d?.inputDefault ?? '';
+  },
+
+  handleInputValueKeydown(e: KeyboardEvent) {
+    const delta = numericInputStepDelta(e.key);
+    if (delta === null) return;
+    e.preventDefault();
+    const d = this.store;
+    const min = d?.inputMin ?? 0;
+    const max = d?.inputMax ?? 10;
+    this.inputValue = stepBoundedIntegerString(this.inputValue, delta, min, max, min);
   },
 }));

@@ -1523,7 +1523,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     expect(openDrawByNameAt).toHaveBeenCalledWith(333, 444);
   });
 
-  it('handleDrawByIndexShortcut opens draw-by-index dialog and prevents default', () => {
+  it('handleDrawByIndexShortcut opens draw-by-index dialog at context menu when open', () => {
     const ctx = createCtx();
     const preventDefault = vi.fn();
     const event = {
@@ -1532,11 +1532,33 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent;
     const openDrawByIndexDialog = vi.fn();
     window.draggableZoneComponent = {
+      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
       openDrawByIndexDialog,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
     } as unknown as typeof window.draggableZoneComponent;
     ctx.handleDrawByIndexShortcut.call(ctx, event);
     expect(preventDefault).toHaveBeenCalledTimes(1);
-    expect(openDrawByIndexDialog).toHaveBeenCalledTimes(1);
+    expect(openDrawByIndexDialog).toHaveBeenCalledWith(120, 240);
+  });
+
+  it('handleDrawByIndexShortcut opens draw-by-index dialog at last pointer position', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const openDrawByIndexDialog = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      openDrawByIndexDialog,
+      lastPointerScreenX: 333,
+      lastPointerScreenY: 444,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawByIndexShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(openDrawByIndexDialog).toHaveBeenCalledWith(333, 444);
   });
 
   it('handleDrawByIndexShortcut ignores editable targets', () => {

@@ -670,7 +670,23 @@ Alpine.data('stateComponent', () => ({
       return;
     }
     event.preventDefault();
-    window.draggableZoneComponent?.openDrawByIndexDialog();
+    const canvas = window.draggableZoneComponent;
+    if (!canvas) {
+      return;
+    }
+    if (canvas.contextMenu.open) {
+      canvas.openDrawByIndexDialog(canvas.contextMenu.x, canvas.contextMenu.y);
+      return;
+    }
+    if (canvas.lastPointerScreenX !== null && canvas.lastPointerScreenY !== null) {
+      canvas.openDrawByIndexDialog(canvas.lastPointerScreenX, canvas.lastPointerScreenY);
+      return;
+    }
+    if (!canvas.viewport) {
+      return;
+    }
+    const rect = canvas.viewport.getBoundingClientRect();
+    canvas.openDrawByIndexDialog(rect.left + rect.width / 2, rect.top + rect.height / 2);
   },
 
   handleAddTextShortcut(this: MergedThis, event: KeyboardEvent): void {

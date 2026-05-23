@@ -475,6 +475,16 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(cv.mock.calls.length).toBeGreaterThan(0);
   });
 
+  it('openDrawByIndexFromContextMenu opens dialog at menu coords and closes context menu', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.contextMenu = { open: true, x: 12, y: 34, cardId: null, textId: null };
+    ctx.openDrawByIndexDialog = vi.fn();
+    c.openDrawByIndexFromContextMenu.call(ctx);
+    expect(ctx.openDrawByIndexDialog).toHaveBeenCalledWith(12, 34);
+    expect(ctx.contextMenu.open).toBe(false);
+  });
+
   it('openDrawByNameFromContextMenu opens picker at menu coords and closes context menu', () => {
     const c = mountCanvas();
     const ctx = createMerged();

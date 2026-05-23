@@ -686,6 +686,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     ctx.deckId = 'd1';
     ctx.newCardTitle = 'Added';
     ctx.newCardNumber = 5;
+    ctx.newCardNumberDraft = '5';
     setFilesOnInput('deck-edit-add-main', [pngFile('main.png')]);
     setFilesOnInput('deck-edit-add-censor', [new File([], 'empty.png', { type: 'image/png' })]);
 
@@ -793,6 +794,7 @@ describe('deckEditComponent (DeckEditComponent.ts)', () => {
     ctx.selectedCardIds = ['c1'];
     ctx.editTitle = 'Renamed';
     ctx.editNumber = 4;
+    ctx.editNumberDraft = '4';
     ctx.clearCensor = false;
     const refreshed = [tarot({ id: 'c1', title: 'Renamed', num: 4 })];
     decksMocks.getCardsByDeckId.mockResolvedValue(ok(refreshed));

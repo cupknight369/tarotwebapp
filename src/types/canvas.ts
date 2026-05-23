@@ -147,7 +147,9 @@ export type MergedThis = {
   $nextTick(cb?: () => void): void;
   init(): void;
   shuffleDeck(): void;
-  openDrawByIndexDialog(): void;
+  openDrawByIndexDialog(screenX: number, screenY: number): void;
+  openDrawByIndexFromContextMenu(): void;
+  addCardAtScreenPosition(card: TarotCard, screenX: number, screenY: number): void;
   serializeState(): Promise<SavedReadingState>;
   deserializeState(state: SavedReadingState): Promise<void>;
 

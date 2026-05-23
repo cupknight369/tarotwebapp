@@ -3,9 +3,12 @@ import type { MergedThis, TextLabel, TextLabelAnchorPosition } from '../types/ca
 import {
   clampFixedWidthPx,
   clampLabelFontSize,
+  LABEL_FONT_SIZE_MIN,
+  LABEL_FONT_SIZE_MAX,
   labelColorSchema,
   labelTextSchema,
 } from '../validation/canvasLabel.js';
+import { numericInputStepDelta, stepBoundedIntegerString } from '../lib/numericInput.js';
 
 Alpine.data('textLabelComponent', () => ({
   textLabels: [] as TextLabel[],
@@ -20,6 +23,7 @@ Alpine.data('textLabelComponent', () => ({
   resizingTextId: null as string | null,
   textResizeStart: null as { startWidthPx: number; startDropX: number } | null,
   editingTextId: null as string | null,
+  editFontSizeInput: '16',
   pendingAnchor: null as {
     textId: string;
     cardId: string;
@@ -56,7 +60,7 @@ Alpine.data('textLabelComponent', () => ({
     };
     this.textLabels = [...this.textLabels, label];
     this.$nextTick(() => {
-      this.editingTextId = label.id;
+      this.startEditingTextLabel(label);
     });
     this.maxTextZIndex += 1;
     this.dirty = true;
@@ -146,8 +150,39 @@ Alpine.data('textLabelComponent', () => ({
     this.pendingAnchor = null;
   },
 
-  commitEditTextLabel() {
+  commitEditTextLabel(this: MergedThis) {
+    if (this.editingTextId) {
+      this.applyEditFontSizeInput(this.editingTextId);
+    }
     this.editingTextId = null;
+  },
+
+  startEditingTextLabel(this: MergedThis, label: TextLabel) {
+    this.editingTextId = label.id;
+    this.editFontSizeInput = String(label.fontSize);
+  },
+
+  applyEditFontSizeInput(this: MergedThis, labelId: string) {
+    const parsed = Number.parseInt(this.editFontSizeInput, 10);
+    this.updateTextLabel(labelId, { fontSize: Number.isFinite(parsed) ? parsed : 16 });
+    const label = this.textLabels.find((l) => l.id === labelId);
+    if (label) {
+      this.editFontSizeInput = String(label.fontSize);
+    }
+  },
+
+  handleEditFontSizeKeydown(this: MergedThis, labelId: string, e: KeyboardEvent) {
+    const delta = numericInputStepDelta(e.key);
+    if (delta === null) return;
+    e.preventDefault();
+    this.editFontSizeInput = stepBoundedIntegerString(
+      this.editFontSizeInput,
+      delta,
+      LABEL_FONT_SIZE_MIN,
+      LABEL_FONT_SIZE_MAX,
+      16,
+    );
+    this.applyEditFontSizeInput(labelId);
   },
 
   /**

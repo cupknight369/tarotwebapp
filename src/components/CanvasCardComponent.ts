@@ -47,7 +47,7 @@ Alpine.data('cardComponent', () => ({
     }, 3000);
   },
 
-  openDrawByIndexDialog(this: MergedThis) {
+  openDrawByIndexDialog(this: MergedThis, screenX: number, screenY: number) {
     const s = Alpine.store('shuffledCards') as TarotCard[];
     const max = Math.max(0, s.length - 1);
     Alpine.store('dialog', {
@@ -59,11 +59,17 @@ Alpine.data('cardComponent', () => ({
       inputDefault: '0',
       onSubmit: (i: number) => {
         if (i >= 0 && i <= max && s.length > 0) {
-          this.addCardToCanvas(s[i]);
+          this.addCardAtScreenPosition(s[i], screenX, screenY);
         }
       },
       onCancel: () => {},
     });
+  },
+
+  addCardAtScreenPosition(this: MergedThis, card: TarotCard, screenX: number, screenY: number) {
+    const { x, y } = this.screenToContent(screenX, screenY);
+    this.addCardToCanvas(card);
+    this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, { x, y });
   },
 
   addCardToCanvas(this: MergedThis, card: TarotCard): void {
@@ -121,12 +127,7 @@ Alpine.data('cardComponent', () => ({
   drawCardAt(this: MergedThis, x: number, y: number) {
     const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
     if (shuffledCards.length === 0) return;
-    const { x: contentX, y: contentY } = this.screenToContent(x, y);
-    this.addCardToCanvas(shuffledCards[this.cryptoRandomInt(shuffledCards.length)]);
-    this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, {
-      x: contentX,
-      y: contentY,
-    });
+    this.addCardAtScreenPosition(shuffledCards[this.cryptoRandomInt(shuffledCards.length)], x, y);
   },
 
   updateItem(this: MergedThis, id: string, newProps: Partial<DraggableCard>) {

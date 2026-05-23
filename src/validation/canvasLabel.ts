@@ -3,6 +3,11 @@ import { z } from 'zod';
 const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const TEXT_MAX = 10000;
 
+/** Inclusive lower bound for canvas text label font size inputs. */
+export const LABEL_FONT_SIZE_MIN = 1;
+/** Inclusive upper bound for canvas text label font size inputs. */
+export const LABEL_FONT_SIZE_MAX = 555;
+
 export const labelColorSchema = z
   .string()
   .regex(HEX_COLOR, 'Invalid color')
@@ -19,7 +24,7 @@ export const labelTextSchema = z
  */
 export function clampLabelFontSize(n: number): number {
   if (!Number.isFinite(n)) return 16;
-  return Math.min(555, Math.round(n));
+  return Math.min(LABEL_FONT_SIZE_MAX, Math.round(n));
 }
 
 const FIXED_WIDTH_MIN = 40;

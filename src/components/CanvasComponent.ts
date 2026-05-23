@@ -785,6 +785,12 @@ Alpine.data('canvasComponent', () => ({
     this.contextMenu.textId = null;
   },
 
+  openDrawByIndexFromContextMenu(this: MergedThis) {
+    const { x, y } = this.contextMenu;
+    this.openDrawByIndexDialog(x, y);
+    this.closeContextMenu();
+  },
+
   openDrawByNameAt(this: MergedThis, screenX: number, screenY: number) {
     this.drawByName = {
       screenX,

@@ -325,6 +325,17 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     expect(ctx.inputError).toBe('');
   });
 
+  it('handleInputValueKeydown steps within dialog min and max', () => {
+    const d = dialogState({ open: true, type: 'input', inputMin: 2, inputMax: 4 });
+    alpineCapture.rawStores.dialog = d;
+    const ctx = mount();
+    ctx.inputValue = '3';
+    ctx.handleInputValueKeydown.call(ctx, { key: 'ArrowUp', preventDefault: vi.fn() } as unknown as KeyboardEvent);
+    expect(ctx.inputValue).toBe('4');
+    ctx.handleInputValueKeydown.call(ctx, { key: 'ArrowDown', preventDefault: vi.fn() } as unknown as KeyboardEvent);
+    expect(ctx.inputValue).toBe('3');
+  });
+
   it('initInputTextValue resets error and uses inputDefault when set', () => {
     const d = dialogState({ inputDefault: 'hello' });
     alpineCapture.rawStores.dialog = d;

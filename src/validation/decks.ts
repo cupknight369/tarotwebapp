@@ -4,6 +4,11 @@ const TITLE_MAX = 200;
 const CARD_TITLE_MAX = 500;
 const CARD_NUMBER_MAX = 99999;
 
+/** Inclusive lower bound for deck card numbers (matches {@link deckCardNumberSchema}). */
+export const DECK_CARD_NUMBER_MIN = 0;
+/** Inclusive upper bound for deck card numbers (matches {@link deckCardNumberSchema}). */
+export const DECK_CARD_NUMBER_MAX = CARD_NUMBER_MAX;
+
 export const localDeckTitleSchema = z
   .string()
   .trim()

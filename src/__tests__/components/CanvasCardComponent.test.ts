@@ -47,7 +47,8 @@ type CardComponentApi = {
   getCardImg: (card: TarotCard, censored: boolean) => string;
   cardShowsPlaceholder: (card: TarotCard, censored: boolean) => boolean;
   shuffleDeck: () => void;
-  openDrawByIndexDialog: (this: MergedCtx) => void;
+  openDrawByIndexDialog: (this: MergedCtx, screenX: number, screenY: number) => void;
+  addCardAtScreenPosition: (this: MergedCtx, card: TarotCard, screenX: number, screenY: number) => void;
   addCardToCanvas: (this: MergedCtx, card: TarotCard) => void;
   generateCardId: () => string;
   cryptoRandomInt: (len: number) => number;
@@ -196,7 +197,7 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     }
   });
 
-  it('openDrawByIndexDialog wires onSubmit to addCardToCanvas', () => {
+  it('openDrawByIndexDialog wires onSubmit to addCardAtScreenPosition', () => {
     alpineStub.rawStores.shuffledCards = [baseCard];
     alpineStub.rawStores.activeDeckTitle = 'My deck';
     const base = mountBase();
@@ -205,13 +206,15 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     ctx.maxZIndex = 0;
     ctx.dirty = false;
 
-    base.openDrawByIndexDialog.call(ctx);
+    base.openDrawByIndexDialog.call(ctx, 100, 200);
     const dialog = alpineStub.rawStores.dialog as DialogState;
     expect(dialog.title).toContain('0-0');
     dialog.onSubmit(0);
 
     expect(ctx.draggableCards).toHaveLength(1);
     expect(ctx.draggableCards[0].card.deckTitle).toBe('My deck');
+    expect(ctx.draggableCards[0].x).toBe(95);
+    expect(ctx.draggableCards[0].y).toBe(193);
     expect(ctx.dirty).toBe(true);
   });
 
@@ -231,7 +234,7 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     alpineStub.rawStores.shuffledCards = [baseCard];
     const base = mountBase();
     const ctx = createMerged(base);
-    base.openDrawByIndexDialog.call(ctx);
+    base.openDrawByIndexDialog.call(ctx, 0, 0);
     const dialog = alpineStub.rawStores.dialog as DialogState;
     expect(() => dialog.onCancel()).not.toThrow();
   });
@@ -241,7 +244,7 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     const base = mountBase();
     const ctx = createMerged(base);
     ctx.draggableCards = [];
-    base.openDrawByIndexDialog.call(ctx);
+    base.openDrawByIndexDialog.call(ctx, 0, 0);
     const dialog = alpineStub.rawStores.dialog as DialogState;
     dialog.onSubmit(5);
     expect(ctx.draggableCards).toHaveLength(0);
@@ -251,7 +254,7 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     alpineStub.rawStores.shuffledCards = [];
     const base = mountBase();
     const ctx = createMerged(base);
-    base.openDrawByIndexDialog.call(ctx);
+    base.openDrawByIndexDialog.call(ctx, 0, 0);
     const dialog = alpineStub.rawStores.dialog as DialogState;
     dialog.onSubmit(0);
     expect(ctx.draggableCards).toHaveLength(0);
