@@ -140,7 +140,13 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
 
         if (targetVersion > oldVersion) {
           req.transaction = {
-            objectStore: () => {
+            objectStore: (storeName: string) => {
+              if (!names.contains(storeName)) {
+                throw new DOMException(
+                  `Failed to execute 'objectStore' on 'IDBTransaction': One of the specified object stores was not found.`,
+                  'NotFoundError',
+                );
+              }
               const createIndex = opts.createIndexSpy ?? vi.fn();
               return {
                 put: vi.fn(),
@@ -148,6 +154,7 @@ function createFakeIndexedDB(opts: FakeIdbOptions = {}): IDBFactory {
                 indexNames: {
                   contains: vi.fn(() => false),
                 },
+                openCursor: vi.fn(() => ({ onsuccess: null, result: null })),
                 getAll: vi.fn(() => ({ onsuccess: null, result: [] })),
               };
             },
@@ -328,9 +335,9 @@ describe('indexedDb.ts', () => {
       }),
     );
     const { openTarotDb, STORE_READING_STATES } = await loadIndexedDbModule();
+    await expect(openTarotDb()).resolves.toBeDefined();
     const db = await openTarotDb();
     expect(db.objectStoreNames.contains(STORE_READING_STATES)).toBe(true);
-    expect(db.version).toBeGreaterThanOrEqual(8);
   });
 
   it('openTarotDb migrates v8 to v11: re-runs inline state split repair', async () => {

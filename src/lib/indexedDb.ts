@@ -89,7 +89,13 @@ function migrateReadingStatesSplitData(
   db: IDBDatabase,
   upgradeTx: IDBTransaction | null,
 ): void {
-  if (!upgradeTx || !db.objectStoreNames.contains(STORE_READINGS)) return;
+  if (
+    !upgradeTx ||
+    !db.objectStoreNames.contains(STORE_READINGS) ||
+    !db.objectStoreNames.contains(STORE_READING_STATES)
+  ) {
+    return;
+  }
   const readingsStore = upgradeTx.objectStore(STORE_READINGS);
   const statesStore = upgradeTx.objectStore(STORE_READING_STATES);
   if (typeof readingsStore.openCursor !== 'function') return;
@@ -203,14 +209,14 @@ function runTarotDbUpgrade(
           db.createObjectStore(STORE_PENDING_DECK_DOWNLOADS, { keyPath: 'deckId' });
         }
       }
+      ensureReadingGroupsStore(db);
+      ensureReadingStatesStore(db);
       if (old < 7) {
         migrateReadingGroupsData(upgradeTx);
       }
       if (old < 11) {
         migrateReadingStatesSplitData(db, upgradeTx);
       }
-      ensureReadingGroupsStore(db);
-      ensureReadingStatesStore(db);
 }
 
 /**
