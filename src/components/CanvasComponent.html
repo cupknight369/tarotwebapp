@@ -8,6 +8,7 @@
         @keydown.window.ctrl.n="handleDrawByNameShortcut($event)"
         @keydown.window.ctrl.i="handleDrawByIndexShortcut($event)"
         @keydown.window.ctrl.t="handleAddTextShortcut($event)"
+        @keydown.window.ctrl.8="handleShuffleShortcut($event)"
         @keydown.window.escape="handleEscapeShortcut($event)"
         @readings-changed.window="loadModalOpen && refreshLoadModalReadings()"
         class="relative"
@@ -619,7 +620,7 @@
                 type="button"
                 class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
                 aria-label="Shuffle deck"
-                title="Shuffle deck"
+                title="Shuffle deck (ctrl + 8)"
                 @click="shuffleDeck()"
               >
                 ⇅

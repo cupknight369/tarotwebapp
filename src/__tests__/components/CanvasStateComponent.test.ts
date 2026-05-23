@@ -193,6 +193,7 @@ type StateCtx = {
   handleDrawByNameShortcut: (event: KeyboardEvent) => void;
   handleDrawByIndexShortcut: (event: KeyboardEvent) => void;
   handleAddTextShortcut: (event: KeyboardEvent) => void;
+  handleShuffleShortcut: (event: KeyboardEvent) => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
@@ -1395,6 +1396,30 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     ctx.handleSaveShortcut.call(ctx, event);
     expect(preventDefault).not.toHaveBeenCalled();
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it('handleShuffleShortcut shuffles deck and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleShuffleShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(ctx.shuffleDeck).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleShuffleShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('textarea'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleShuffleShortcut.call(ctx, event);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(ctx.shuffleDeck).not.toHaveBeenCalled();
   });
 
   it('handleDrawCardShortcut uses context menu coordinates when open', () => {

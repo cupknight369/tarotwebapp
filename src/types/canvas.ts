@@ -197,6 +197,7 @@ export type MergedThis = {
   handleDrawByNameShortcut(event: KeyboardEvent): void;
   handleDrawByIndexShortcut(event: KeyboardEvent): void;
   handleAddTextShortcut(event: KeyboardEvent): void;
+  handleShuffleShortcut(event: KeyboardEvent): void;
   handleEscapeShortcut(event: KeyboardEvent): void;
   showReadingSaveFlash(): void;
   triggerTitleDialog(): void;
