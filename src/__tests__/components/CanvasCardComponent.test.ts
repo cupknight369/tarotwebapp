@@ -48,11 +48,9 @@ type CardComponentApi = {
   cardShowsPlaceholder: (card: TarotCard, censored: boolean) => boolean;
   shuffleDeck: () => void;
   openDrawByIndexDialog: (this: MergedCtx) => void;
-  openDrawMultipleDialog: (this: MergedCtx) => void;
   addCardToCanvas: (this: MergedCtx, card: TarotCard) => void;
   generateCardId: () => string;
   cryptoRandomInt: (len: number) => number;
-  drawMultipleCards: (num: number) => Set<number> | undefined;
   drawCardAt: (this: MergedCtx, x: number, y: number) => void;
   updateItem: (this: MergedCtx, id: string, newProps: Partial<DraggableCard>) => void;
   deleteCard: (this: MergedCtx, cardId: string) => void;
@@ -71,8 +69,6 @@ type MergedCtx = CardComponentApi & {
   scale: number;
   updateTextLabel: (id: string, props: Partial<TextLabel>) => void;
   screenToContent: (screenX: number, screenY: number) => { x: number; y: number };
-  /** Optional override for dialog `onSubmit` tests. */
-  drawMultipleCards?: (num: number) => Set<number> | undefined;
 };
 
 const baseCard: TarotCard = {
@@ -200,44 +196,6 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     }
   });
 
-  it('drawMultipleCards returns undefined for out-of-range counts', () => {
-    const c = mountBase();
-    expect(c.drawMultipleCards(0)).toBeUndefined();
-    expect(c.drawMultipleCards(11)).toBeUndefined();
-  });
-
-  it('drawMultipleCards returns undefined when the deck is empty', () => {
-    alpineStub.rawStores.shuffledCards = [];
-    const c = mountBase();
-    expect(c.drawMultipleCards(3)).toBeUndefined();
-  });
-
-  it('drawMultipleCards returns a set of unique indices capped by deck size', () => {
-    alpineStub.rawStores.shuffledCards = [
-      baseCard,
-      { ...baseCard, id: '2' },
-      { ...baseCard, id: '3' },
-    ];
-    const c = mountBase();
-    const draws = c.drawMultipleCards(10);
-    expect(draws).toBeDefined();
-    expect(draws!.size).toBe(3);
-  });
-
-  it('drawMultipleCards retries cryptoRandomInt when the same index is drawn twice', () => {
-    alpineStub.rawStores.shuffledCards = [baseCard, { ...baseCard, id: '2' }];
-    const c = mountBase();
-    let n = 0;
-    vi.spyOn(c, 'cryptoRandomInt').mockImplementation((len: number) => {
-      const seq = [0, 0, 1];
-      const v = seq[Math.min(n, seq.length - 1)] ?? 0;
-      n += 1;
-      return v % len;
-    });
-    const draws = c.drawMultipleCards(2);
-    expect(draws!.size).toBe(2);
-  });
-
   it('openDrawByIndexDialog wires onSubmit to addCardToCanvas', () => {
     alpineStub.rawStores.shuffledCards = [baseCard];
     alpineStub.rawStores.activeDeckTitle = 'My deck';
@@ -296,60 +254,6 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     base.openDrawByIndexDialog.call(ctx);
     const dialog = alpineStub.rawStores.dialog as DialogState;
     dialog.onSubmit(0);
-    expect(ctx.draggableCards).toHaveLength(0);
-  });
-
-  it('openDrawMultipleDialog is a no-op when the deck is empty', () => {
-    alpineStub.rawStores.shuffledCards = [];
-    const base = mountBase();
-    const ctx = createMerged(base);
-    base.openDrawMultipleDialog.call(ctx);
-    expect(alpineStub.rawStores.dialog).toBeUndefined();
-  });
-
-  it('openDrawMultipleDialog draws several cards via onSubmit', () => {
-    alpineStub.rawStores.shuffledCards = [
-      baseCard,
-      { ...baseCard, id: 'c2' },
-      { ...baseCard, id: 'c3' },
-    ];
-    const base = mountBase();
-    const ctx = createMerged(base);
-    ctx.draggableCards = [];
-    ctx.maxZIndex = 0;
-    ctx.dirty = false;
-
-    let idx = 0;
-    vi.spyOn(base, 'cryptoRandomInt').mockImplementation((len: number) => {
-      idx += 1;
-      return idx % len;
-    });
-
-    base.openDrawMultipleDialog.call(ctx);
-    const dialog = alpineStub.rawStores.dialog as DialogState;
-    dialog.onSubmit(2);
-
-    expect(ctx.draggableCards.length).toBe(2);
-  });
-
-  it('openDrawMultipleDialog onCancel is safe to call', () => {
-    alpineStub.rawStores.shuffledCards = [baseCard, { ...baseCard, id: 'x' }];
-    const base = mountBase();
-    const ctx = createMerged(base);
-    base.openDrawMultipleDialog.call(ctx);
-    const dialog = alpineStub.rawStores.dialog as DialogState;
-    expect(() => dialog.onCancel()).not.toThrow();
-  });
-
-  it('openDrawMultipleDialog onSubmit does nothing when drawMultipleCards returns undefined', () => {
-    alpineStub.rawStores.shuffledCards = [baseCard, { ...baseCard, id: 'y' }];
-    const base = mountBase();
-    const ctx = createMerged(base);
-    ctx.draggableCards = [];
-    ctx.drawMultipleCards = (): undefined => undefined;
-    base.openDrawMultipleDialog.call(ctx);
-    const dialog = alpineStub.rawStores.dialog as DialogState;
-    dialog.onSubmit(2);
     expect(ctx.draggableCards).toHaveLength(0);
   });
 

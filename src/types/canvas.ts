@@ -148,7 +148,6 @@ export type MergedThis = {
   init(): void;
   shuffleDeck(): void;
   openDrawByIndexDialog(): void;
-  openDrawMultipleDialog(): void;
   serializeState(): Promise<SavedReadingState>;
   deserializeState(state: SavedReadingState): Promise<void>;
 
@@ -212,7 +211,6 @@ export type MergedThis = {
   getTextLabelPosition(label: TextLabel): { x: number; y: number };
   getTextLabelStyle(label: TextLabel): string;
   cryptoRandomInt(len: number): number;
-  drawMultipleCards(num: number): Set<number> | undefined;
   onMouseWheelClick(event: MouseLikeEvent): void;
   drawCardAt(x: number, y: number): void;
   onMouseDown(event: MouseLikeEvent): void;
