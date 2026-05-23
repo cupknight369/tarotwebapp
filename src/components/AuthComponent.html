@@ -1,11 +1,33 @@
 <div x-cloak x-data="authComponent">
-  <button
-    type="button"
-    @click="toggleAccountMenu()"
-    class="fixed top-2 left-2 z-[9999] w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
-  >
-    👤
-  </button>
+  <div class="fixed top-2 left-2 z-[9999] flex items-center gap-1">
+    <button
+      type="button"
+      @click="toggleAccountMenu()"
+      class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+      aria-label="Account"
+      title="Account"
+    >
+      👤
+    </button>
+    <button
+      type="button"
+      class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+      aria-label="Settings"
+      title="Settings"
+      @click="$store.settings.open = true"
+    >
+      ⚙
+    </button>
+    <button
+      type="button"
+      class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
+      aria-label="Help"
+      title="Help"
+      @click="$dispatch('open-help')"
+    >
+      ?
+    </button>
+  </div>
 
   <div
     class="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/80"

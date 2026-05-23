@@ -81,8 +81,14 @@ describe('helpComponent (HelpComponent.ts)', () => {
   });
 
   it('toolbar markup includes Help button dispatching open-help', async () => {
-    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    const html = await readFile('src/components/AuthComponent.html', 'utf-8');
     expect(html).toContain('aria-label="Help"');
     expect(html).toContain('@click="$dispatch(\'open-help\')"');
+  });
+
+  it('toolbar markup includes Settings button opening settings store', async () => {
+    const html = await readFile('src/components/AuthComponent.html', 'utf-8');
+    expect(html).toContain('aria-label="Settings"');
+    expect(html).toContain('@click="$store.settings.open = true"');
   });
 });
