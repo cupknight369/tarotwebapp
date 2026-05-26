@@ -1,5 +1,9 @@
 import Alpine from 'alpinejs';
 import type { SettingsStoreState } from '../types/settings.js';
+import {
+  CANVAS_ZOOM_SENSITIVITY_DEFAULT,
+  clampCanvasZoomSensitivity,
+} from '../validation/canvasZoom.js';
 
 const STORAGE_KEY = 'app-settings';
 
@@ -9,6 +13,7 @@ const DEFAULT_SETTINGS = {
   showCorrespondenceThumbnailsOnCanvas: false,
   showCorrespondenceCountBarOnCanvas: true,
   showCardCountBarOnCanvas: true,
+  canvasZoomSensitivity: CANVAS_ZOOM_SENSITIVITY_DEFAULT,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -21,6 +26,7 @@ function loadFromStorage(): {
   showCorrespondenceThumbnailsOnCanvas: boolean;
   showCorrespondenceCountBarOnCanvas: boolean;
   showCardCountBarOnCanvas: boolean;
+  canvasZoomSensitivity: number;
 } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -35,12 +41,17 @@ function loadFromStorage(): {
     const thumbRaw = parsed['showCorrespondenceThumbnailsOnCanvas'];
     const countBarRaw = parsed['showCorrespondenceCountBarOnCanvas'];
     const cardCountBarRaw = parsed['showCardCountBarOnCanvas'];
+    const zoomRaw = parsed['canvasZoomSensitivity'];
     return {
       censored: Boolean(parsed['censored']),
       showDeckTitleOnCanvas: showRaw === undefined ? true : Boolean(showRaw),
       showCorrespondenceThumbnailsOnCanvas: thumbRaw === undefined ? false : Boolean(thumbRaw),
       showCorrespondenceCountBarOnCanvas: countBarRaw === undefined ? true : Boolean(countBarRaw),
       showCardCountBarOnCanvas: cardCountBarRaw === undefined ? true : Boolean(cardCountBarRaw),
+      canvasZoomSensitivity:
+        zoomRaw === undefined
+          ? CANVAS_ZOOM_SENSITIVITY_DEFAULT
+          : clampCanvasZoomSensitivity(Number(zoomRaw)),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -57,6 +68,7 @@ export function initSettingsStore(): void {
     showCorrespondenceThumbnailsOnCanvas,
     showCorrespondenceCountBarOnCanvas,
     showCardCountBarOnCanvas,
+    canvasZoomSensitivity,
   } = loadFromStorage();
   Alpine.store('settings', {
     open: false,
@@ -65,6 +77,7 @@ export function initSettingsStore(): void {
     showCorrespondenceThumbnailsOnCanvas,
     showCorrespondenceCountBarOnCanvas,
     showCardCountBarOnCanvas,
+    canvasZoomSensitivity,
   });
   Alpine.effect(() => {
     const settings = Alpine.store('settings') as SettingsStoreState;
@@ -76,6 +89,7 @@ export function initSettingsStore(): void {
         showCorrespondenceThumbnailsOnCanvas: settings.showCorrespondenceThumbnailsOnCanvas,
         showCorrespondenceCountBarOnCanvas: settings.showCorrespondenceCountBarOnCanvas,
         showCardCountBarOnCanvas: settings.showCardCountBarOnCanvas,
+        canvasZoomSensitivity: clampCanvasZoomSensitivity(settings.canvasZoomSensitivity),
       }),
     );
   });

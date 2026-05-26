@@ -1,5 +1,11 @@
 import { DraggableCard, MouseLikeEvent, MergedThis, TarotCard } from '../types/canvas.js';
 import Alpine from 'alpinejs';
+import type { SettingsStoreState } from '../types/settings.js';
+import {
+  CANVAS_ZOOM_SENSITIVITY_DEFAULT,
+  applyCanvasZoomSensitivityToPinchFactor,
+  clampCanvasZoomSensitivity,
+} from '../validation/canvasZoom.js';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
 import { aggregateCardTitleCounts, type CardCanvasCountEntry } from '../lib/cardCanvasCounts.js';
 import {
@@ -18,7 +24,6 @@ import {
   isRemainingStorageBelowFraction,
   isStorageWarningDismissedThisSession,
 } from '../lib/storageWarning.js';
-import type { SettingsStoreState } from '../types/settings.js';
 import { clampFixedWidthPx } from '../validation/canvasLabel.js';
 import {
   lockPointerInteraction,
@@ -291,7 +296,12 @@ Alpine.data('canvasComponent', () => ({
       const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       const centerX = (t1.clientX + t2.clientX) / 2;
       const centerY = (t1.clientY + t2.clientY) / 2;
-      const factor = dist / this.pinchStartDistance;
+      const rawFactor = dist / this.pinchStartDistance;
+      const settings = Alpine.store('settings') as Partial<SettingsStoreState> | undefined;
+      const zoomSensitivity = clampCanvasZoomSensitivity(
+        settings?.canvasZoomSensitivity ?? CANVAS_ZOOM_SENSITIVITY_DEFAULT,
+      );
+      const factor = applyCanvasZoomSensitivityToPinchFactor(rawFactor, zoomSensitivity);
       const newScale = this.clamp(this.pinchStartScale * factor, this.minScale, this.maxScale);
       const actual = newScale / this.scale;
 

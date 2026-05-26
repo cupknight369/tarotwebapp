@@ -10,6 +10,8 @@ export interface SettingsStoreState {
   showCorrespondenceCountBarOnCanvas: boolean;
   /** When true, the card count status bar is shown on the left side of the canvas. */
   showCardCountBarOnCanvas: boolean;
+  /** Canvas wheel/pinch zoom feel as a percentage (100 = default; 25–200). */
+  canvasZoomSensitivity: number;
 }
 
 /** Protobuf `CktarotBackup.version` field — must match generated backup files. */

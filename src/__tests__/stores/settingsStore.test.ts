@@ -81,6 +81,7 @@ describe('settingsStore.ts', () => {
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
       showCardCountBarOnCanvas: true,
+      canvasZoomSensitivity: 100,
     });
     expect(setItemMock).toHaveBeenCalledWith(
       STORAGE_KEY,
@@ -90,6 +91,7 @@ describe('settingsStore.ts', () => {
         showCorrespondenceThumbnailsOnCanvas: false,
         showCorrespondenceCountBarOnCanvas: true,
         showCardCountBarOnCanvas: true,
+        canvasZoomSensitivity: 100,
       }),
     );
   });
@@ -104,6 +106,7 @@ describe('settingsStore.ts', () => {
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
       showCardCountBarOnCanvas: true,
+      canvasZoomSensitivity: 100,
     });
   });
 
@@ -122,7 +125,26 @@ describe('settingsStore.ts', () => {
       showCorrespondenceThumbnailsOnCanvas: true,
       showCorrespondenceCountBarOnCanvas: false,
       showCardCountBarOnCanvas: true,
+      canvasZoomSensitivity: 100,
     });
+  });
+
+  it('loads and clamps canvasZoomSensitivity from storage', () => {
+    lsState.data[STORAGE_KEY] = JSON.stringify({
+      censored: false,
+      canvasZoomSensitivity: 250,
+    });
+    initSettingsStore();
+    expect(getSettings().canvasZoomSensitivity).toBe(200);
+  });
+
+  it('defaults canvasZoomSensitivity when stored value is invalid', () => {
+    lsState.data[STORAGE_KEY] = JSON.stringify({
+      censored: false,
+      canvasZoomSensitivity: 'fast',
+    });
+    initSettingsStore();
+    expect(getSettings().canvasZoomSensitivity).toBe(100);
   });
 
   it('coerces censored with Boolean and defaults showDeckTitleOnCanvas when key absent', () => {
@@ -194,6 +216,7 @@ describe('settingsStore.ts', () => {
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
       showCardCountBarOnCanvas: true,
+      canvasZoomSensitivity: 100,
     });
   });
 
@@ -207,6 +230,7 @@ describe('settingsStore.ts', () => {
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
       showCardCountBarOnCanvas: true,
+      canvasZoomSensitivity: 100,
     });
   });
 
@@ -220,6 +244,7 @@ describe('settingsStore.ts', () => {
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
       showCardCountBarOnCanvas: true,
+      canvasZoomSensitivity: 100,
     });
   });
 
@@ -233,6 +258,7 @@ describe('settingsStore.ts', () => {
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
       showCardCountBarOnCanvas: true,
+      canvasZoomSensitivity: 100,
     });
   });
 
@@ -246,6 +272,7 @@ describe('settingsStore.ts', () => {
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
       showCardCountBarOnCanvas: true,
+      canvasZoomSensitivity: 100,
     });
   });
 
@@ -257,6 +284,7 @@ describe('settingsStore.ts', () => {
     settings.showCorrespondenceThumbnailsOnCanvas = true;
     settings.showCorrespondenceCountBarOnCanvas = false;
     settings.showCardCountBarOnCanvas = false;
+    settings.canvasZoomSensitivity = 150;
 
     const effectFn = alpineEffect.mock.calls[0][0] as () => void;
     effectFn();
@@ -269,6 +297,7 @@ describe('settingsStore.ts', () => {
         showCorrespondenceThumbnailsOnCanvas: true,
         showCorrespondenceCountBarOnCanvas: false,
         showCardCountBarOnCanvas: false,
+        canvasZoomSensitivity: 150,
       }),
     );
   });

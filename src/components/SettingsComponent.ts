@@ -13,6 +13,7 @@ import type {
   LocalReadingGroupRow,
 } from '../types/localDb.js';
 import type { ReadingGroupSection, ReadingSummary } from '../types/readingState.js';
+import { clampCanvasZoomSensitivity } from '../validation/canvasZoom.js';
 
 function settingsStore(): SettingsStoreState {
   return Alpine.store('settings') as SettingsStoreState;
@@ -67,6 +68,10 @@ Alpine.data('settingsComponent', () => ({
       this.readingTransferBusy ||
       this.deckTransferBusy
     );
+  },
+
+  setCanvasZoomSensitivity(raw: string | number): void {
+    settingsStore().canvasZoomSensitivity = clampCanvasZoomSensitivity(Number(raw));
   },
 
   formatStorageLine(): string {

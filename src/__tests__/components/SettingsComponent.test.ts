@@ -95,6 +95,7 @@ function settingsState(overrides: Partial<SettingsStoreState> = {}): SettingsSto
     showCorrespondenceThumbnailsOnCanvas: false,
     showCorrespondenceCountBarOnCanvas: true,
     showCardCountBarOnCanvas: true,
+    canvasZoomSensitivity: 100,
     ...overrides,
   };
 }
@@ -127,6 +128,7 @@ type SettingsCtx = {
   correspondenceGroupsLoadError: string | null;
   correspondenceGroupsPending: boolean;
   isSettingsBusy: () => boolean;
+  setCanvasZoomSensitivity: (raw: string | number) => void;
   loadCorrespondenceGroupsForExport: () => Promise<void>;
   isCorrespondenceGroupSelected: (id: string) => boolean;
   toggleCorrespondenceGroup: (id: string) => void;
@@ -357,6 +359,16 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     ctx.readingTransferBusy = false;
     ctx.deckTransferBusy = true;
     expect(ctx.isSettingsBusy.call(ctx)).toBe(true);
+  });
+
+  it('setCanvasZoomSensitivity clamps and writes to the settings store', () => {
+    const ctx = mount();
+    ctx.setCanvasZoomSensitivity.call(ctx, '150');
+    expect((rawStores.settings as SettingsStoreState).canvasZoomSensitivity).toBe(150);
+    ctx.setCanvasZoomSensitivity.call(ctx, 999);
+    expect((rawStores.settings as SettingsStoreState).canvasZoomSensitivity).toBe(200);
+    ctx.setCanvasZoomSensitivity.call(ctx, 'bad');
+    expect((rawStores.settings as SettingsStoreState).canvasZoomSensitivity).toBe(100);
   });
 
   it('toggleCorrespondenceGroup and canExportCorrespondences gate export', () => {

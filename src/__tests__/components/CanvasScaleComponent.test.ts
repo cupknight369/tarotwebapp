@@ -18,6 +18,7 @@ vi.mock('alpinejs', () => ({
 
 import '../../components/CanvasScaleComponent.js';
 import { wheelEventToZoomFactor } from '../../components/CanvasScaleComponent.js';
+import { WHEEL_ZOOM_SENSITIVITY_BASE } from '../../validation/canvasZoom.js';
 
 type ScaleCtx = {
   scale: number;
@@ -100,6 +101,21 @@ describe('scaleComponent (CanvasScaleComponent.ts)', () => {
   it('wheelEventToZoomFactor caps large wheel deltas', () => {
     const ev = new WheelEvent('wheel', { deltaY: -500, deltaMode: WheelEvent.DOM_DELTA_PIXEL });
     expect(wheelEventToZoomFactor(ev)).toBe(1.025);
+  });
+
+  it('wheelEventToZoomFactor increases response with higher sensitivity', () => {
+    const ev = new WheelEvent('wheel', { deltaY: -2, deltaMode: WheelEvent.DOM_DELTA_PIXEL });
+    const defaultFactor = wheelEventToZoomFactor(ev);
+    const fastFactor = wheelEventToZoomFactor(ev, WHEEL_ZOOM_SENSITIVITY_BASE * 2);
+    expect(fastFactor).toBeGreaterThan(defaultFactor);
+  });
+
+  it('wheelEventToZoomFactor decreases response with lower sensitivity', () => {
+    const ev = new WheelEvent('wheel', { deltaY: -2, deltaMode: WheelEvent.DOM_DELTA_PIXEL });
+    const defaultFactor = wheelEventToZoomFactor(ev);
+    const slowFactor = wheelEventToZoomFactor(ev, WHEEL_ZOOM_SENSITIVITY_BASE * 0.25);
+    expect(slowFactor).toBeLessThan(defaultFactor);
+    expect(slowFactor).toBeGreaterThan(1);
   });
 
   it('onWheel prevents default and zooms in when deltaY is negative', () => {

@@ -1,9 +1,14 @@
 import Alpine from 'alpinejs';
 import { MergedThis } from '../types/canvas.js';
+import type { SettingsStoreState } from '../types/settings.js';
+import {
+  CANVAS_ZOOM_SENSITIVITY_DEFAULT,
+  WHEEL_ZOOM_SENSITIVITY_BASE,
+  canvasZoomSensitivityToWheelCoefficient,
+  clampCanvasZoomSensitivity,
+} from '../validation/canvasZoom.js';
 
 const WHEEL_LINE_HEIGHT_PX = 16;
-/** Scale change per pixel of wheel delta before the per-event cap is applied. */
-const WHEEL_ZOOM_SENSITIVITY = 0.0004;
 /** Max zoom change per wheel event (~2.5%) so fast trackpad pinches stay controlled. */
 const WHEEL_ZOOM_MAX_STEP_RATIO = 0.025;
 
@@ -28,13 +33,17 @@ function normalizeWheelDeltaToPx(e: WheelEvent): number {
  * Maps wheel delta to a multiplicative zoom factor centered on 1.
  *
  * @param e - Wheel event from the canvas viewport.
+ * @param sensitivity - Wheel delta coefficient; defaults to pre-setting behavior.
  * @returns Zoom multiplier for {@link MergedThis.zoomAt}; 1 when delta is zero.
  */
-export function wheelEventToZoomFactor(e: WheelEvent): number {
+export function wheelEventToZoomFactor(
+  e: WheelEvent,
+  sensitivity: number = WHEEL_ZOOM_SENSITIVITY_BASE,
+): number {
   const deltaPx = normalizeWheelDeltaToPx(e);
   if (deltaPx === 0) return 1;
 
-  const uncapped = Math.exp(-deltaPx * WHEEL_ZOOM_SENSITIVITY);
+  const uncapped = Math.exp(-deltaPx * sensitivity);
   const min = 1 - WHEEL_ZOOM_MAX_STEP_RATIO;
   const max = 1 + WHEEL_ZOOM_MAX_STEP_RATIO;
   return Math.min(max, Math.max(min, uncapped));
@@ -62,7 +71,14 @@ Alpine.data('scaleComponent', () => ({
 
   onWheel(this: MergedThis, e: WheelEvent) {
     e.preventDefault();
-    const factor = wheelEventToZoomFactor(e);
+    const settings = Alpine.store('settings') as Partial<SettingsStoreState> | undefined;
+    const zoomSensitivity = clampCanvasZoomSensitivity(
+      settings?.canvasZoomSensitivity ?? CANVAS_ZOOM_SENSITIVITY_DEFAULT,
+    );
+    const factor = wheelEventToZoomFactor(
+      e,
+      canvasZoomSensitivityToWheelCoefficient(zoomSensitivity),
+    );
     if (factor === 1) return;
 
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();

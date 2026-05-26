@@ -985,6 +985,21 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(zoomMock.mock.calls[0]).toEqual([100, 0, 2]);
   });
 
+  it('onTouchMove pinch applies canvas zoom sensitivity from settings', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    alpineStub.rawStores.settings = { canvasZoomSensitivity: 50 };
+    ctx.pinchStartDistance = 100;
+    ctx.pinchStartScale = 1;
+    ctx.scale = 1;
+    ctx.clamp = (v: number) => v;
+    const t0 = touch(0, 0, 0);
+    const t1 = touch(1, 200, 0);
+    c.onTouchMove.call(ctx, touchEv([t0, t1], [t0, t1]));
+    const zoomMock = mockFromCtx(ctx, 'zoomAt') as { mock: { calls: [number, number, number][] } };
+    expect(zoomMock.mock.calls[0]).toEqual([100, 0, 1.5]);
+  });
+
   it('onTouchMove two-finger clears an active long-press timer', () => {
     vi.useFakeTimers();
     const c = mountCanvas();
