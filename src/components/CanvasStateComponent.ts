@@ -771,6 +771,12 @@ Alpine.data('stateComponent', () => ({
       this.closeLoadModal();
       return;
     }
+
+    if (canvas?.editingTextId) {
+      event.preventDefault();
+      canvas.commitEditTextLabel();
+      return;
+    }
   },
 
   triggerTitleDialog(this: MergedThis): void {

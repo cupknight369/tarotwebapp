@@ -343,6 +343,7 @@
                   </template>
                   <template x-if="editingTextId === label.id">
                     <div
+                      data-text-edit-panel
                       @click.outside="commitEditTextLabel()"
                       @keydown.enter="commitEditTextLabel()"
                       class="flex flex-col gap-1 bg-gray-800 border border-gray-600 rounded-lg p-2 shadow-lg"

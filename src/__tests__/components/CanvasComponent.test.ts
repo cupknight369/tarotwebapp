@@ -248,6 +248,7 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
     longPressActivated: false,
     touchMovedAfterLongPress: false,
     touchGestureStarted: false,
+    lastTextLabelTap: null as MergedThis['lastTextLabelTap'],
     selectionBox: null as MergedThis['selectionBox'],
     selectionBoxStyle: '',
     contextMenu: {
@@ -279,6 +280,12 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
     getTextLabelPosition(l: TextLabel) {
       return { x: l.x, y: l.y };
     },
+    commitEditTextLabel: vi.fn(function (this: MergedThis) {
+      this.editingTextId = null;
+    }),
+    startEditingTextLabel: vi.fn(function (this: MergedThis, label: TextLabel) {
+      this.editingTextId = label.id;
+    }),
     $refs: {
       viewport: viewportEl,
       content: contentEl,
@@ -679,6 +686,24 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     c.onMouseDown.call(ctx, ev);
     expect(ctx.draggingTextId).toBe('tl1');
     expect(ctx.textDragStart).not.toBeNull();
+  });
+
+  it('onMouseDown ignores interactive controls inside a text label', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.textLabels = [mkLabel('tl1', null)];
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-text-id', 'tl1');
+    const button = document.createElement('button');
+    wrap.append(button);
+    c.onMouseDown.call(ctx, {
+      clientX: 100,
+      clientY: 200,
+      target: button,
+      ctrlKey: false,
+    });
+    expect(ctx.draggingTextId).toBeNull();
+    expect(ctx.textDragStart).toBeNull();
   });
 
   it('onMouseDown on text resize handle starts resize, not label drag', () => {
@@ -1122,6 +1147,88 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(ctx.longPressTimerId).not.toBe(prior);
   });
 
+  it('onTouchStart skips canvas handling for interactive targets', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const button = document.createElement('button');
+    spyElementFromPoint(button);
+    const t0 = touch(0, 10, 10);
+    const ev = touchEv([t0], [t0]);
+    c.onTouchStart.call(ctx, ev);
+    expect(ev.preventDefault).not.toHaveBeenCalled();
+    expect(ctx.activeTouchId).toBeNull();
+  });
+
+  it('onTouchEnd quick tap outside edit panel commits text edit', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.editingTextId = 'tl1';
+    ctx.textLabels = [mkLabel('tl1', null)];
+    spyElementFromPoint(ctx.viewport);
+    const t0 = touch(9, 50, 50);
+    c.onTouchStart.call(ctx, touchEv([t0], [t0]));
+    c.onTouchEnd.call(ctx, touchEv([], [t0]));
+    expect(ctx.commitEditTextLabel).toHaveBeenCalled();
+    expect(ctx.editingTextId).toBeNull();
+  });
+
+  it('onTouchEnd quick tap inside edit panel does not commit text edit', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.editingTextId = 'tl1';
+    ctx.textLabels = [mkLabel('tl1', null)];
+    const panel = document.createElement('div');
+    panel.setAttribute('data-text-edit-panel', '');
+    spyElementFromPoint(panel);
+    const t0 = touch(10, 20, 20);
+    c.onTouchStart.call(ctx, touchEv([t0], [t0]));
+    c.onTouchEnd.call(ctx, touchEv([], [t0]));
+    expect(ctx.commitEditTextLabel).not.toHaveBeenCalled();
+    expect(ctx.editingTextId).toBe('tl1');
+  });
+
+  it('onTouchEnd double-tap on text label opens edit mode', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(5_000);
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const label = mkLabel('tl1', null);
+    ctx.textLabels = [label];
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-text-id', 'tl1');
+    const span = document.createElement('span');
+    wrap.append(span);
+    spyElementFromPoint(span);
+
+    const first = touch(11, 40, 40);
+    c.onTouchStart.call(ctx, touchEv([first], [first]));
+    c.onTouchEnd.call(ctx, touchEv([], [first]));
+    expect(ctx.startEditingTextLabel).not.toHaveBeenCalled();
+    expect(ctx.lastTextLabelTap).toMatchObject({ textId: 'tl1' });
+
+    vi.setSystemTime(5_200);
+    const second = touch(11, 42, 41);
+    c.onTouchStart.call(ctx, touchEv([second], [second]));
+    c.onTouchEnd.call(ctx, touchEv([], [second]));
+    expect(ctx.startEditingTextLabel).toHaveBeenCalledTimes(1);
+    expect(ctx.startEditingTextLabel).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'tl1' }),
+    );
+    expect(ctx.editingTextId).toBe('tl1');
+    expect(ctx.lastTextLabelTap).toBeNull();
+  });
+
+  it('onTouchMove clears pending text double-tap after movement', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.lastTextLabelTap = { textId: 'tl1', time: Date.now(), x: 1, y: 2 };
+    spyElementFromPoint(ctx.viewport);
+    const t0 = touch(12, 0, 0);
+    c.onTouchStart.call(ctx, touchEv([t0], [t0]));
+    c.onTouchMove.call(ctx, touchEv([touch(12, 8, 8)], [touch(12, 8, 8)]));
+    expect(ctx.lastTextLabelTap).toBeNull();
+  });
+
   it('onTouchMove two-finger pinch skips clearing when no long-press timer', () => {
     const c = mountCanvas();
     const ctx = createMerged();
@@ -1237,7 +1344,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     foreign.remove();
   });
 
-  it('onTouchEnd does not open menu or mouse-up when tap ends without gesture', () => {
+  it('onTouchEnd quick tap synthesizes mouse up without opening context menu', () => {
     const ctx = createMerged();
     spyElementFromPoint(ctx.viewport);
     const t0 = touch(9, 1, 1);
@@ -1246,7 +1353,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     const mu = vi.spyOn(ctx, 'onMouseUp');
     ctx.onTouchEnd.call(ctx, touchEv([], [t0]));
     expect(cm.mock.calls.length).toBe(0);
-    expect(mu.mock.calls.length).toBe(0);
+    expect(mu.mock.calls.length).toBe(1);
   });
 
   it('onTouchMove single-finger returns when activeTouchId is null', () => {

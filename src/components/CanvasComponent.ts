@@ -26,6 +26,15 @@ import {
 } from '../lib/storageWarning.js';
 import { clampFixedWidthPx } from '../validation/canvasLabel.js';
 import {
+  isCanvasInteractiveTarget,
+  isWithinTextEditPanel,
+} from '../lib/canvasInteractiveTarget.js';
+import {
+  getTextLabelIdFromTarget,
+  isTextDoubleTap,
+  type TextLabelTapRecord,
+} from '../lib/canvasTextDoubleTap.js';
+import {
   lockPointerInteraction,
   resetPointerInteractionLock,
   unlockPointerInteraction,
@@ -183,6 +192,7 @@ Alpine.data('canvasComponent', () => ({
   longPressActivated: false,
   touchMovedAfterLongPress: false,
   touchGestureStarted: false,
+  lastTextLabelTap: null as TextLabelTapRecord | null,
   pinchStartDistance: 0,
   pinchStartScale: 1,
 
@@ -259,13 +269,17 @@ Alpine.data('canvasComponent', () => ({
     }
 
     if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (isCanvasInteractiveTarget(target)) {
+        return;
+      }
+
       e.preventDefault();
 
-      const touch = e.touches[0];
       this.lastPointerScreenX = touch.clientX;
       this.lastPointerScreenY = touch.clientY;
       this.activeTouchId = touch.identifier;
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
       this.touchStartPos = { clientX: touch.clientX, clientY: touch.clientY, target };
       this.touchGestureStarted = false;
       this.touchMovedAfterLongPress = false;
@@ -316,6 +330,7 @@ Alpine.data('canvasComponent', () => ({
     if (e.touches.length === 1) {
       const touch = this.activeTouchId !== null ? this.getTouchById(e, this.activeTouchId) : null;
       if (!touch || !this.touchStartPos) return;
+      if (isCanvasInteractiveTarget(this.touchStartPos.target)) return;
       this.lastPointerScreenX = touch.clientX;
       this.lastPointerScreenY = touch.clientY;
 
@@ -358,6 +373,7 @@ Alpine.data('canvasComponent', () => ({
         this.onMouseMove(moveSyn);
       }
 
+      this.lastTextLabelTap = null;
       e.preventDefault();
     }
   },
@@ -382,6 +398,53 @@ Alpine.data('canvasComponent', () => ({
         this.onContextMenu(syn);
       } else if (this.touchGestureStarted) {
         this.onMouseUp(this.touchToMouseLike(ended));
+      } else if (this.touchStartPos) {
+        const pos = this.touchStartPos;
+        if (
+          this.editingTextId &&
+          !isWithinTextEditPanel(pos.target) &&
+          !isCanvasInteractiveTarget(pos.target)
+        ) {
+          this.commitEditTextLabel();
+        }
+
+        const textId = getTextLabelIdFromTarget(pos.target);
+        const now = Date.now();
+        const openedTextEdit =
+          textId &&
+          !this.editingTextId &&
+          !isCanvasInteractiveTarget(pos.target) &&
+          isTextDoubleTap(this.lastTextLabelTap, textId, pos.clientX, pos.clientY, now);
+
+        if (openedTextEdit) {
+          const label = this.textLabels.find((l) => l.id === textId);
+          if (label) {
+            this.startEditingTextLabel(label);
+          }
+          this.lastTextLabelTap = null;
+        } else {
+          if (textId && !this.editingTextId && !isCanvasInteractiveTarget(pos.target)) {
+            this.lastTextLabelTap = {
+              textId,
+              time: now,
+              x: pos.clientX,
+              y: pos.clientY,
+            };
+          } else {
+            this.lastTextLabelTap = null;
+          }
+
+          if (!isCanvasInteractiveTarget(pos.target)) {
+            const syn: MouseLikeEvent = {
+              clientX: pos.clientX,
+              clientY: pos.clientY,
+              target: pos.target,
+              preventDefault: () => {},
+            };
+            this.onMouseDown(syn);
+            this.onMouseUp(syn);
+          }
+        }
       }
     }
     this.activeTouchId = null;
@@ -436,6 +499,10 @@ Alpine.data('canvasComponent', () => ({
     this.lastPointerScreenX = event.clientX;
     this.lastPointerScreenY = event.clientY;
     const target = event.target as HTMLElement;
+    if (isCanvasInteractiveTarget(target)) {
+      return;
+    }
+
     const resizeHit = target.closest('[data-text-resize]');
     if (resizeHit) {
       const textEl = resizeHit.closest('[data-text-id]');

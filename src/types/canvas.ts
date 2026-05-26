@@ -119,6 +119,7 @@ export type MergedThis = {
   longPressActivated: boolean;
   touchMovedAfterLongPress: boolean;
   touchGestureStarted: boolean;
+  lastTextLabelTap: { textId: string; time: number; x: number; y: number } | null;
   pinchStartDistance: number;
   pinchStartScale: number;
 

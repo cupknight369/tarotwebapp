@@ -1642,6 +1642,23 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     expect(addTextAt).toHaveBeenCalledWith(333, 444);
   });
 
+  it('handleEscapeShortcut commits active text edit', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const commitEditTextLabel = vi.fn();
+    window.draggableZoneComponent = {
+      editingTextId: 'label-1',
+      commitEditTextLabel,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleEscapeShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(commitEditTextLabel).toHaveBeenCalledTimes(1);
+  });
+
   it('triggerTitleDialog save success skips load when no deferred target', async () => {
     readingsMocks.saveLocalReading.mockResolvedValue({ id: 'n' });
     const ctx = createCtx({ saveAndLoadTargetId: null });
