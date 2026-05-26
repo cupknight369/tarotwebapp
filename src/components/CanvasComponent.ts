@@ -27,6 +27,7 @@ import {
 import { clampFixedWidthPx } from '../validation/canvasLabel.js';
 import {
   isCanvasInteractiveTarget,
+  isWithinContextMenu,
   isWithinTextEditPanel,
 } from '../lib/canvasInteractiveTarget.js';
 import {
@@ -90,6 +91,7 @@ Alpine.data('canvasComponent', () => ({
   storageWarningVisible: false,
   storageAdditionalInfoOpen: false,
   _storageWarningStartupListener: null as (() => void) | null,
+  _contextMenuTouchDismissListener: null as ((ev: TouchEvent) => void) | null,
 
   correspondenceCountBarCollapsed: false,
   correspondenceBarEntries: [] as CorrespondenceCanvasCountEntry[],
@@ -489,6 +491,13 @@ Alpine.data('canvasComponent', () => ({
     this.viewport.addEventListener('touchend', (ev: TouchEvent) => this.onTouchEnd(ev));
     this.viewport.addEventListener('touchcancel', (ev: TouchEvent) => this.onTouchCancel(ev));
 
+    this._contextMenuTouchDismissListener = (ev: TouchEvent) => {
+      this.handleContextMenuTouchDismiss(ev);
+    };
+    document.addEventListener('touchstart', this._contextMenuTouchDismissListener, {
+      capture: true,
+    });
+
     this._storageWarningStartupListener = () => {
       void this.runStartupStorageWarningCheck();
     };
@@ -860,6 +869,15 @@ Alpine.data('canvasComponent', () => ({
     this.contextMenu.open = false;
     this.contextMenu.cardId = null;
     this.contextMenu.textId = null;
+  },
+
+  handleContextMenuTouchDismiss(this: MergedThis, ev: TouchEvent) {
+    if (!this.contextMenu.open) {
+      return;
+    }
+    if (!isWithinContextMenu(ev.target)) {
+      this.closeContextMenu();
+    }
   },
 
   openDrawByIndexFromContextMenu(this: MergedThis) {

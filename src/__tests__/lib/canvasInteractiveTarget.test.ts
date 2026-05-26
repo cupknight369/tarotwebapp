@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isCanvasInteractiveTarget,
+  isWithinContextMenu,
   isWithinTextEditPanel,
 } from '../../lib/canvasInteractiveTarget.js';
 
@@ -28,5 +29,14 @@ describe('canvasInteractiveTarget', () => {
     panel.append(child);
     expect(isWithinTextEditPanel(child)).toBe(true);
     expect(isWithinTextEditPanel(document.createElement('div'))).toBe(false);
+  });
+
+  it('isWithinContextMenu matches descendants of data-context-menu', () => {
+    const menu = document.createElement('div');
+    menu.setAttribute('data-context-menu', '');
+    const button = document.createElement('button');
+    menu.append(button);
+    expect(isWithinContextMenu(button)).toBe(true);
+    expect(isWithinContextMenu(document.createElement('div'))).toBe(false);
   });
 });

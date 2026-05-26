@@ -440,6 +440,7 @@
           <div
             x-show="contextMenu.open"
             x-transition
+            data-context-menu
             @click.outside="closeContextMenu()"
             class="fixed z-[10000] min-w-[180px] py-1 bg-gray-800 border border-gray-600 rounded shadow-lg"
             :style="`left: ${contextMenu.x}px; top: ${contextMenu.y}px;`"

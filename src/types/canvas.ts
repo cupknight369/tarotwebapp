@@ -234,6 +234,7 @@ export type MergedThis = {
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180'): void;
   onContextMenu(event: MouseLikeEvent): void;
   closeContextMenu(): void;
+  handleContextMenuTouchDismiss(ev: TouchEvent): void;
   openDrawByNameAt(screenX: number, screenY: number): void;
   openDrawByNameFromContextMenu(): void;
   onDrawByNameQueryInput(value: string): void;

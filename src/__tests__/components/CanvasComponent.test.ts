@@ -418,6 +418,30 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(inst.contextMenu.textId).toBeNull();
   });
 
+  it('handleContextMenuTouchDismiss closes menu on outside touch', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.contextMenu = { open: true, x: 0, y: 0, cardId: null, textId: null };
+    const outside = ctx.viewport!;
+    c.handleContextMenuTouchDismiss.call(ctx, {
+      target: outside,
+    } as TouchEvent);
+    expect(ctx.contextMenu.open).toBe(false);
+  });
+
+  it('handleContextMenuTouchDismiss keeps menu open for touches inside menu', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.contextMenu = { open: true, x: 0, y: 0, cardId: 'c1', textId: null };
+    const menu = document.createElement('div');
+    menu.setAttribute('data-context-menu', '');
+    const item = document.createElement('button');
+    menu.append(item);
+    c.handleContextMenuTouchDismiss.call(ctx, { target: item } as TouchEvent);
+    expect(ctx.contextMenu.open).toBe(true);
+    expect(ctx.contextMenu.cardId).toBe('c1');
+  });
+
   it('clearDragState skips cursor when viewport is null', () => {
     const c = mountCanvas();
     c.clearDragState.call({

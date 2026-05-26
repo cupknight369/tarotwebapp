@@ -15,6 +15,18 @@ export function isCanvasInteractiveTarget(target: EventTarget | null): boolean {
 }
 
 /**
+ * Returns whether the target is inside the canvas context menu.
+ * @param target - DOM event target.
+ * @returns True when the target is within `[data-context-menu]`.
+ */
+export function isWithinContextMenu(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  return target.closest('[data-context-menu]') !== null;
+}
+
+/**
  * Returns whether the target is inside the text label edit panel.
  * @param target - DOM event target.
  * @returns True when the target is within `[data-text-edit-panel]`.
