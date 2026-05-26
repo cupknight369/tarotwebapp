@@ -18,7 +18,10 @@ vi.mock('alpinejs', () => ({
 
 import '../../components/CanvasScaleComponent.js';
 import { wheelEventToZoomFactor } from '../../components/CanvasScaleComponent.js';
-import { WHEEL_ZOOM_SENSITIVITY_BASE } from '../../validation/canvasZoom.js';
+import {
+  WHEEL_ZOOM_MAX_STEP_RATIO_BASE,
+  WHEEL_ZOOM_SENSITIVITY_BASE,
+} from '../../validation/canvasZoom.js';
 
 type ScaleCtx = {
   scale: number;
@@ -100,7 +103,13 @@ describe('scaleComponent (CanvasScaleComponent.ts)', () => {
 
   it('wheelEventToZoomFactor caps large wheel deltas', () => {
     const ev = new WheelEvent('wheel', { deltaY: -500, deltaMode: WheelEvent.DOM_DELTA_PIXEL });
-    expect(wheelEventToZoomFactor(ev)).toBe(1.025);
+    expect(wheelEventToZoomFactor(ev)).toBe(1 + WHEEL_ZOOM_MAX_STEP_RATIO_BASE);
+  });
+
+  it('wheelEventToZoomFactor uses a higher cap when maxStepRatio is larger', () => {
+    const ev = new WheelEvent('wheel', { deltaY: -500, deltaMode: WheelEvent.DOM_DELTA_PIXEL });
+    const maxStep = WHEEL_ZOOM_MAX_STEP_RATIO_BASE * 4;
+    expect(wheelEventToZoomFactor(ev, WHEEL_ZOOM_SENSITIVITY_BASE * 4, maxStep)).toBe(1 + maxStep);
   });
 
   it('wheelEventToZoomFactor increases response with higher sensitivity', () => {

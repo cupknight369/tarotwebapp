@@ -13,7 +13,6 @@ import type {
   LocalReadingGroupRow,
 } from '../types/localDb.js';
 import type { ReadingGroupSection, ReadingSummary } from '../types/readingState.js';
-import { clampCanvasZoomSensitivity } from '../validation/canvasZoom.js';
 
 function settingsStore(): SettingsStoreState {
   return Alpine.store('settings') as SettingsStoreState;
@@ -51,12 +50,17 @@ Alpine.data('settingsComponent', () => ({
   userDecksPending: false,
 
   init() {
+    let settingsWereOpen = false;
     Alpine.effect(() => {
-      if ((Alpine.store('settings') as SettingsStoreState).open) {
+      const open = settingsStore().open;
+      if (open && !settingsWereOpen) {
+        settingsWereOpen = true;
         void this.refreshStorageEstimate();
         void this.loadCorrespondenceGroupsForExport();
         void this.loadReadingsForExport();
         void this.loadUserDecksForExport();
+      } else if (!open) {
+        settingsWereOpen = false;
       }
     });
   },
@@ -68,10 +72,6 @@ Alpine.data('settingsComponent', () => ({
       this.readingTransferBusy ||
       this.deckTransferBusy
     );
-  },
-
-  setCanvasZoomSensitivity(raw: string | number): void {
-    settingsStore().canvasZoomSensitivity = clampCanvasZoomSensitivity(Number(raw));
   },
 
   formatStorageLine(): string {

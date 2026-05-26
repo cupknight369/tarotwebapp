@@ -4,10 +4,12 @@ import {
   CANVAS_ZOOM_SENSITIVITY_DEFAULT,
   CANVAS_ZOOM_SENSITIVITY_MAX,
   CANVAS_ZOOM_SENSITIVITY_MIN,
+  WHEEL_ZOOM_MAX_STEP_RATIO_BASE,
   WHEEL_ZOOM_SENSITIVITY_BASE,
   applyCanvasZoomSensitivityToPinchFactor,
   canvasZoomSensitivityToRatio,
   canvasZoomSensitivityToWheelCoefficient,
+  canvasZoomSensitivityToWheelMaxStepRatio,
   clampCanvasZoomSensitivity,
 } from '../../validation/canvasZoom.js';
 
@@ -19,10 +21,12 @@ describe('clampCanvasZoomSensitivity', () => {
     );
   });
 
-  it('clamps to 25–200 and rounds', () => {
+  it('snaps to the nearest preset', () => {
     expect(clampCanvasZoomSensitivity(10)).toBe(CANVAS_ZOOM_SENSITIVITY_MIN);
     expect(clampCanvasZoomSensitivity(500)).toBe(CANVAS_ZOOM_SENSITIVITY_MAX);
-    expect(clampCanvasZoomSensitivity(99.6)).toBe(100);
+    expect(clampCanvasZoomSensitivity(99)).toBe(100);
+    expect(clampCanvasZoomSensitivity(130)).toBe(100);
+    expect(clampCanvasZoomSensitivity(160)).toBe(200);
   });
 });
 
@@ -33,7 +37,7 @@ describe('canvasZoomSensitivityToRatio', () => {
 
   it('maps min and max to expected ratios', () => {
     expect(canvasZoomSensitivityToRatio(CANVAS_ZOOM_SENSITIVITY_MIN)).toBe(0.25);
-    expect(canvasZoomSensitivityToRatio(CANVAS_ZOOM_SENSITIVITY_MAX)).toBe(2);
+    expect(canvasZoomSensitivityToRatio(CANVAS_ZOOM_SENSITIVITY_MAX)).toBe(4);
   });
 });
 
@@ -45,7 +49,19 @@ describe('canvasZoomSensitivityToWheelCoefficient', () => {
   });
 
   it('scales coefficient with sensitivity', () => {
-    expect(canvasZoomSensitivityToWheelCoefficient(200)).toBe(WHEEL_ZOOM_SENSITIVITY_BASE * 2);
+    expect(canvasZoomSensitivityToWheelCoefficient(400)).toBe(WHEEL_ZOOM_SENSITIVITY_BASE * 4);
+  });
+});
+
+describe('canvasZoomSensitivityToWheelMaxStepRatio', () => {
+  it('returns base cap at normal sensitivity', () => {
+    expect(canvasZoomSensitivityToWheelMaxStepRatio(CANVAS_ZOOM_SENSITIVITY_DEFAULT)).toBe(
+      WHEEL_ZOOM_MAX_STEP_RATIO_BASE,
+    );
+  });
+
+  it('scales the per-event cap with sensitivity', () => {
+    expect(canvasZoomSensitivityToWheelMaxStepRatio(400)).toBe(WHEEL_ZOOM_MAX_STEP_RATIO_BASE * 4);
   });
 });
 
@@ -60,6 +76,6 @@ describe('applyCanvasZoomSensitivityToPinchFactor', () => {
   });
 
   it('amplifies pinch response above default sensitivity', () => {
-    expect(applyCanvasZoomSensitivityToPinchFactor(2, CANVAS_ZOOM_SENSITIVITY_MAX)).toBe(3);
+    expect(applyCanvasZoomSensitivityToPinchFactor(2, CANVAS_ZOOM_SENSITIVITY_MAX)).toBe(5);
   });
 });

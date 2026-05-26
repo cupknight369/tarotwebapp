@@ -3,14 +3,14 @@ import { MergedThis } from '../types/canvas.js';
 import type { SettingsStoreState } from '../types/settings.js';
 import {
   CANVAS_ZOOM_SENSITIVITY_DEFAULT,
+  WHEEL_ZOOM_MAX_STEP_RATIO_BASE,
   WHEEL_ZOOM_SENSITIVITY_BASE,
   canvasZoomSensitivityToWheelCoefficient,
+  canvasZoomSensitivityToWheelMaxStepRatio,
   clampCanvasZoomSensitivity,
 } from '../validation/canvasZoom.js';
 
 const WHEEL_LINE_HEIGHT_PX = 16;
-/** Max zoom change per wheel event (~2.5%) so fast trackpad pinches stay controlled. */
-const WHEEL_ZOOM_MAX_STEP_RATIO = 0.025;
 
 /**
  * Normalizes a wheel event delta to pixels for consistent zoom across delta modes.
@@ -34,18 +34,20 @@ function normalizeWheelDeltaToPx(e: WheelEvent): number {
  *
  * @param e - Wheel event from the canvas viewport.
  * @param sensitivity - Wheel delta coefficient; defaults to pre-setting behavior.
+ * @param maxStepRatio - Max multiplicative change per wheel event before capping.
  * @returns Zoom multiplier for {@link MergedThis.zoomAt}; 1 when delta is zero.
  */
 export function wheelEventToZoomFactor(
   e: WheelEvent,
   sensitivity: number = WHEEL_ZOOM_SENSITIVITY_BASE,
+  maxStepRatio: number = WHEEL_ZOOM_MAX_STEP_RATIO_BASE,
 ): number {
   const deltaPx = normalizeWheelDeltaToPx(e);
   if (deltaPx === 0) return 1;
 
   const uncapped = Math.exp(-deltaPx * sensitivity);
-  const min = 1 - WHEEL_ZOOM_MAX_STEP_RATIO;
-  const max = 1 + WHEEL_ZOOM_MAX_STEP_RATIO;
+  const min = 1 - maxStepRatio;
+  const max = 1 + maxStepRatio;
   return Math.min(max, Math.max(min, uncapped));
 }
 
@@ -78,6 +80,7 @@ Alpine.data('scaleComponent', () => ({
     const factor = wheelEventToZoomFactor(
       e,
       canvasZoomSensitivityToWheelCoefficient(zoomSensitivity),
+      canvasZoomSensitivityToWheelMaxStepRatio(zoomSensitivity),
     );
     if (factor === 1) return;
 

@@ -80,23 +80,18 @@
 
       <div class="mt-4">
         <label class="block">
-          <div class="flex items-center justify-between gap-2 mb-2">
-            <span class="text-gray-200">Canvas zoom sensitivity</span>
-            <span
-              class="text-xs text-gray-400 tabular-nums"
-              x-text="`${$store.settings.canvasZoomSensitivity}%`"
-            ></span>
-          </div>
-          <input
-            type="range"
-            min="25"
-            max="200"
-            step="5"
-            :value="$store.settings.canvasZoomSensitivity"
+          <span class="text-gray-200">Canvas zoom sensitivity</span>
+          <select
+            x-model.number="$store.settings.canvasZoomSensitivity"
             :disabled="isSettingsBusy()"
-            class="w-full accent-purple-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            @input="setCanvasZoomSensitivity($event.target.value)"
-          />
+            class="mt-2 w-full cursor-pointer rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="25">Very slow</option>
+            <option value="50">Slow</option>
+            <option value="100">Normal</option>
+            <option value="200">Fast</option>
+            <option value="400">Very fast</option>
+          </select>
         </label>
       </div>
 

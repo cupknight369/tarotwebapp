@@ -10,7 +10,7 @@ export interface SettingsStoreState {
   showCorrespondenceCountBarOnCanvas: boolean;
   /** When true, the card count status bar is shown on the left side of the canvas. */
   showCardCountBarOnCanvas: boolean;
-  /** Canvas wheel/pinch zoom feel as a percentage (100 = default; 25–200). */
+  /** Canvas zoom feel preset (25 very slow … 400 very fast). */
   canvasZoomSensitivity: number;
 }
 

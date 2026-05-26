@@ -132,10 +132,10 @@ describe('settingsStore.ts', () => {
   it('loads and clamps canvasZoomSensitivity from storage', () => {
     lsState.data[STORAGE_KEY] = JSON.stringify({
       censored: false,
-      canvasZoomSensitivity: 250,
+      canvasZoomSensitivity: 500,
     });
     initSettingsStore();
-    expect(getSettings().canvasZoomSensitivity).toBe(200);
+    expect(getSettings().canvasZoomSensitivity).toBe(400);
   });
 
   it('defaults canvasZoomSensitivity when stored value is invalid', () => {
@@ -284,7 +284,7 @@ describe('settingsStore.ts', () => {
     settings.showCorrespondenceThumbnailsOnCanvas = true;
     settings.showCorrespondenceCountBarOnCanvas = false;
     settings.showCardCountBarOnCanvas = false;
-    settings.canvasZoomSensitivity = 150;
+    settings.canvasZoomSensitivity = 200;
 
     const effectFn = alpineEffect.mock.calls[0][0] as () => void;
     effectFn();
@@ -297,7 +297,7 @@ describe('settingsStore.ts', () => {
         showCorrespondenceThumbnailsOnCanvas: true,
         showCorrespondenceCountBarOnCanvas: false,
         showCardCountBarOnCanvas: false,
-        canvasZoomSensitivity: 150,
+        canvasZoomSensitivity: 200,
       }),
     );
   });
