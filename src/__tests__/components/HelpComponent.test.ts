@@ -72,6 +72,8 @@ describe('helpComponent (HelpComponent.ts)', () => {
 
   it('help modal markup includes core section headings', async () => {
     const html = await readFile('src/components/HelpComponent.html', 'utf-8');
+    expect(html).toContain('Questions or Bug Reports?');
+    expect(html).toContain('cupknight369@gmail.com');
     expect(html).toContain('Open Welcome');
     expect(html).toContain('Draw Cards');
     expect(html).toContain('Deck Management');

@@ -44,6 +44,7 @@ const uiMocks = vi.hoisted(() => ({
   initAuthStore: vi.fn(() => Promise.resolve()),
   initSettingsStore: vi.fn(),
   startCardImagePrefetch: vi.fn(),
+  ensureDefaultDeckOnDevice: vi.fn(() => Promise.resolve()),
 }));
 
 const alpineHoisted = vi.hoisted(() => {
@@ -78,6 +79,10 @@ vi.mock('../stores/settingsStore.js', () => ({
 
 vi.mock('../lib/cardImageUrls.js', () => ({
   startCardImagePrefetch: uiMocks.startCardImagePrefetch,
+}));
+
+vi.mock('../lib/bootstrapDefaultDeck.js', () => ({
+  ensureDefaultDeckOnDevice: uiMocks.ensureDefaultDeckOnDevice,
 }));
 
 vi.mock('../lib/decks.js', () => ({
@@ -145,6 +150,8 @@ describe('main.ts bootstrap', () => {
     uiMocks.initAuthStore.mockResolvedValue(undefined);
     uiMocks.initSettingsStore.mockReset();
     uiMocks.startCardImagePrefetch.mockReset();
+    uiMocks.ensureDefaultDeckOnDevice.mockReset();
+    uiMocks.ensureDefaultDeckOnDevice.mockResolvedValue(undefined);
     alpineHoisted.Alpine.start.mockReset();
   });
 
@@ -159,6 +166,7 @@ describe('main.ts bootstrap', () => {
     expect(alpineHoisted.Alpine.start).toHaveBeenCalledTimes(1);
     expect(uiMocks.initAuthStore).toHaveBeenCalledTimes(1);
     expect(uiMocks.startCardImagePrefetch).toHaveBeenCalledTimes(1);
+    expect(uiMocks.ensureDefaultDeckOnDevice).toHaveBeenCalledTimes(1);
     expect(uiMocks.initSettingsStore).toHaveBeenCalledTimes(1);
     expect(initPwaClient).toHaveBeenCalledTimes(1);
 

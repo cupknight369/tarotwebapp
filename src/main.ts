@@ -3,6 +3,7 @@ import './input.css';
 
 import { initAuthStore } from './stores/authStore.js';
 import { initSettingsStore } from './stores/settingsStore.js';
+import { ensureDefaultDeckOnDevice } from './lib/bootstrapDefaultDeck.js';
 import { startCardImagePrefetch } from './lib/cardImageUrls.js';
 import { initPwaClient } from './lib/pwaClient.js';
 import {
@@ -95,6 +96,9 @@ void (async () => {
   } catch (e) {
     logError('bootstrapDeck.unexpected', e);
   }
+  void ensureDefaultDeckOnDevice().catch((e) => {
+    logError('ensureDefaultDeckOnDevice', e);
+  });
   void warmReadingListCache().catch((e) => {
     logError('warmReadingListCache', e);
   });

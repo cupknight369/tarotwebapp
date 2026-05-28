@@ -172,6 +172,13 @@ Alpine.data('deckComponent', () => ({
     await this.refreshDeckLists();
     const activeId = Alpine.store('activeDeckId') as string;
     if (activeId === deckId) {
+      const title =
+        this.onDeviceDecks.find((d) => d.id === deckId)?.title ??
+        this.catalogOffers.find((c) => c.id === deckId)?.title ??
+        '';
+      if (title) {
+        Alpine.store('activeDeckTitle', title);
+      }
       const cardsRes = await getCardsByDeckId(deckId);
       if (!cardsRes.ok) {
         logError('deckComponent.finishDownloadedDeck.reloadCards', cardsRes.error);
