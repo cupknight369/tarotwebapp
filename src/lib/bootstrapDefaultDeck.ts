@@ -17,6 +17,14 @@ function notifyDefaultDeckInstalled(): void {
 }
 
 /**
+ * Returns true when the seeded Rider-Waite-Smith deck is already stored in IndexedDB.
+ */
+export async function isDefaultDeckOnDevice(): Promise<boolean> {
+  const existing = await listLocalDecks();
+  return existing.some((d) => d.id === DEFAULT_DECK_ID);
+}
+
+/**
  * Copies the seeded Rider-Waite-Smith catalog deck into IndexedDB when it is not already installed.
  * Uses the same download pipeline as manual cloud installs so local and catalog lists stay in sync.
  */
@@ -24,8 +32,7 @@ export async function ensureDefaultDeckOnDevice(): Promise<void> {
   const config = getBrowserSupabaseRestConfig();
   if (!config.url || !config.anonKey) return;
 
-  const existing = await listLocalDecks();
-  if (existing.some((d) => d.id === DEFAULT_DECK_ID)) return;
+  if (await isDefaultDeckOnDevice()) return;
 
   const result = await executeCloudDeckDownload(DEFAULT_DECK_ID, config);
   if (result.ok || result.error.kind === 'already_installed') {

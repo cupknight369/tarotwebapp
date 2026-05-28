@@ -43,7 +43,33 @@ vi.mock('../../lib/logError.js', () => ({
 }));
 
 import { ok, err } from '../../lib/result.js';
-import { ensureDefaultDeckOnDevice } from '../../lib/bootstrapDefaultDeck.js';
+import { ensureDefaultDeckOnDevice, isDefaultDeckOnDevice } from '../../lib/bootstrapDefaultDeck.js';
+
+describe('ensureDefaultDeckOnDevice', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getBrowserSupabaseRestConfig.mockReturnValue({
+      url: 'https://example.supabase.co',
+      anonKey: 'anon-key',
+    });
+    mocks.listLocalDecks.mockResolvedValue([]);
+    mocks.executeCloudDeckDownload.mockResolvedValue(ok(undefined));
+    mocks.enqueuePendingDeckDownload.mockResolvedValue(undefined);
+    mocks.registerDeckDownloadSync.mockResolvedValue(undefined);
+  });
+
+  it('isDefaultDeckOnDevice returns true when the default deck row exists', async () => {
+    mocks.listLocalDecks.mockResolvedValue([{ id: DEFAULT_DECK_ID, title: 'Rider-Waite-Smith' }]);
+
+    await expect(isDefaultDeckOnDevice()).resolves.toBe(true);
+  });
+
+  it('isDefaultDeckOnDevice returns false when the default deck row is absent', async () => {
+    mocks.listLocalDecks.mockResolvedValue([{ id: 'other-deck', title: 'Other' }]);
+
+    await expect(isDefaultDeckOnDevice()).resolves.toBe(false);
+  });
+});
 
 describe('ensureDefaultDeckOnDevice', () => {
   beforeEach(() => {

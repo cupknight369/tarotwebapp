@@ -45,6 +45,7 @@ const uiMocks = vi.hoisted(() => ({
   initSettingsStore: vi.fn(),
   startCardImagePrefetch: vi.fn(),
   ensureDefaultDeckOnDevice: vi.fn(() => Promise.resolve()),
+  isDefaultDeckOnDevice: vi.fn(() => Promise.resolve(false)),
 }));
 
 const alpineHoisted = vi.hoisted(() => {
@@ -83,6 +84,7 @@ vi.mock('../lib/cardImageUrls.js', () => ({
 
 vi.mock('../lib/bootstrapDefaultDeck.js', () => ({
   ensureDefaultDeckOnDevice: uiMocks.ensureDefaultDeckOnDevice,
+  isDefaultDeckOnDevice: uiMocks.isDefaultDeckOnDevice,
 }));
 
 vi.mock('../lib/decks.js', () => ({
@@ -152,6 +154,8 @@ describe('main.ts bootstrap', () => {
     uiMocks.startCardImagePrefetch.mockReset();
     uiMocks.ensureDefaultDeckOnDevice.mockReset();
     uiMocks.ensureDefaultDeckOnDevice.mockResolvedValue(undefined);
+    uiMocks.isDefaultDeckOnDevice.mockReset();
+    uiMocks.isDefaultDeckOnDevice.mockResolvedValue(false);
     alpineHoisted.Alpine.start.mockReset();
   });
 
@@ -174,6 +178,18 @@ describe('main.ts bootstrap', () => {
     expect(alpineHoisted.stores.activeDeckId).toBe('deck-local-1');
     expect(alpineHoisted.stores.activeDeckTitle).toBe('Local deck');
     expect(localStorage.getItem(LAST_KEY)).toBe('deck-local-1');
+  });
+
+  it('skips prefetch and default deck install when Rider-Waite-Smith is already on device', async () => {
+    uiMocks.isDefaultDeckOnDevice.mockResolvedValue(true);
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValue(ok([deckEntry]));
+    deckMocks.listCatalogDeckOffers.mockResolvedValue(ok([]));
+    deckMocks.getCardsByDeckId.mockResolvedValue(ok([card]));
+
+    await loadMain();
+
+    expect(uiMocks.startCardImagePrefetch).not.toHaveBeenCalled();
+    expect(uiMocks.ensureDefaultDeckOnDevice).not.toHaveBeenCalled();
   });
 
   it('uses DEFAULT_DECK_ID when on-device list is empty', async () => {

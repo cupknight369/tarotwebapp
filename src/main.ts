@@ -3,7 +3,7 @@ import './input.css';
 
 import { initAuthStore } from './stores/authStore.js';
 import { initSettingsStore } from './stores/settingsStore.js';
-import { ensureDefaultDeckOnDevice } from './lib/bootstrapDefaultDeck.js';
+import { ensureDefaultDeckOnDevice, isDefaultDeckOnDevice } from './lib/bootstrapDefaultDeck.js';
 import { startCardImagePrefetch } from './lib/cardImageUrls.js';
 import { initPwaClient } from './lib/pwaClient.js';
 import {
@@ -85,7 +85,10 @@ async function bootstrapDeck(): Promise<void> {
 
 void (async () => {
   await initAuthStore();
-  startCardImagePrefetch();
+  const defaultDeckOnDevice = await isDefaultDeckOnDevice();
+  if (!defaultDeckOnDevice) {
+    startCardImagePrefetch();
+  }
   initSettingsStore();
   initPwaClient(registerSW);
   Alpine.start();
@@ -96,9 +99,11 @@ void (async () => {
   } catch (e) {
     logError('bootstrapDeck.unexpected', e);
   }
-  void ensureDefaultDeckOnDevice().catch((e) => {
-    logError('ensureDefaultDeckOnDevice', e);
-  });
+  if (!defaultDeckOnDevice) {
+    void ensureDefaultDeckOnDevice().catch((e) => {
+      logError('ensureDefaultDeckOnDevice', e);
+    });
+  }
   void warmReadingListCache().catch((e) => {
     logError('warmReadingListCache', e);
   });
