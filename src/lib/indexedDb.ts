@@ -85,10 +85,7 @@ function migrateReadingGroupsData(upgradeTx: IDBTransaction | null): void {
  * @param db - Database being upgraded.
  * @param upgradeTx - Active upgrade transaction, when available.
  */
-function migrateReadingStatesSplitData(
-  db: IDBDatabase,
-  upgradeTx: IDBTransaction | null,
-): void {
+function migrateReadingStatesSplitData(db: IDBDatabase, upgradeTx: IDBTransaction | null): void {
   if (
     !upgradeTx ||
     !db.objectStoreNames.contains(STORE_READINGS) ||
@@ -160,63 +157,59 @@ function openTarotDbAtVersion(version: number): Promise<IDBDatabase> {
  * @param old - Previous version before this upgrade.
  * @param upgradeTx - Active upgrade transaction, when available.
  */
-function runTarotDbUpgrade(
-  db: IDBDatabase,
-  old: number,
-  upgradeTx: IDBTransaction | null,
-): void {
-      if (old < 1) {
-        if (!db.objectStoreNames.contains(STORE_READINGS)) {
-          const readings = db.createObjectStore(STORE_READINGS, { keyPath: 'id' });
-          readings.createIndex('by_updated_at', 'updated_at');
-        }
-        if (!db.objectStoreNames.contains(STORE_DECKS)) {
-          db.createObjectStore(STORE_DECKS, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains(STORE_CARD_IMAGES)) {
-          db.createObjectStore(STORE_CARD_IMAGES, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains(STORE_CARDS)) {
-          const cards = db.createObjectStore(STORE_CARDS, { keyPath: 'id' });
-          cards.createIndex('by_deck_id', 'deck_id');
-        }
-      }
-      if (old < 3 && old >= 1) {
-        if (db.objectStoreNames.contains(STORE_READINGS)) {
-          db.deleteObjectStore(STORE_READINGS);
-        }
-        const readings = db.createObjectStore(STORE_READINGS, { keyPath: 'id' });
-        readings.createIndex('by_updated_at', 'updated_at');
-      }
-      if (old < 4) {
-        if (!db.objectStoreNames.contains(STORE_CORRESPONDENCE_GROUPS)) {
-          db.createObjectStore(STORE_CORRESPONDENCE_GROUPS, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains(STORE_CORRESPONDENCES)) {
-          const corr = db.createObjectStore(STORE_CORRESPONDENCES, { keyPath: 'id' });
-          corr.createIndex('by_group_id', 'group_id');
-        }
-        if (!db.objectStoreNames.contains(STORE_CORRESPONDENCE_IMAGES)) {
-          db.createObjectStore(STORE_CORRESPONDENCE_IMAGES, { keyPath: 'id' });
-        }
-        if (upgradeTx) {
-          const gStore = upgradeTx.objectStore(STORE_CORRESPONDENCE_GROUPS);
-          gStore.put({ id: DEFAULT_CORRESPONDENCE_GROUP_ID, title: 'Default' });
-        }
-      }
-      if (old < 5) {
-        if (!db.objectStoreNames.contains(STORE_PENDING_DECK_DOWNLOADS)) {
-          db.createObjectStore(STORE_PENDING_DECK_DOWNLOADS, { keyPath: 'deckId' });
-        }
-      }
-      ensureReadingGroupsStore(db);
-      ensureReadingStatesStore(db);
-      if (old < 7) {
-        migrateReadingGroupsData(upgradeTx);
-      }
-      if (old < 11) {
-        migrateReadingStatesSplitData(db, upgradeTx);
-      }
+function runTarotDbUpgrade(db: IDBDatabase, old: number, upgradeTx: IDBTransaction | null): void {
+  if (old < 1) {
+    if (!db.objectStoreNames.contains(STORE_READINGS)) {
+      const readings = db.createObjectStore(STORE_READINGS, { keyPath: 'id' });
+      readings.createIndex('by_updated_at', 'updated_at');
+    }
+    if (!db.objectStoreNames.contains(STORE_DECKS)) {
+      db.createObjectStore(STORE_DECKS, { keyPath: 'id' });
+    }
+    if (!db.objectStoreNames.contains(STORE_CARD_IMAGES)) {
+      db.createObjectStore(STORE_CARD_IMAGES, { keyPath: 'id' });
+    }
+    if (!db.objectStoreNames.contains(STORE_CARDS)) {
+      const cards = db.createObjectStore(STORE_CARDS, { keyPath: 'id' });
+      cards.createIndex('by_deck_id', 'deck_id');
+    }
+  }
+  if (old < 3 && old >= 1) {
+    if (db.objectStoreNames.contains(STORE_READINGS)) {
+      db.deleteObjectStore(STORE_READINGS);
+    }
+    const readings = db.createObjectStore(STORE_READINGS, { keyPath: 'id' });
+    readings.createIndex('by_updated_at', 'updated_at');
+  }
+  if (old < 4) {
+    if (!db.objectStoreNames.contains(STORE_CORRESPONDENCE_GROUPS)) {
+      db.createObjectStore(STORE_CORRESPONDENCE_GROUPS, { keyPath: 'id' });
+    }
+    if (!db.objectStoreNames.contains(STORE_CORRESPONDENCES)) {
+      const corr = db.createObjectStore(STORE_CORRESPONDENCES, { keyPath: 'id' });
+      corr.createIndex('by_group_id', 'group_id');
+    }
+    if (!db.objectStoreNames.contains(STORE_CORRESPONDENCE_IMAGES)) {
+      db.createObjectStore(STORE_CORRESPONDENCE_IMAGES, { keyPath: 'id' });
+    }
+    if (upgradeTx) {
+      const gStore = upgradeTx.objectStore(STORE_CORRESPONDENCE_GROUPS);
+      gStore.put({ id: DEFAULT_CORRESPONDENCE_GROUP_ID, title: 'Default' });
+    }
+  }
+  if (old < 5) {
+    if (!db.objectStoreNames.contains(STORE_PENDING_DECK_DOWNLOADS)) {
+      db.createObjectStore(STORE_PENDING_DECK_DOWNLOADS, { keyPath: 'deckId' });
+    }
+  }
+  ensureReadingGroupsStore(db);
+  ensureReadingStatesStore(db);
+  if (old < 7) {
+    migrateReadingGroupsData(upgradeTx);
+  }
+  if (old < 11) {
+    migrateReadingStatesSplitData(db, upgradeTx);
+  }
 }
 
 /**
@@ -238,8 +231,9 @@ async function ensureReadingGroupsStorePresent(
   }
   db.close();
   dbPromise = null;
-  dbPromise = openTarotDbAtVersion(Math.max(db.version + 1, DB_VERSION))
-    .then((repaired) => ensureReadingGroupsStorePresent(repaired, false));
+  dbPromise = openTarotDbAtVersion(Math.max(db.version + 1, DB_VERSION)).then((repaired) =>
+    ensureReadingGroupsStorePresent(repaired, false),
+  );
   return dbPromise;
 }
 
@@ -255,8 +249,9 @@ async function ensureReadingStatesStorePresent(
   }
   db.close();
   dbPromise = null;
-  dbPromise = openTarotDbAtVersion(Math.max(db.version + 1, DB_VERSION))
-    .then((repaired) => ensureReadingStatesStorePresent(repaired, false));
+  dbPromise = openTarotDbAtVersion(Math.max(db.version + 1, DB_VERSION)).then((repaired) =>
+    ensureReadingStatesStorePresent(repaired, false),
+  );
   return dbPromise;
 }
 

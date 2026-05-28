@@ -26,14 +26,8 @@ describe('canvasTextDoubleTap', () => {
     expect(isTextDoubleTap(last, 'a', 12, 22, now)).toBe(true);
     expect(isTextDoubleTap(last, 'b', 12, 22, now)).toBe(false);
     expect(isTextDoubleTap(last, 'a', 12, 22, now + TEXT_DOUBLE_TAP_MS + 1)).toBe(false);
-    expect(
-      isTextDoubleTap(
-        last,
-        'a',
-        10 + TEXT_DOUBLE_TAP_MAX_DISTANCE_PX + 1,
-        20,
-        now,
-      ),
-    ).toBe(false);
+    expect(isTextDoubleTap(last, 'a', 10 + TEXT_DOUBLE_TAP_MAX_DISTANCE_PX + 1, 20, now)).toBe(
+      false,
+    );
   });
 });

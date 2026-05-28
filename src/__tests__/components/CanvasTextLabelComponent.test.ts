@@ -307,11 +307,10 @@ describe('textLabelComponent (CanvasTextLabelComponent.ts)', () => {
   it('handleEditFontSizeKeydown steps font size and updates the label', () => {
     const ctx = mount({ textLabels: [label({ id: 'a', fontSize: 16 })] });
     ctx.editFontSizeInput = '16';
-    ctx.handleEditFontSizeKeydown.call(
-      ctx,
-      'a',
-      { key: 'ArrowUp', preventDefault: vi.fn() } as unknown as KeyboardEvent,
-    );
+    ctx.handleEditFontSizeKeydown.call(ctx, 'a', {
+      key: 'ArrowUp',
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
     expect(ctx.editFontSizeInput).toBe('17');
     expect(ctx.textLabels[0]?.fontSize).toBe(17);
   });

@@ -46,9 +46,7 @@
     </template>
 
     <template x-if="$store.dialog.type === 'input'">
-      <div
-        x-init="initInputValue(); $nextTick(() => { $refs.inputNumberField?.focus(); })"
-      >
+      <div x-init="initInputValue(); $nextTick(() => { $refs.inputNumberField?.focus(); })">
         <p
           id="dialog-title"
           class="text-xl font-bold text-gray-200 pr-8 mb-4"

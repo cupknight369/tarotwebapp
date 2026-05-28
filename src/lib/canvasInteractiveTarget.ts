@@ -1,6 +1,5 @@
 /** Selectors for canvas controls that should receive native pointer/touch events. */
-const CANVAS_INTERACTIVE_SELECTOR =
-  'button, input, label, select, textarea, [contenteditable], a';
+const CANVAS_INTERACTIVE_SELECTOR = 'button, input, label, select, textarea, [contenteditable], a';
 
 /**
  * Returns whether the event target is an interactive canvas control (e.g. text edit toolbar).

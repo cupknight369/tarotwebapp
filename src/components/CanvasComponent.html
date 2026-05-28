@@ -244,6 +244,15 @@
           </div>
 
           <div
+            class="pointer-events-none absolute bottom-3 right-3 z-[9998] rounded-lg border border-gray-700/80 bg-gray-900/90 px-3 py-2 shadow-lg backdrop-blur-sm"
+          >
+            <p class="text-[15px] text-gray-500 leading-snug">
+              © Cup Knight Tarot <span x-text="new Date().getFullYear()"></span>. All rights
+              reserved.
+            </p>
+          </div>
+
+          <div
             x-ref="viewport"
             @mousedown="onMouseDown($event)"
             @mousemove.window="onMouseMove($event)"
@@ -498,7 +507,7 @@
               <button
                 type="button"
                 class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-                @click="drawCardAt($event.clientX, $event.clientY); closeContextMenu()"
+                @click="drawCardAt(contextMenu.x, contextMenu.y); closeContextMenu()"
               >
                 Draw card here
               </button>

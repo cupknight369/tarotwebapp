@@ -3,6 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFile } from 'node:fs/promises';
 
 import type {
   DraggableCard,
@@ -532,6 +533,22 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
       query: '',
       highlightIndex: 0,
     });
+  });
+
+  it('Draw card here uses context menu anchor coordinates', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toContain('Draw card here');
+    expect(html).toContain('drawCardAt(contextMenu.x, contextMenu.y); closeContextMenu()');
+    expect(html).not.toContain('drawCardAt($event.clientX, $event.clientY)');
+  });
+
+  it('canvas markup includes bottom-right copyright notice', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toContain('© Cup Knight Tarot');
+    expect(html).toContain('new Date().getFullYear()');
+    expect(html).toContain('All rights');
+    expect(html).toContain('reserved.');
+    expect(html).toContain('absolute bottom-3 right-3');
   });
 
   it('confirmDrawByNameSelection clears picker, adds card, and positions at screenToContent', () => {
@@ -1235,9 +1252,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     c.onTouchStart.call(ctx, touchEv([second], [second]));
     c.onTouchEnd.call(ctx, touchEv([], [second]));
     expect(ctx.startEditingTextLabel).toHaveBeenCalledTimes(1);
-    expect(ctx.startEditingTextLabel).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'tl1' }),
-    );
+    expect(ctx.startEditingTextLabel).toHaveBeenCalledWith(expect.objectContaining({ id: 'tl1' }));
     expect(ctx.editingTextId).toBe('tl1');
     expect(ctx.lastTextLabelTap).toBeNull();
   });

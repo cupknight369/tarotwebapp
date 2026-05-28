@@ -48,7 +48,12 @@ type CardComponentApi = {
   cardShowsPlaceholder: (card: TarotCard, censored: boolean) => boolean;
   shuffleDeck: () => void;
   openDrawByIndexDialog: (this: MergedCtx, screenX: number, screenY: number) => void;
-  addCardAtScreenPosition: (this: MergedCtx, card: TarotCard, screenX: number, screenY: number) => void;
+  addCardAtScreenPosition: (
+    this: MergedCtx,
+    card: TarotCard,
+    screenX: number,
+    screenY: number,
+  ) => void;
   addCardToCanvas: (this: MergedCtx, card: TarotCard) => void;
   generateCardId: () => string;
   cryptoRandomInt: (len: number) => number;

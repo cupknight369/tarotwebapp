@@ -15,7 +15,13 @@ import {
   type CorrespondenceGroupSection,
 } from '../lib/localCorrespondences.js';
 import type { TarotCard } from '../types/canvas.js';
-import { addLocalCardFormSchema, deckCardNumberSchema, saveLocalCardFormSchema, DECK_CARD_NUMBER_MIN, DECK_CARD_NUMBER_MAX } from '../validation/decks.js';
+import {
+  addLocalCardFormSchema,
+  deckCardNumberSchema,
+  saveLocalCardFormSchema,
+  DECK_CARD_NUMBER_MIN,
+  DECK_CARD_NUMBER_MAX,
+} from '../validation/decks.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
 import { numericInputStepDelta, stepBoundedIntegerString } from '../lib/numericInput.js';
 

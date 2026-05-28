@@ -330,9 +330,15 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     alpineCapture.rawStores.dialog = d;
     const ctx = mount();
     ctx.inputValue = '3';
-    ctx.handleInputValueKeydown.call(ctx, { key: 'ArrowUp', preventDefault: vi.fn() } as unknown as KeyboardEvent);
+    ctx.handleInputValueKeydown.call(ctx, {
+      key: 'ArrowUp',
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
     expect(ctx.inputValue).toBe('4');
-    ctx.handleInputValueKeydown.call(ctx, { key: 'ArrowDown', preventDefault: vi.fn() } as unknown as KeyboardEvent);
+    ctx.handleInputValueKeydown.call(ctx, {
+      key: 'ArrowDown',
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
     expect(ctx.inputValue).toBe('3');
   });
 
