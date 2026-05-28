@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
         injectRegister: false,
         devOptions: {
           enabled: true,
+          // injectManifest dev SW is ESM (uses import.meta); must register as module.
+          // Explicit type also avoids vite-plugin-pwa passing "undefined" to Firefox.
+          type: 'module',
         },
         manifest: {
           name: 'Cup Knight Tarot',

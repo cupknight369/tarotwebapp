@@ -24,20 +24,13 @@ function scheduleDrainPendingDeckDownloads(): void {
   });
 }
 
-async function registerAppServiceWorker(registerSW: RegisterSW): Promise<void> {
+function registerAppServiceWorker(registerSW: RegisterSW): void {
   registerSW({
     immediate: true,
     onRegisterError(error) {
       logDebug('registerSW.onRegisterError', error);
     },
   });
-
-  const swUrl = import.meta.env.DEV ? '/dev-sw.js?dev-sw' : '/sw.js';
-  try {
-    await navigator.serviceWorker.register(swUrl, { scope: '/', type: 'module' });
-  } catch (e) {
-    logDebug('registerAppServiceWorker', e);
-  }
 }
 
 /**
