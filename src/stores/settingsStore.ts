@@ -9,6 +9,7 @@ const STORAGE_KEY = 'app-settings';
 
 const DEFAULT_SETTINGS = {
   censored: false,
+  reversals: false,
   showDeckTitleOnCanvas: true,
   showCorrespondenceThumbnailsOnCanvas: false,
   showCorrespondenceCountBarOnCanvas: true,
@@ -22,6 +23,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function loadFromStorage(): {
   censored: boolean;
+  reversals: boolean;
   showDeckTitleOnCanvas: boolean;
   showCorrespondenceThumbnailsOnCanvas: boolean;
   showCorrespondenceCountBarOnCanvas: boolean;
@@ -44,6 +46,7 @@ function loadFromStorage(): {
     const zoomRaw = parsed['canvasZoomSensitivity'];
     return {
       censored: Boolean(parsed['censored']),
+      reversals: Boolean(parsed['reversals']),
       showDeckTitleOnCanvas: showRaw === undefined ? true : Boolean(showRaw),
       showCorrespondenceThumbnailsOnCanvas: thumbRaw === undefined ? false : Boolean(thumbRaw),
       showCorrespondenceCountBarOnCanvas: countBarRaw === undefined ? true : Boolean(countBarRaw),
@@ -64,6 +67,7 @@ function loadFromStorage(): {
 export function initSettingsStore(): void {
   const {
     censored,
+    reversals,
     showDeckTitleOnCanvas,
     showCorrespondenceThumbnailsOnCanvas,
     showCorrespondenceCountBarOnCanvas,
@@ -73,6 +77,7 @@ export function initSettingsStore(): void {
   Alpine.store('settings', {
     open: false,
     censored,
+    reversals,
     showDeckTitleOnCanvas,
     showCorrespondenceThumbnailsOnCanvas,
     showCorrespondenceCountBarOnCanvas,
@@ -85,6 +90,7 @@ export function initSettingsStore(): void {
       STORAGE_KEY,
       JSON.stringify({
         censored: settings.censored,
+        reversals: settings.reversals,
         showDeckTitleOnCanvas: settings.showDeckTitleOnCanvas,
         showCorrespondenceThumbnailsOnCanvas: settings.showCorrespondenceThumbnailsOnCanvas,
         showCorrespondenceCountBarOnCanvas: settings.showCorrespondenceCountBarOnCanvas,

@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import type { MergedThis, DraggableCard, TarotCard, TextLabel } from '../types/canvas.js';
+import type { SettingsStoreState } from '../types/settings.js';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
 
 Alpine.data('cardComponent', () => ({
@@ -74,6 +75,7 @@ Alpine.data('cardComponent', () => ({
 
   addCardToCanvas(this: MergedThis, card: TarotCard): void {
     const activeDeckTitle = Alpine.store('activeDeckTitle') as string;
+    const settings = Alpine.store('settings') as SettingsStoreState;
     const cardWithMeta: TarotCard = {
       ...card,
       deckTitle: card.deckTitle ?? (activeDeckTitle || undefined),
@@ -97,7 +99,7 @@ Alpine.data('cardComponent', () => ({
         const rangeY = Math.max(0, visibleMaxY - visibleMinY);
         return visibleMinY + Math.random() * rangeY;
       })(),
-      rotation: 0,
+      rotation: settings.reversals && this.cryptoRandomInt(4) === 0 ? 180 : 0,
       zIndex: this.maxZIndex + 1,
       opacity: 1,
       cursor: 'grab',

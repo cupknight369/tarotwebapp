@@ -21,6 +21,7 @@ export interface SavedReadingState {
     card_number?: number;
     x: number;
     y: number;
+    /** Card image rotation in degrees. */
     rotation: number;
     zIndex: number;
     opacity: number;

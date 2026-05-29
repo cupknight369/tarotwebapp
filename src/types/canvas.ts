@@ -301,6 +301,7 @@ export interface DraggableCard {
   id: string;
   x: number;
   y: number;
+  /** Card image rotation in degrees (0, 90, 180, 270, …). */
   rotation: number;
   zIndex: number;
   opacity: number;

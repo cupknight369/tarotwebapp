@@ -77,6 +77,7 @@ describe('settingsStore.ts', () => {
     expect(settings).toEqual({
       open: false,
       censored: false,
+      reversals: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
@@ -87,6 +88,7 @@ describe('settingsStore.ts', () => {
       STORAGE_KEY,
       JSON.stringify({
         censored: false,
+        reversals: false,
         showDeckTitleOnCanvas: true,
         showCorrespondenceThumbnailsOnCanvas: false,
         showCorrespondenceCountBarOnCanvas: true,
@@ -102,6 +104,7 @@ describe('settingsStore.ts', () => {
     expect(getSettings()).toEqual({
       open: false,
       censored: false,
+      reversals: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
@@ -113,6 +116,7 @@ describe('settingsStore.ts', () => {
   it('loads valid persisted settings', () => {
     lsState.data[STORAGE_KEY] = JSON.stringify({
       censored: true,
+      reversals: false,
       showDeckTitleOnCanvas: false,
       showCorrespondenceThumbnailsOnCanvas: true,
       showCorrespondenceCountBarOnCanvas: false,
@@ -121,6 +125,7 @@ describe('settingsStore.ts', () => {
     expect(getSettings()).toEqual({
       open: false,
       censored: true,
+      reversals: false,
       showDeckTitleOnCanvas: false,
       showCorrespondenceThumbnailsOnCanvas: true,
       showCorrespondenceCountBarOnCanvas: false,
@@ -199,6 +204,7 @@ describe('settingsStore.ts', () => {
   it('uses Boolean when showCorrespondenceThumbnailsOnCanvas is present', () => {
     lsState.data[STORAGE_KEY] = JSON.stringify({
       censored: false,
+      reversals: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: 1,
     });
@@ -212,6 +218,7 @@ describe('settingsStore.ts', () => {
     expect(getSettings()).toEqual({
       open: false,
       censored: false,
+      reversals: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
@@ -226,6 +233,7 @@ describe('settingsStore.ts', () => {
     expect(getSettings()).toEqual({
       open: false,
       censored: false,
+      reversals: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
@@ -240,6 +248,7 @@ describe('settingsStore.ts', () => {
     expect(getSettings()).toEqual({
       open: false,
       censored: false,
+      reversals: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
@@ -254,6 +263,7 @@ describe('settingsStore.ts', () => {
     expect(getSettings()).toEqual({
       open: false,
       censored: false,
+      reversals: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
@@ -268,12 +278,19 @@ describe('settingsStore.ts', () => {
     expect(getSettings()).toEqual({
       open: false,
       censored: false,
+      reversals: false,
       showDeckTitleOnCanvas: true,
       showCorrespondenceThumbnailsOnCanvas: false,
       showCorrespondenceCountBarOnCanvas: true,
       showCardCountBarOnCanvas: true,
       canvasZoomSensitivity: 100,
     });
+  });
+
+  it('loads reversals from storage', () => {
+    lsState.data[STORAGE_KEY] = JSON.stringify({ reversals: true });
+    initSettingsStore();
+    expect(getSettings().reversals).toBe(true);
   });
 
   it('effect persists current store snapshot to localStorage', () => {
@@ -293,6 +310,7 @@ describe('settingsStore.ts', () => {
       STORAGE_KEY,
       JSON.stringify({
         censored: true,
+        reversals: false,
         showDeckTitleOnCanvas: false,
         showCorrespondenceThumbnailsOnCanvas: true,
         showCorrespondenceCountBarOnCanvas: false,

@@ -127,6 +127,7 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     alpineStub.rawStores.shuffledCards = [];
     alpineStub.rawStores.activeDeckTitle = '';
     alpineStub.rawStores.dialog = undefined;
+    alpineStub.rawStores.settings = { reversals: false };
     vi.mocked(revokeTarotCardBlobUrls).mockClear();
   });
 
@@ -233,6 +234,35 @@ describe('cardComponent (CanvasCardComponent.ts)', () => {
     const withTitle: TarotCard = { ...baseCard, deckTitle: 'Embedded title' };
     base.addCardToCanvas.call(ctx, withTitle);
     expect(ctx.draggableCards[0].card.deckTitle).toBe('Embedded title');
+  });
+
+  it('addCardToCanvas sets rotation 0 when reversals setting is disabled', () => {
+    alpineStub.rawStores.settings = { reversals: false };
+    const base = mountBase();
+    const ctx = createMerged(base);
+    ctx.draggableCards = [];
+    vi.spyOn(base, 'cryptoRandomInt').mockReturnValue(1);
+    base.addCardToCanvas.call(ctx, baseCard);
+    expect(ctx.draggableCards[0].rotation).toBe(0);
+    expect(base.cryptoRandomInt).not.toHaveBeenCalled();
+  });
+
+  it('addCardToCanvas rolls 180 degree rotation when reversals setting is enabled', () => {
+    alpineStub.rawStores.settings = { reversals: true };
+    const base = mountBase();
+    const randomSpy = vi.spyOn(base, 'cryptoRandomInt');
+    const ctx = createMerged(base);
+    ctx.draggableCards = [];
+
+    randomSpy.mockReturnValueOnce(0);
+    base.addCardToCanvas.call(ctx, baseCard);
+    expect(ctx.draggableCards[0].rotation).toBe(180);
+
+    ctx.draggableCards = [];
+    randomSpy.mockReturnValueOnce(1);
+    base.addCardToCanvas.call(ctx, baseCard);
+    expect(ctx.draggableCards[0].rotation).toBe(0);
+    expect(randomSpy).toHaveBeenCalledWith(4);
   });
 
   it('openDrawByIndexDialog onCancel is safe to call', () => {

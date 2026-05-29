@@ -2,6 +2,8 @@
 export interface SettingsStoreState {
   open: boolean;
   censored: boolean;
+  /** When true, newly placed cards have a 25% chance of rendering upside down. */
+  reversals: boolean;
   /** When false, the active deck name is hidden in the bottom-left of the canvas. */
   showDeckTitleOnCanvas: boolean;
   /** When true, correspondence thumbnails render in a row under each local card image on the canvas. */

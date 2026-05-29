@@ -527,6 +527,25 @@ describe('savedReadingCodec.ts', () => {
     });
   });
 
+  it('round-trips card image rotation on placed cards', () => {
+    const state = minimalState({
+      cards: [
+        {
+          id: 'c1',
+          deck_id: 'd1',
+          card_id: 'x',
+          x: 0,
+          y: 0,
+          rotation: 270,
+          zIndex: 0,
+          opacity: 1,
+        },
+      ],
+    });
+    const out = decodeSavedReadingState(encodeSavedReadingState(state));
+    expect(out.cards[0].rotation).toBe(270);
+  });
+
   it('omits optional card string fields when proto values are falsy', () => {
     const msg = new cktarot.SavedReadingState();
     msg.viewport = new cktarot.Viewport();
