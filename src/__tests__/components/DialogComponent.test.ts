@@ -31,6 +31,7 @@ type DialogCtx = {
   handleInputTextSubmit: () => void;
   initInputValue: () => void;
   initInputTextValue: () => void;
+  focusConfirmButton: () => void;
 };
 
 function dialogState(overrides: Partial<DialogStoreState> = {}): DialogStoreState {
@@ -45,12 +46,21 @@ function dialogState(overrides: Partial<DialogStoreState> = {}): DialogStoreStat
   };
 }
 
-function mount(): DialogCtx {
+function mount(): DialogCtx & {
+  $refs: Record<string, HTMLElement>;
+  $nextTick: (cb?: () => void) => void;
+} {
   const f = alpineCapture.getFactory();
   if (!f) {
     throw new Error('dialogComponent factory not registered');
   }
-  return f() as DialogCtx;
+  return {
+    ...(f() as DialogCtx),
+    $refs: {},
+    $nextTick: (cb?: () => void) => {
+      cb?.();
+    },
+  };
 }
 
 describe('dialogComponent (DialogComponent.ts)', () => {
@@ -361,5 +371,13 @@ describe('dialogComponent (DialogComponent.ts)', () => {
     ctx.initInputTextValue.call(ctx);
     expect(ctx.inputValue).toBe('');
     expect(ctx.inputError).toBe('');
+  });
+
+  it('focusConfirmButton focuses the confirm button on the next tick', () => {
+    const focus = vi.fn();
+    const ctx = mount();
+    ctx.$refs.confirmButton = { focus } as unknown as HTMLElement;
+    ctx.focusConfirmButton.call(ctx);
+    expect(focus).toHaveBeenCalledTimes(1);
   });
 });

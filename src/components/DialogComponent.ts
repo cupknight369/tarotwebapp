@@ -124,6 +124,13 @@ Alpine.data('dialogComponent', () => ({
     this.inputValue = d?.inputDefault ?? '';
   },
 
+  focusConfirmButton(this: { $refs: Record<string, HTMLElement>; $nextTick: (cb?: () => void) => void }) {
+    this.$nextTick(() => {
+      const el = this.$refs.confirmButton as HTMLButtonElement | undefined;
+      el?.focus();
+    });
+  },
+
   handleInputValueKeydown(e: KeyboardEvent) {
     const delta = numericInputStepDelta(e.key);
     if (delta === null) return;

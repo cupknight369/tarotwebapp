@@ -21,7 +21,9 @@
     </button>
 
     <template x-if="$store.dialog.type === 'confirm'">
-      <div>
+      <div
+        x-effect="if ($store.dialog.open && $store.dialog.type === 'confirm') { focusConfirmButton(); }"
+      >
         <p
           id="dialog-title"
           class="text-xl font-bold text-gray-200 pr-8 mb-6"
@@ -30,6 +32,7 @@
         <div class="flex gap-3 justify-end">
           <button
             type="button"
+            x-ref="confirmButton"
             class="cursor-pointer px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
             @click="handleConfirm()"
             x-text="$store.dialog.confirmLabel || 'Yes'"
