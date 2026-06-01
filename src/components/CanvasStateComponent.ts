@@ -882,6 +882,12 @@ Alpine.data('stateComponent', () => ({
       return;
     }
 
+    if (window.authComponent?.isAccountMenuOpen) {
+      event.preventDefault();
+      window.authComponent.closeAccountMenu();
+      return;
+    }
+
     const canvas = window.draggableZoneComponent;
     if (canvas?.deckModalOpen) {
       event.preventDefault();

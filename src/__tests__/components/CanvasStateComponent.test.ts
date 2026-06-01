@@ -298,10 +298,12 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       revokeObjectURL: vi.fn(),
     });
     window.draggableZoneComponent = undefined;
+    window.authComponent = undefined;
   });
 
   afterEach(() => {
     window.draggableZoneComponent = undefined;
+    window.authComponent = undefined;
     vi.unstubAllGlobals();
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -1801,6 +1803,23 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     ctx.handleAddTextShortcut.call(ctx, event);
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(addTextAt).toHaveBeenCalledWith(333, 444);
+  });
+
+  it('handleEscapeShortcut closes account modal when open', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const closeAccountMenu = vi.fn();
+    window.authComponent = {
+      isAccountMenuOpen: true,
+      closeAccountMenu,
+    };
+    ctx.handleEscapeShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(closeAccountMenu).toHaveBeenCalledTimes(1);
   });
 
   it('handleEscapeShortcut commits active text edit', () => {

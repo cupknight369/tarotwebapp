@@ -60,6 +60,19 @@ Alpine.data('authComponent', () => ({
     this.isAccountMenuOpen = true;
   },
 
+  closeAccountMenu() {
+    if (!this.isAccountMenuOpen) {
+      return;
+    }
+    this.isAccountMenuOpen = false;
+    this.isPassResetOpen = false;
+    this.resetLoginUi();
+  },
+
+  init() {
+    window.authComponent = this;
+  },
+
   togglePassResetForm() {
     this.isPassResetOpen = !this.isPassResetOpen;
     this.validationError = '';

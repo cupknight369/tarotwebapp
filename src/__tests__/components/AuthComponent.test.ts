@@ -46,6 +46,8 @@ type AuthComponentInstance = {
   logout: () => Promise<void>;
   toggleAccountMenu: () => void;
   openAccountMenu: () => void;
+  closeAccountMenu: () => void;
+  init: () => void;
   togglePassResetForm: () => void;
   resetPassword: () => Promise<void>;
   setLoginMode: (mode: 'password' | 'magiclink') => void;
@@ -143,6 +145,25 @@ describe('authComponent (AuthComponent.ts)', () => {
     expect(c.isAccountMenuOpen).toBe(true);
     c.openAccountMenu();
     expect(c.isAccountMenuOpen).toBe(true);
+  });
+
+  it('closeAccountMenu closes the menu and resets login UI', () => {
+    const auth = createAuthStore();
+    const c = mountComponent(auth);
+    c.openAccountMenu();
+    c.email = 'dirty@example.com';
+    c.isPassResetOpen = true;
+    c.closeAccountMenu();
+    expect(c.isAccountMenuOpen).toBe(false);
+    expect(c.isPassResetOpen).toBe(false);
+    expect(c.email).toBe('');
+  });
+
+  it('init registers authComponent on window', () => {
+    const auth = createAuthStore();
+    const c = mountComponent(auth);
+    c.init();
+    expect(window.authComponent).toBe(c);
   });
 
   it('togglePassResetForm toggles and clears validationError', () => {
