@@ -193,6 +193,19 @@ type StateCtx = {
   handleDrawByNameShortcut: (event: KeyboardEvent) => void;
   handleDrawByIndexShortcut: (event: KeyboardEvent) => void;
   handleAddTextShortcut: (event: KeyboardEvent) => void;
+  handleRandomNumberShortcut: (event: KeyboardEvent) => void;
+  openRandomNumberModal: (screenX: number, screenY: number) => void;
+  closeRandomNumberModal: () => void;
+  generateRandomNumber: () => void;
+  addRandomNumberResultToCanvas: () => void;
+  addTextLabelWithTextAt: (screenX: number, screenY: number, text: string) => void;
+  randomNumberModalOpen: boolean;
+  randomNumberLowerBound: string;
+  randomNumberUpperBound: string;
+  randomNumberResult: number | null;
+  randomNumberError: string | null;
+  randomNumberScreenX: number | null;
+  randomNumberScreenY: number | null;
   handleShuffleShortcut: (event: KeyboardEvent) => void;
   handleNextDeckShortcut: (event: KeyboardEvent) => void;
   handlePreviousDeckShortcut: (event: KeyboardEvent) => void;
@@ -1576,7 +1589,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
 
   it('promptClearCanvas confirm calls clearCanvas on draggableZoneComponent', () => {
     const clearCanvas = vi.fn();
-    window.draggableZoneComponent = { clearCanvas } as unknown as typeof window.draggableZoneComponent;
+    window.draggableZoneComponent = {
+      clearCanvas,
+    } as unknown as typeof window.draggableZoneComponent;
     const ctx = createCtx();
     ctx.promptClearCanvas.call(ctx);
     (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
@@ -1814,6 +1829,187 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     ctx.handleAddTextShortcut.call(ctx, event);
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(addTextAt).toHaveBeenCalledWith(333, 444);
+  });
+
+  it('handleRandomNumberShortcut opens modal at context menu when open', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      code: 'Digit3',
+      ctrlKey: true,
+      shiftKey: true,
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    window.draggableZoneComponent = {
+      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleRandomNumberShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(ctx.randomNumberModalOpen).toBe(true);
+    expect(ctx.randomNumberScreenX).toBe(120);
+    expect(ctx.randomNumberScreenY).toBe(240);
+  });
+
+  it('handleRandomNumberShortcut opens modal at last pointer position', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      code: 'Digit3',
+      ctrlKey: true,
+      shiftKey: true,
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      lastPointerScreenX: 333,
+      lastPointerScreenY: 444,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleRandomNumberShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(ctx.randomNumberModalOpen).toBe(true);
+    expect(ctx.randomNumberScreenX).toBe(333);
+    expect(ctx.randomNumberScreenY).toBe(444);
+  });
+
+  it('handleRandomNumberShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      code: 'Digit3',
+      ctrlKey: true,
+      shiftKey: true,
+      target: document.createElement('input'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleRandomNumberShortcut.call(ctx, event);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(ctx.randomNumberModalOpen).toBe(false);
+  });
+
+  it('handleRandomNumberShortcut ignores non-Digit3 keys and missing modifiers', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const base = {
+      target: document.createElement('div'),
+      preventDefault,
+    };
+    ctx.handleRandomNumberShortcut.call(ctx, {
+      ...base,
+      code: 'Digit3',
+      ctrlKey: true,
+      shiftKey: false,
+    } as unknown as KeyboardEvent);
+    ctx.handleRandomNumberShortcut.call(ctx, {
+      ...base,
+      code: 'KeyS',
+      ctrlKey: true,
+      shiftKey: true,
+    } as unknown as KeyboardEvent);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(ctx.randomNumberModalOpen).toBe(false);
+  });
+
+  it('generateRandomNumber sets result and clears error on valid bounds', () => {
+    vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation((arr) => {
+      (arr as Uint32Array)[0] = 0;
+      return arr;
+    });
+    const ctx = createCtx({
+      randomNumberLowerBound: '1',
+      randomNumberUpperBound: '12',
+      randomNumberResult: 99,
+      randomNumberError: 'old',
+    });
+    ctx.generateRandomNumber.call(ctx);
+    expect(ctx.randomNumberError).toBeNull();
+    expect(ctx.randomNumberResult).toBe(1);
+  });
+
+  it('generateRandomNumber sets error and clears result on invalid bounds', () => {
+    const ctx = createCtx({
+      randomNumberLowerBound: '10',
+      randomNumberUpperBound: '3',
+      randomNumberResult: 7,
+    });
+    ctx.generateRandomNumber.call(ctx);
+    expect(ctx.randomNumberError).toBe('Upper bound must be larger than lower bound');
+    expect(ctx.randomNumberResult).toBeNull();
+  });
+
+  it('closeRandomNumberModal preserves bounds and result', () => {
+    const ctx = createCtx({
+      randomNumberModalOpen: true,
+      randomNumberLowerBound: '2',
+      randomNumberUpperBound: '20',
+      randomNumberResult: 15,
+      randomNumberError: 'err',
+    });
+    ctx.closeRandomNumberModal.call(ctx);
+    expect(ctx.randomNumberModalOpen).toBe(false);
+    expect(ctx.randomNumberLowerBound).toBe('2');
+    expect(ctx.randomNumberUpperBound).toBe('20');
+    expect(ctx.randomNumberResult).toBe(15);
+    expect(ctx.randomNumberError).toBe('err');
+  });
+
+  it('reopenRandomNumberModal preserves prior state', () => {
+    const ctx = createCtx({
+      randomNumberLowerBound: '5',
+      randomNumberUpperBound: '50',
+      randomNumberResult: 42,
+    });
+    ctx.openRandomNumberModal.call(ctx, 10, 20);
+    expect(ctx.randomNumberModalOpen).toBe(true);
+    expect(ctx.randomNumberLowerBound).toBe('5');
+    expect(ctx.randomNumberUpperBound).toBe('50');
+    expect(ctx.randomNumberResult).toBe(42);
+  });
+
+  it('addRandomNumberResultToCanvas calls addTextLabelWithTextAt at anchor', () => {
+    const addTextLabelWithTextAt = vi.fn();
+    const ctx = createCtx({
+      randomNumberModalOpen: true,
+      randomNumberResult: 8,
+      randomNumberScreenX: 100,
+      randomNumberScreenY: 200,
+    });
+    window.draggableZoneComponent = {
+      addTextLabelWithTextAt,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.addRandomNumberResultToCanvas.call(ctx);
+    expect(addTextLabelWithTextAt).toHaveBeenCalledWith(100, 200, '8');
+    expect(ctx.randomNumberModalOpen).toBe(false);
+  });
+
+  it('addRandomNumberResultToCanvas no-ops without result or anchor', () => {
+    const addTextLabelWithTextAt = vi.fn();
+    const ctx = createCtx({
+      randomNumberResult: null,
+      randomNumberScreenX: 100,
+      randomNumberScreenY: 200,
+    });
+    window.draggableZoneComponent = {
+      addTextLabelWithTextAt,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.addRandomNumberResultToCanvas.call(ctx);
+    expect(addTextLabelWithTextAt).not.toHaveBeenCalled();
+  });
+
+  it('handleEscapeShortcut closes random number modal when open', () => {
+    const ctx = createCtx({ randomNumberModalOpen: true });
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleEscapeShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(ctx.randomNumberModalOpen).toBe(false);
   });
 
   it('handleEscapeShortcut closes account modal when open', () => {

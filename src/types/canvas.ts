@@ -55,6 +55,13 @@ export type MergedThis = {
   loadModalRenameGroupTitle: string;
   loadModalGroupError: string | null;
   loadModalReadingsPending: boolean;
+  randomNumberModalOpen: boolean;
+  randomNumberLowerBound: string;
+  randomNumberUpperBound: string;
+  randomNumberResult: number | null;
+  randomNumberError: string | null;
+  randomNumberScreenX: number | null;
+  randomNumberScreenY: number | null;
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
   _readingSaveFlashTimer: ReturnType<typeof setTimeout> | null;
@@ -151,6 +158,12 @@ export type MergedThis = {
   shuffleDeck(): void;
   openDrawByIndexDialog(screenX: number, screenY: number): void;
   openDrawByIndexFromContextMenu(): void;
+  openRandomNumberModalFromContextMenu(): void;
+  openRandomNumberModal(screenX: number, screenY: number): void;
+  closeRandomNumberModal(): void;
+  generateRandomNumber(): void;
+  addRandomNumberResultToCanvas(): void;
+  handleRandomNumberShortcut(event: KeyboardEvent): void;
   addCardAtScreenPosition(card: TarotCard, screenX: number, screenY: number): void;
   serializeState(): Promise<SavedReadingState>;
   deserializeState(state: SavedReadingState): Promise<void>;
@@ -239,10 +252,19 @@ export type MergedThis = {
   generateCardId(): string;
   generateTextId(): string;
   addTextAt(screenX: number, screenY: number): void;
+  addTextLabelWithTextAt(screenX: number, screenY: number, text: string): void;
   getTextLabelPosition(label: TextLabel): { x: number; y: number };
-  getTextLabelBounds(label: TextLabel): { left: number; top: number; width: number; height: number };
+  getTextLabelBounds(label: TextLabel): {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  };
   getTextLabelStyle(label: TextLabel): string;
-  buildGroupDragOffsets(anchorX: number, anchorY: number): Record<string, { dx: number; dy: number }>;
+  buildGroupDragOffsets(
+    anchorX: number,
+    anchorY: number,
+  ): Record<string, { dx: number; dy: number }>;
   applyGroupDragAt(newAnchorX: number, newAnchorY: number): void;
   cryptoRandomInt(len: number): number;
   onMouseWheelClick(event: MouseLikeEvent): void;

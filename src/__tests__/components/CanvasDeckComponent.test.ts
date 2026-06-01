@@ -256,7 +256,12 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
   it('closeDeckModal is a no-op while global dialog is open', () => {
     const ctx = mountDeck();
     ctx.deckModalOpen = true;
-    alpineStub.rawStores.dialog = { open: true, type: 'confirm', title: 'Delete?', cancelLabelVisible: true };
+    alpineStub.rawStores.dialog = {
+      open: true,
+      type: 'confirm',
+      title: 'Delete?',
+      cancelLabelVisible: true,
+    };
     ctx.closeDeckModal.call(ctx);
     expect(ctx.deckModalOpen).toBe(true);
   });

@@ -1,4 +1,10 @@
-import { DraggableCard, MouseLikeEvent, MergedThis, TarotCard, TextLabel } from '../types/canvas.js';
+import {
+  DraggableCard,
+  MouseLikeEvent,
+  MergedThis,
+  TarotCard,
+  TextLabel,
+} from '../types/canvas.js';
 import Alpine from 'alpinejs';
 import type { SettingsStoreState } from '../types/settings.js';
 import {
@@ -678,8 +684,10 @@ Alpine.data('canvasComponent', () => ({
         newAnchorX = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
         newAnchorY = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
       } else {
-        newAnchorX = this.textDragStart!.startX + (dropX - this.textDragStart!.startDropX) / this.scale;
-        newAnchorY = this.textDragStart!.startY + (dropY - this.textDragStart!.startDropY) / this.scale;
+        newAnchorX =
+          this.textDragStart!.startX + (dropX - this.textDragStart!.startDropX) / this.scale;
+        newAnchorY =
+          this.textDragStart!.startY + (dropY - this.textDragStart!.startDropY) / this.scale;
       }
       this.applyGroupDragAt(newAnchorX, newAnchorY);
       return;
@@ -982,6 +990,12 @@ Alpine.data('canvasComponent', () => ({
   openDrawByIndexFromContextMenu(this: MergedThis) {
     const { x, y } = this.contextMenu;
     this.openDrawByIndexDialog(x, y);
+    this.closeContextMenu();
+  },
+
+  openRandomNumberModalFromContextMenu(this: MergedThis) {
+    const { x, y } = this.contextMenu;
+    this.openRandomNumberModal(x, y);
     this.closeContextMenu();
   },
 

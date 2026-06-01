@@ -11,6 +11,7 @@ import { logError } from '../lib/logError.js';
 import { showQueryFailureDialog } from '../lib/queryFailureUi.js';
 import { getCardImageRow, getLocalCardsByIds } from '../lib/localDecks.js';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
+import { parseRandomNumberBounds, randomIntInclusive } from '../lib/randomNumber.js';
 import { readingGroupCreateSchema } from '../validation/readings.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
 
@@ -83,6 +84,85 @@ Alpine.data('stateComponent', () => ({
   readingSaveFlashVisible: false,
   _readingSaveFlashTimer: null as ReturnType<typeof setTimeout> | null,
   _ctrlDLastDrawAtMs: null as number | null,
+
+  randomNumberModalOpen: false,
+  randomNumberLowerBound: '1',
+  randomNumberUpperBound: '12',
+  randomNumberResult: null as number | null,
+  randomNumberError: null as string | null,
+  randomNumberScreenX: null as number | null,
+  randomNumberScreenY: null as number | null,
+
+  openRandomNumberModal(this: MergedThis, screenX: number, screenY: number): void {
+    this.randomNumberScreenX = screenX;
+    this.randomNumberScreenY = screenY;
+    this.randomNumberModalOpen = true;
+  },
+
+  closeRandomNumberModal(this: MergedThis): void {
+    this.randomNumberModalOpen = false;
+  },
+
+  generateRandomNumber(this: MergedThis): void {
+    const parsed = parseRandomNumberBounds(
+      this.randomNumberLowerBound,
+      this.randomNumberUpperBound,
+    );
+    if (!parsed.ok) {
+      this.randomNumberError = parsed.error;
+      this.randomNumberResult = null;
+      return;
+    }
+    this.randomNumberError = null;
+    this.randomNumberResult = randomIntInclusive(parsed.lower, parsed.upper);
+  },
+
+  addRandomNumberResultToCanvas(this: MergedThis): void {
+    if (this.randomNumberResult === null) {
+      return;
+    }
+    if (this.randomNumberScreenX === null || this.randomNumberScreenY === null) {
+      return;
+    }
+    window.draggableZoneComponent?.addTextLabelWithTextAt(
+      this.randomNumberScreenX,
+      this.randomNumberScreenY,
+      String(this.randomNumberResult),
+    );
+    this.closeRandomNumberModal();
+  },
+
+  handleRandomNumberShortcut(this: MergedThis, event: KeyboardEvent): void {
+    if (event.code !== 'Digit3' || !event.ctrlKey || !event.shiftKey) {
+      return;
+    }
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    const canvas = window.draggableZoneComponent;
+    if (!canvas) {
+      return;
+    }
+    if (canvas.contextMenu.open) {
+      this.openRandomNumberModal(canvas.contextMenu.x, canvas.contextMenu.y);
+      return;
+    }
+    if (canvas.lastPointerScreenX !== null && canvas.lastPointerScreenY !== null) {
+      this.openRandomNumberModal(canvas.lastPointerScreenX, canvas.lastPointerScreenY);
+      return;
+    }
+    if (!canvas.viewport) {
+      return;
+    }
+    const rect = canvas.viewport.getBoundingClientRect();
+    this.openRandomNumberModal(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  },
 
   showReadingSaveFlash(this: MergedThis): void {
     if (this._readingSaveFlashTimer !== null) {
@@ -919,6 +999,12 @@ Alpine.data('stateComponent', () => ({
     if (this.loadModalOpen) {
       event.preventDefault();
       this.closeLoadModal();
+      return;
+    }
+
+    if (this.randomNumberModalOpen) {
+      event.preventDefault();
+      this.closeRandomNumberModal();
       return;
     }
 

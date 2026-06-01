@@ -79,8 +79,14 @@ type TextLabelCtx = {
   TEXT_LABEL_DEFAULT_HEIGHT: number;
   generateTextId: () => string;
   addTextAt: (screenX: number, screenY: number) => void;
+  addTextLabelWithTextAt: (screenX: number, screenY: number, text: string) => void;
   getTextLabelPosition: (l: TextLabel) => { x: number; y: number };
-  getTextLabelBounds: (l: TextLabel) => { left: number; top: number; width: number; height: number };
+  getTextLabelBounds: (l: TextLabel) => {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  };
   getTextLabelStyle: (l: TextLabel) => string;
   updateTextLabel: (id: string, p: Partial<TextLabel>) => void;
   deleteTextLabel: (id: string) => void;
@@ -140,6 +146,27 @@ describe('textLabelComponent (CanvasTextLabelComponent.ts)', () => {
     expect(ctx.textLabels[0]?.zIndex).toBe(4);
     expect(ctx.maxTextZIndex).toBe(4);
     expect(ctx.dirty).toBe(true);
+  });
+
+  it('addTextLabelWithTextAt places label with given text, enters edit mode, dirty/z-index', () => {
+    const ctx = mount({ maxTextZIndex: 2, textLabels: [] });
+    ctx.addTextLabelWithTextAt.call(ctx, 50, 60, '42');
+    expect(ctx.textLabels).toHaveLength(1);
+    expect(ctx.textLabels[0]?.text).toBe('42');
+    expect(ctx.textLabels[0]?.x).toBe(51);
+    expect(ctx.textLabels[0]?.y).toBe(62);
+    expect(ctx.textLabels[0]?.zIndex).toBe(3);
+    expect(ctx.maxTextZIndex).toBe(3);
+    expect(ctx.editingTextId).toBe(ctx.textLabels[0]?.id ?? null);
+    expect(ctx.dirty).toBe(true);
+  });
+
+  it('addTextLabelWithTextAt ignores invalid text', () => {
+    const ctx = mount({ maxTextZIndex: 2, textLabels: [] });
+    const longText = 'x'.repeat(10001);
+    ctx.addTextLabelWithTextAt.call(ctx, 0, 0, longText);
+    expect(ctx.textLabels).toHaveLength(0);
+    expect(ctx.dirty).toBe(false);
   });
 
   it('getTextLabelPosition returns label coordinates when unanchored', () => {

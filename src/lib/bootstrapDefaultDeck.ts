@@ -2,10 +2,7 @@ import { executeCloudDeckDownload, isRetryableCoreFailure } from './cloudDeckDow
 import { DEFAULT_DECK_ID } from './decks.js';
 import { logDebug } from './logError.js';
 import { listLocalDecks } from './localDecks.js';
-import {
-  enqueuePendingDeckDownload,
-  registerDeckDownloadSync,
-} from './pendingDeckDownloads.js';
+import { enqueuePendingDeckDownload, registerDeckDownloadSync } from './pendingDeckDownloads.js';
 import { getBrowserSupabaseRestConfig } from './supabaseRest.js';
 
 function notifyDefaultDeckInstalled(): void {

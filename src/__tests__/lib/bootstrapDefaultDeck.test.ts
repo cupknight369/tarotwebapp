@@ -43,7 +43,10 @@ vi.mock('../../lib/logError.js', () => ({
 }));
 
 import { ok, err } from '../../lib/result.js';
-import { ensureDefaultDeckOnDevice, isDefaultDeckOnDevice } from '../../lib/bootstrapDefaultDeck.js';
+import {
+  ensureDefaultDeckOnDevice,
+  isDefaultDeckOnDevice,
+} from '../../lib/bootstrapDefaultDeck.js';
 
 describe('ensureDefaultDeckOnDevice', () => {
   beforeEach(() => {
@@ -135,9 +138,7 @@ describe('ensureDefaultDeckOnDevice', () => {
   });
 
   it('queues retryable failures for background sync', async () => {
-    mocks.executeCloudDeckDownload.mockResolvedValue(
-      err({ kind: 'network', message: 'offline' }),
-    );
+    mocks.executeCloudDeckDownload.mockResolvedValue(err({ kind: 'network', message: 'offline' }));
 
     await ensureDefaultDeckOnDevice();
 

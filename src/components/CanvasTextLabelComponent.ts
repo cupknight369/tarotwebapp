@@ -66,6 +66,38 @@ Alpine.data('textLabelComponent', () => ({
     this.dirty = true;
   },
 
+  addTextLabelWithTextAt(this: MergedThis, screenX: number, screenY: number, text: string): void {
+    const parsed = labelTextSchema.safeParse(text);
+    if (!parsed.success) {
+      return;
+    }
+    const { x, y } = this.screenToContent(screenX, screenY);
+    const label: TextLabel = {
+      id: this.generateTextId(),
+      text: parsed.data,
+      x,
+      y,
+      fontSize: 16,
+      fontWeight: 400,
+      fontStyle: 'normal',
+      textDecoration: 'none',
+      color: '#e5e7eb',
+      zIndex: this.maxTextZIndex + 1,
+      cursor: 'grab',
+      display: 'block',
+      anchorCardId: null,
+      anchorPosition: null,
+      fixedWidth: false,
+      fixedWidthPx: 0,
+    };
+    this.textLabels = [...this.textLabels, label];
+    this.$nextTick(() => {
+      this.startEditingTextLabel(label);
+    });
+    this.maxTextZIndex += 1;
+    this.dirty = true;
+  },
+
   getTextLabelBounds(
     this: MergedThis,
     label: TextLabel,

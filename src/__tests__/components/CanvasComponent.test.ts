@@ -521,6 +521,25 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(ctx.contextMenu.open).toBe(false);
   });
 
+  it('openRandomNumberModalFromContextMenu opens modal at menu coords and closes context menu', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.contextMenu = { open: true, x: 12, y: 34, cardId: null, textId: null };
+    ctx.openRandomNumberModal = vi.fn();
+    ctx.closeContextMenu = vi.fn();
+    c.openRandomNumberModalFromContextMenu.call(ctx);
+    expect(ctx.openRandomNumberModal).toHaveBeenCalledWith(12, 34);
+    expect(ctx.closeContextMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('canvas markup includes generate random number context menu item', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toContain('Generate random number');
+    expect(html).toContain('openRandomNumberModalFromContextMenu()');
+    expect(html).toContain('@keydown.window="handleRandomNumberShortcut($event)"');
+    expect(html).toContain('randomNumberModalOpen');
+  });
+
   it('openDrawByNameFromContextMenu opens picker at menu coords and closes context menu', () => {
     const c = mountCanvas();
     const ctx = createMerged();
