@@ -59,6 +59,7 @@ Alpine.data('settingsComponent', () => ({
         void this.loadCorrespondenceGroupsForExport();
         void this.loadReadingsForExport();
         void this.loadUserDecksForExport();
+        this.focusSettingsFirstInput();
       } else if (!open) {
         settingsWereOpen = false;
       }
@@ -79,6 +80,16 @@ Alpine.data('settingsComponent', () => ({
       return;
     }
     settingsStore().open = false;
+  },
+
+  focusSettingsFirstInput(this: {
+    $refs: Record<string, HTMLElement>;
+    $nextTick: (cb?: () => void) => void;
+  }) {
+    this.$nextTick(() => {
+      const el = this.$refs.settingsFirstInput as HTMLInputElement | undefined;
+      el?.focus();
+    });
   },
 
   formatStorageLine(): string {

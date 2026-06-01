@@ -36,6 +36,7 @@
       <label class="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
+          x-ref="settingsFirstInput"
           x-model="$store.settings.censored"
           :disabled="isSettingsBusy()"
           class="rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"

@@ -129,6 +129,7 @@ type SettingsCtx = {
   correspondenceGroupsPending: boolean;
   isSettingsBusy: () => boolean;
   closeSettings: () => void;
+  focusSettingsFirstInput: () => void;
   loadCorrespondenceGroupsForExport: () => Promise<void>;
   isCorrespondenceGroupSelected: (id: string) => boolean;
   toggleCorrespondenceGroup: (id: string) => void;
@@ -210,12 +211,21 @@ type SettingsCtx = {
   onDeckImportFileChange: (event: Event) => Promise<void>;
 };
 
-function mount(): SettingsCtx {
+function mount(): SettingsCtx & {
+  $refs: Record<string, HTMLElement>;
+  $nextTick: (cb?: () => void) => void;
+} {
   const f = alpineBundle.cap.getFactory();
   if (!f) {
     throw new Error('settingsComponent factory not registered');
   }
-  return f() as SettingsCtx;
+  return {
+    ...(f() as SettingsCtx),
+    $refs: {},
+    $nextTick: (cb?: () => void) => {
+      cb?.();
+    },
+  };
 }
 
 function storageEstimateMock(): ReturnType<typeof vi.fn> {
@@ -374,6 +384,14 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     ctx.backupBusy = true;
     ctx.closeSettings.call(ctx);
     expect((rawStores.settings as SettingsStoreState).open).toBe(true);
+  });
+
+  it('focusSettingsFirstInput focuses the first settings input on the next tick', () => {
+    const focus = vi.fn();
+    const ctx = mount();
+    ctx.$refs.settingsFirstInput = { focus } as unknown as HTMLElement;
+    ctx.focusSettingsFirstInput.call(ctx);
+    expect(focus).toHaveBeenCalledTimes(1);
   });
 
   it('toggleCorrespondenceGroup and canExportCorrespondences gate export', () => {
