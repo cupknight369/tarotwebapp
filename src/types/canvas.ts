@@ -69,6 +69,7 @@ export type MergedThis = {
   draggingCard: HTMLElement | null;
   showShuffledConfirmation: boolean;
   selectedCardIds: string[];
+  selectedTextIds: string[];
   selectionBox: { startX: number; startY: number; currentX: number; currentY: number } | null;
   selectionBoxStyle: string;
   groupDragOffsets: Record<string, { dx: number; dy: number }> | null;
@@ -213,7 +214,10 @@ export type MergedThis = {
   generateTextId(): string;
   addTextAt(screenX: number, screenY: number): void;
   getTextLabelPosition(label: TextLabel): { x: number; y: number };
+  getTextLabelBounds(label: TextLabel): { left: number; top: number; width: number; height: number };
   getTextLabelStyle(label: TextLabel): string;
+  buildGroupDragOffsets(anchorX: number, anchorY: number): Record<string, { dx: number; dy: number }>;
+  applyGroupDragAt(newAnchorX: number, newAnchorY: number): void;
   cryptoRandomInt(len: number): number;
   onMouseWheelClick(event: MouseLikeEvent): void;
   drawCardAt(x: number, y: number): void;

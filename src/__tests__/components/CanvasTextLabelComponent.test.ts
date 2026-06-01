@@ -80,6 +80,7 @@ type TextLabelCtx = {
   generateTextId: () => string;
   addTextAt: (screenX: number, screenY: number) => void;
   getTextLabelPosition: (l: TextLabel) => { x: number; y: number };
+  getTextLabelBounds: (l: TextLabel) => { left: number; top: number; width: number; height: number };
   getTextLabelStyle: (l: TextLabel) => string;
   updateTextLabel: (id: string, p: Partial<TextLabel>) => void;
   deleteTextLabel: (id: string) => void;
@@ -145,6 +146,28 @@ describe('textLabelComponent (CanvasTextLabelComponent.ts)', () => {
     const ctx = mount();
     const l = label({ x: 9, y: 11, anchorCardId: null, anchorPosition: null });
     expect(ctx.getTextLabelPosition.call(ctx, l)).toEqual({ x: 9, y: 11 });
+  });
+
+  it('getTextLabelBounds uses default width for auto-sized labels', () => {
+    const ctx = mount();
+    const l = label({ x: 9, y: 11, anchorCardId: null, anchorPosition: null });
+    expect(ctx.getTextLabelBounds.call(ctx, l)).toEqual({
+      left: 9,
+      top: 11,
+      width: 100,
+      height: 24,
+    });
+  });
+
+  it('getTextLabelBounds uses fixed width when enabled', () => {
+    const ctx = mount();
+    const l = label({ x: 0, y: 0, fixedWidth: true, fixedWidthPx: 180 });
+    expect(ctx.getTextLabelBounds.call(ctx, l)).toEqual({
+      left: 0,
+      top: 0,
+      width: 180,
+      height: 24,
+    });
   });
 
   it('getTextLabelPosition returns label coordinates when anchor position missing', () => {

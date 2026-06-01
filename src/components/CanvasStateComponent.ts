@@ -283,6 +283,7 @@ Alpine.data('stateComponent', () => ({
     this.maxZIndex = Math.max(0, ...this.draggableCards.map((c) => c.zIndex));
     this.maxTextZIndex = Math.max(0, ...this.textLabels.map((l) => l.zIndex));
     this.selectedCardIds = [];
+    this.selectedTextIds = [];
     this.editingTextId = null;
     this.dirty = false;
   },

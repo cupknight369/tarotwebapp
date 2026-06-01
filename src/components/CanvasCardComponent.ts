@@ -14,6 +14,7 @@ Alpine.data('cardComponent', () => ({
   } | null,
   draggingCard: null as HTMLElement | null,
   selectedCardIds: [] as string[],
+  selectedTextIds: [] as string[],
   groupDragOffsets: null as Record<string, { dx: number; dy: number }> | null,
   showShuffledConfirmation: false,
 
@@ -166,6 +167,7 @@ Alpine.data('cardComponent', () => ({
       this.updateTextLabel(textLabel.id, { anchorCardId: null, anchorPosition: null });
     }
     this.selectedCardIds = [];
+    this.selectedTextIds = [];
     this.dirty = true;
   },
 

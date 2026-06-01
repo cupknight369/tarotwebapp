@@ -231,6 +231,7 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
     draggingCard: null as HTMLElement | null,
     dragStart: null as MergedThis['dragStart'],
     selectedCardIds: [] as string[],
+    selectedTextIds: [] as string[],
     isPanning: false,
     dirty: false,
     CARD_WIDTH: 150,
@@ -280,6 +281,9 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
     },
     getTextLabelPosition(l: TextLabel) {
       return { x: l.x, y: l.y };
+    },
+    getTextLabelBounds(l: TextLabel) {
+      return { left: l.x, top: l.y, width: 100, height: 24 };
     },
     commitEditTextLabel: vi.fn(function (this: MergedThis) {
       this.editingTextId = null;
@@ -867,6 +871,62 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(ctx.dirty).toBe(true);
   });
 
+  it('onMouseUp completes selection and picks overlapping cards and text labels', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.selectionBox = { startX: 0, startY: 0, currentX: 200, currentY: 200 };
+    ctx.draggableCards = [mkCard('a', 10, 10), mkCard('b', 500, 500)];
+    ctx.textLabels = [mkLabel('tl1', null), mkLabel('far-text', null)];
+    ctx.textLabels[0]!.x = 20;
+    ctx.textLabels[0]!.y = 20;
+    ctx.textLabels[1]!.x = 900;
+    ctx.textLabels[1]!.y = 900;
+    c.onMouseUp.call(ctx, { clientX: 0, clientY: 0, target: null });
+    expect(ctx.selectedCardIds).toEqual(['a']);
+    expect(ctx.selectedTextIds).toEqual(['tl1']);
+    expect(ctx.selectionBox).toBeNull();
+  });
+
+  it('onMouseMove drags a mixed group of selected cards and text labels', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const el = document.createElement('div');
+    el.id = 'a';
+    ctx.draggableCards = [mkCard('a', 0, 0)];
+    ctx.textLabels = [{ ...mkLabel('tl1', null), x: 50, y: 10 }];
+    ctx.selectedCardIds = ['a'];
+    ctx.selectedTextIds = ['tl1'];
+    ctx.draggingCard = el;
+    ctx.dragStart = { startCardX: 0, startCardY: 0, startDropX: 0, startDropY: 0 };
+    ctx.groupDragOffsets = { a: { dx: 0, dy: 0 }, tl1: { dx: 50, dy: 10 } };
+    c.onMouseMove.call(ctx, { clientX: 40, clientY: 40, target: null });
+    expect(ctx.draggableCards.find((x) => x.id === 'a')?.x).toBe(40);
+    expect(ctx.textLabels.find((l) => l.id === 'tl1')?.x).toBe(90);
+    expect(ctx.textLabels.find((l) => l.id === 'tl1')?.y).toBe(50);
+  });
+
+  it('onMouseDown drags a selected text label with grouped cards', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.draggableCards = [mkCard('card-1', 0, 0)];
+    ctx.textLabels = [{ ...mkLabel('tl1', null), x: 10, y: 20 }];
+    ctx.selectedCardIds = ['card-1'];
+    ctx.selectedTextIds = ['tl1'];
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-text-id', 'tl1');
+    c.onMouseDown.call(ctx, {
+      clientX: 5,
+      clientY: 6,
+      target: wrap,
+      ctrlKey: false,
+    });
+    expect(ctx.draggingTextId).toBe('tl1');
+    expect(ctx.groupDragOffsets).toEqual({
+      'card-1': { dx: -10, dy: -20 },
+      tl1: { dx: 0, dy: 0 },
+    });
+  });
+
   it('onMouseUp completes selection and picks overlapping cards', () => {
     const c = mountCanvas();
     const ctx = createMerged();
@@ -874,6 +934,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     ctx.draggableCards = [mkCard('a', 10, 10), mkCard('b', 500, 500)];
     c.onMouseUp.call(ctx, { clientX: 0, clientY: 0, target: null });
     expect(ctx.selectedCardIds).toEqual(['a']);
+    expect(ctx.selectedTextIds).toEqual([]);
     expect(ctx.selectionBox).toBeNull();
   });
 

@@ -1,4 +1,4 @@
-import { DraggableCard, MouseLikeEvent, MergedThis, TarotCard } from '../types/canvas.js';
+import { DraggableCard, MouseLikeEvent, MergedThis, TarotCard, TextLabel } from '../types/canvas.js';
 import Alpine from 'alpinejs';
 import type { SettingsStoreState } from '../types/settings.js';
 import {
@@ -217,6 +217,47 @@ Alpine.data('canvasComponent', () => ({
       box1.top + box1.height < box2.top ||
       box2.top + box2.height < box1.top
     );
+  },
+
+  buildGroupDragOffsets(
+    this: MergedThis,
+    anchorX: number,
+    anchorY: number,
+  ): Record<string, { dx: number; dy: number }> {
+    const offsets: Record<string, { dx: number; dy: number }> = {};
+    for (const id of this.selectedCardIds) {
+      const card = this.draggableCards.find((c) => c.id === id);
+      if (card) offsets[id] = { dx: card.x - anchorX, dy: card.y - anchorY };
+    }
+    for (const id of this.selectedTextIds) {
+      const label = this.textLabels.find((l) => l.id === id);
+      if (!label) continue;
+      if (label.anchorCardId && this.selectedCardIds.includes(label.anchorCardId)) continue;
+      const pos = this.getTextLabelPosition(label);
+      offsets[id] = { dx: pos.x - anchorX, dy: pos.y - anchorY };
+    }
+    return offsets;
+  },
+
+  applyGroupDragAt(this: MergedThis, newAnchorX: number, newAnchorY: number): void {
+    if (!this.groupDragOffsets) return;
+    for (const id of Object.keys(this.groupDragOffsets)) {
+      const { dx, dy } = this.groupDragOffsets[id];
+      const x = newAnchorX + dx;
+      const y = newAnchorY + dy;
+      if (this.draggableCards.some((c) => c.id === id)) {
+        this.updateItem(id, { x, y });
+        continue;
+      }
+      const label = this.textLabels.find((l) => l.id === id);
+      if (!label) continue;
+      const props: Partial<TextLabel> = { x, y };
+      if (label.anchorCardId) {
+        props.anchorCardId = null;
+        props.anchorPosition = null;
+      }
+      this.updateTextLabel(id, props);
+    }
   },
 
   updateSelectionBoxStyle() {
@@ -535,12 +576,23 @@ Alpine.data('canvasComponent', () => ({
       const label = this.textLabels.find((l) => l.id === textId)!;
       const pos = this.getTextLabelPosition(label);
       const rect = this.dragContainer!.getBoundingClientRect();
+      const startDropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
+      const startDropY = event.clientY - rect.top - this.dragContainer!.clientTop;
       this.textDragStart = {
         startX: pos.x,
         startY: pos.y,
-        startDropX: event.clientX - rect.left - this.dragContainer!.clientLeft,
-        startDropY: event.clientY - rect.top - this.dragContainer!.clientTop,
+        startDropX,
+        startDropY,
       };
+
+      if (this.selectedTextIds.includes(textId)) {
+        this.groupDragOffsets = this.buildGroupDragOffsets(pos.x, pos.y);
+      } else {
+        this.selectedCardIds = [];
+        this.selectedTextIds = [];
+        this.groupDragOffsets = null;
+      }
+
       this.maxTextZIndex += 1;
       this.updateTextLabel(textId, { zIndex: this.maxTextZIndex, cursor: 'grabbing' });
       return;
@@ -560,6 +612,7 @@ Alpine.data('canvasComponent', () => ({
 
     if (isOnEmpty) {
       this.selectedCardIds = [];
+      this.selectedTextIds = [];
       event.preventDefault?.();
       lockPointerInteraction();
       this.isPanning = true;
@@ -578,15 +631,10 @@ Alpine.data('canvasComponent', () => ({
     const startDropY = event.clientY - rect.top - this.dragContainer!.clientTop;
 
     if (this.selectedCardIds.includes(cardId)) {
-      this.groupDragOffsets = {};
-      const anchorX = card.x;
-      const anchorY = card.y;
-      for (const id of this.selectedCardIds) {
-        const c = this.draggableCards.find((dc) => dc.id === id);
-        if (c) this.groupDragOffsets[id] = { dx: c.x - anchorX, dy: c.y - anchorY };
-      }
+      this.groupDragOffsets = this.buildGroupDragOffsets(card.x, card.y);
     } else {
       this.selectedCardIds = [];
+      this.selectedTextIds = [];
       this.groupDragOffsets = null;
     }
 
@@ -620,6 +668,23 @@ Alpine.data('canvasComponent', () => ({
       return;
     }
 
+    if (this.groupDragOffsets && (this.dragStart || this.textDragStart)) {
+      const rect = this.dragContainer!.getBoundingClientRect();
+      const dropX = e.clientX - rect.left - this.dragContainer!.clientLeft;
+      const dropY = e.clientY - rect.top - this.dragContainer!.clientTop;
+      let newAnchorX: number;
+      let newAnchorY: number;
+      if (this.dragStart) {
+        newAnchorX = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
+        newAnchorY = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
+      } else {
+        newAnchorX = this.textDragStart!.startX + (dropX - this.textDragStart!.startDropX) / this.scale;
+        newAnchorY = this.textDragStart!.startY + (dropY - this.textDragStart!.startDropY) / this.scale;
+      }
+      this.applyGroupDragAt(newAnchorX, newAnchorY);
+      return;
+    }
+
     if (this.draggingTextId && this.textDragStart) {
       const rect = this.dragContainer!.getBoundingClientRect();
       const dropX = e.clientX - rect.left - this.dragContainer!.clientLeft;
@@ -644,14 +709,7 @@ Alpine.data('canvasComponent', () => ({
     const newAnchorX = this.dragStart.startCardX + (dropX - this.dragStart.startDropX) / this.scale;
     const newAnchorY = this.dragStart.startCardY + (dropY - this.dragStart.startDropY) / this.scale;
 
-    if (this.groupDragOffsets) {
-      for (const id of Object.keys(this.groupDragOffsets)) {
-        const { dx, dy } = this.groupDragOffsets[id];
-        this.updateItem(id, { x: newAnchorX + dx, y: newAnchorY + dy });
-      }
-    } else {
-      this.updateItem(this.draggingCard.id, { x: newAnchorX, y: newAnchorY });
-    }
+    this.updateItem(this.draggingCard.id, { x: newAnchorX, y: newAnchorY });
   },
 
   onMouseUp(this: MergedThis, event: MouseLikeEvent) {
@@ -678,7 +736,14 @@ Alpine.data('canvasComponent', () => ({
         const cardRect = { left: card.x, top: card.y, width: cardWidth, height: cardHeight };
         if (this.boxesOverlap(selectionRect, cardRect)) ids.push(card.id);
       }
+      const textIds: string[] = [];
+      for (const label of this.textLabels) {
+        if (this.boxesOverlap(selectionRect, this.getTextLabelBounds(label))) {
+          textIds.push(label.id);
+        }
+      }
       this.selectedCardIds = ids;
+      this.selectedTextIds = textIds;
       this.selectionBox = null;
       this.selectionBoxStyle = '';
       return;
@@ -692,32 +757,64 @@ Alpine.data('canvasComponent', () => ({
 
     if (this.draggingTextId && this.textDragStart) {
       const textId = this.draggingTextId;
-      this.updateTextLabel(textId, { display: 'block', cursor: 'grab' });
-      this.draggingTextId = null;
-      this.textDragStart = null;
+      const wasGroup = this.groupDragOffsets !== null;
 
-      const label = this.textLabels.find((l) => l.id === textId);
-      if (label && !label.anchorCardId) {
-        const pos = this.getTextLabelPosition(label);
-        const textBox = { left: pos.x, top: pos.y, width: 100, height: 30 };
-        for (const card of this.draggableCards) {
-          const cardRect = {
-            left: card.x,
-            top: card.y,
-            width: this.CARD_WIDTH,
-            height: this.CARD_HEIGHT,
-          };
-          if (this.boxesOverlap(textBox, cardRect)) {
-            this.pendingAnchor = {
-              textId,
-              cardId: card.id,
-              screenX: event.clientX,
-              screenY: event.clientY,
+      if (wasGroup) {
+        const rect = this.dragContainer!.getBoundingClientRect();
+        const dropX = event.clientX - rect.left - this.dragContainer!.clientLeft;
+        const dropY = event.clientY - rect.top - this.dragContainer!.clientTop;
+        const newAnchorX =
+          this.textDragStart.startX + (dropX - this.textDragStart.startDropX) / this.scale;
+        const newAnchorY =
+          this.textDragStart.startY + (dropY - this.textDragStart.startDropY) / this.scale;
+        const movedCardIds: string[] = [];
+        for (const id of Object.keys(this.groupDragOffsets!)) {
+          const { dx, dy } = this.groupDragOffsets![id];
+          const x = newAnchorX + dx;
+          const y = newAnchorY + dy;
+          if (this.draggableCards.some((c) => c.id === id)) {
+            this.updateItem(id, { x, y, display: 'block', cursor: 'grab' });
+            movedCardIds.push(id);
+          } else {
+            this.updateTextLabel(id, { x, y, display: 'block', cursor: 'grab' });
+          }
+        }
+        for (const tl of this.textLabels) {
+          if (tl.anchorCardId && movedCardIds.includes(tl.anchorCardId)) {
+            const pos = this.getTextLabelPosition(tl);
+            this.updateTextLabel(tl.id, { x: pos.x, y: pos.y });
+          }
+        }
+        this.groupDragOffsets = null;
+      } else {
+        this.updateTextLabel(textId, { display: 'block', cursor: 'grab' });
+
+        const label = this.textLabels.find((l) => l.id === textId);
+        if (label && !label.anchorCardId) {
+          const pos = this.getTextLabelPosition(label);
+          const textBox = this.getTextLabelBounds(label);
+          for (const card of this.draggableCards) {
+            const cardRect = {
+              left: card.x,
+              top: card.y,
+              width: this.CARD_WIDTH,
+              height: this.CARD_HEIGHT,
             };
-            break;
+            if (this.boxesOverlap(textBox, cardRect)) {
+              this.pendingAnchor = {
+                textId,
+                cardId: card.id,
+                screenX: event.clientX,
+                screenY: event.clientY,
+              };
+              break;
+            }
           }
         }
       }
+
+      this.draggingTextId = null;
+      this.textDragStart = null;
       return;
     }
 
@@ -738,12 +835,13 @@ Alpine.data('canvasComponent', () => ({
     if (this.groupDragOffsets) {
       for (const id of Object.keys(this.groupDragOffsets)) {
         const { dx, dy } = this.groupDragOffsets[id];
-        this.updateItem(id, {
-          x: newAnchorX + dx,
-          y: newAnchorY + dy,
-          display: 'block',
-          cursor: 'grab',
-        });
+        const x = newAnchorX + dx;
+        const y = newAnchorY + dy;
+        if (this.draggableCards.some((c) => c.id === id)) {
+          this.updateItem(id, { x, y, display: 'block', cursor: 'grab' });
+        } else {
+          this.updateTextLabel(id, { x, y, display: 'block', cursor: 'grab' });
+        }
       }
       this.groupDragOffsets = null;
     } else {
@@ -775,6 +873,7 @@ Alpine.data('canvasComponent', () => ({
     this.draggingCard = null;
     this.dragStart = null;
     this.selectedCardIds = [];
+    this.selectedTextIds = [];
     this.selectionBox = null;
     this.selectionBoxStyle = '';
     this.groupDragOffsets = null;

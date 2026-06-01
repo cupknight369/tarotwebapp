@@ -66,6 +66,17 @@ Alpine.data('textLabelComponent', () => ({
     this.dirty = true;
   },
 
+  getTextLabelBounds(
+    this: MergedThis,
+    label: TextLabel,
+  ): { left: number; top: number; width: number; height: number } {
+    const pos = this.getTextLabelPosition(label);
+    const width = label.fixedWidth
+      ? clampFixedWidthPx(label.fixedWidthPx > 0 ? label.fixedWidthPx : 240)
+      : 100;
+    return { left: pos.x, top: pos.y, width, height: this.TEXT_LABEL_DEFAULT_HEIGHT };
+  },
+
   getTextLabelPosition(this: MergedThis, label: TextLabel): { x: number; y: number } {
     if (!label.anchorCardId || !label.anchorPosition) return { x: label.x, y: label.y };
     const card = this.draggableCards.find((c) => c.id === label.anchorCardId);
