@@ -56,6 +56,10 @@ Alpine.data('authComponent', () => ({
     }
   },
 
+  openAccountMenu() {
+    this.isAccountMenuOpen = true;
+  },
+
   togglePassResetForm() {
     this.isPassResetOpen = !this.isPassResetOpen;
     this.validationError = '';

@@ -171,6 +171,7 @@ export type MergedThis = {
   switchToDeck(deckId: string, keepDeckModalOpen?: boolean): Promise<void>;
   cycleDeck(direction: 1 | -1): Promise<void>;
   onCycleDeckEvent(event: Event): void;
+  onOpenDeckModalEvent(): void;
   switchDeckByName: null | {
     query: string;
     highlightIndex: number;
@@ -218,6 +219,13 @@ export type MergedThis = {
   handleNextDeckShortcut(event: KeyboardEvent): void;
   handlePreviousDeckShortcut(event: KeyboardEvent): void;
   handleSwitchDeckByNameShortcut(event: KeyboardEvent): void;
+  handleOpenDeckModalShortcut(event: KeyboardEvent): void;
+  handleOpenReadingsModalShortcut(event: KeyboardEvent): void;
+  handleOpenSettingsModalShortcut(event: KeyboardEvent): void;
+  handleOpenAccountModalShortcut(event: KeyboardEvent): void;
+  handleClearCanvasShortcut(event: KeyboardEvent): void;
+  handleNewReadingShortcut(event: KeyboardEvent): void;
+  promptClearCanvas(): void;
   handleEscapeShortcut(event: KeyboardEvent): void;
   showReadingSaveFlash(): void;
   triggerTitleDialog(): void;

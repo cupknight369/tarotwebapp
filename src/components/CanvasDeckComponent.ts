@@ -165,6 +165,10 @@ Alpine.data('deckComponent', () => ({
     void this.cycleDeck(detail.direction);
   },
 
+  onOpenDeckModalEvent(this: MergedThis): void {
+    void this.openDeckModal();
+  },
+
   onSwitchDeckByNameEvent(this: MergedThis): void {
     void this.openSwitchDeckByName();
   },

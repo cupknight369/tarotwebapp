@@ -197,6 +197,13 @@ type StateCtx = {
   handleNextDeckShortcut: (event: KeyboardEvent) => void;
   handlePreviousDeckShortcut: (event: KeyboardEvent) => void;
   handleSwitchDeckByNameShortcut: (event: KeyboardEvent) => void;
+  handleOpenDeckModalShortcut: (event: KeyboardEvent) => void;
+  handleOpenReadingsModalShortcut: (event: KeyboardEvent) => void;
+  handleOpenSettingsModalShortcut: (event: KeyboardEvent) => void;
+  handleOpenAccountModalShortcut: (event: KeyboardEvent) => void;
+  handleClearCanvasShortcut: (event: KeyboardEvent) => void;
+  handleNewReadingShortcut: (event: KeyboardEvent) => void;
+  promptClearCanvas: () => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
@@ -1484,6 +1491,96 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     window.removeEventListener('switch-deck-by-name', listener);
     expect(preventDefault).not.toHaveBeenCalled();
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('handleOpenDeckModalShortcut dispatches open-deck-modal and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('open-deck-modal', listener);
+    ctx.handleOpenDeckModalShortcut.call(ctx, event);
+    window.removeEventListener('open-deck-modal', listener);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleOpenReadingsModalShortcut opens load modal and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const openSpy = vi.spyOn(ctx, 'openLoadModal').mockResolvedValue(undefined);
+    ctx.handleOpenReadingsModalShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(openSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleOpenSettingsModalShortcut opens settings and prevents default', () => {
+    alpineStub.rawStores.settings = { open: false };
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleOpenSettingsModalShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect((alpineStub.rawStores.settings as { open: boolean }).open).toBe(true);
+  });
+
+  it('handleOpenAccountModalShortcut dispatches open-account-modal and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('open-account-modal', listener);
+    ctx.handleOpenAccountModalShortcut.call(ctx, event);
+    window.removeEventListener('open-account-modal', listener);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleClearCanvasShortcut opens confirm dialog and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleClearCanvasShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect((alpineStub.rawStores.dialog as { title: string }).title).toContain('clear the canvas');
+  });
+
+  it('promptClearCanvas confirm calls clearCanvas on draggableZoneComponent', () => {
+    const clearCanvas = vi.fn();
+    window.draggableZoneComponent = { clearCanvas } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.promptClearCanvas.call(ctx);
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    expect(clearCanvas).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleNewReadingShortcut starts createNewReading and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const createSpy = vi.spyOn(ctx, 'createNewReading').mockResolvedValue(undefined);
+    ctx.handleNewReadingShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(createSpy).toHaveBeenCalledTimes(1);
   });
 
   it('handleDrawCardShortcut uses context menu coordinates when open', () => {

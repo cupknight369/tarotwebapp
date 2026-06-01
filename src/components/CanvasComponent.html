@@ -12,6 +12,12 @@
         @keydown.window.ctrl.slash="handleSwitchDeckByNameShortcut($event)"
         @keydown.window.ctrl.period="handleNextDeckShortcut($event)"
         @keydown.window.ctrl.comma="handlePreviousDeckShortcut($event)"
+        @keydown.window.alt.1="handleOpenDeckModalShortcut($event)"
+        @keydown.window.alt.2="handleOpenReadingsModalShortcut($event)"
+        @keydown.window.alt.3="handleOpenSettingsModalShortcut($event)"
+        @keydown.window.alt.4="handleOpenAccountModalShortcut($event)"
+        @keydown.window.ctrl.9="handleClearCanvasShortcut($event)"
+        @keydown.window.ctrl.0="handleNewReadingShortcut($event)"
         @keydown.window.escape="handleEscapeShortcut($event)"
         @readings-changed.window="loadModalOpen && refreshLoadModalReadings()"
         class="relative"
@@ -625,6 +631,7 @@
             @decks-changed.window="onDecksChanged()"
             @deck-download-complete.window="onDeckDownloadComplete($event.detail.deckId)"
             @cycle-deck.window="onCycleDeckEvent($event)"
+            @open-deck-modal.window="onOpenDeckModalEvent()"
             @switch-deck-by-name.window="onSwitchDeckByNameEvent()"
             @keydown.window.escape="handleDeckEscape()"
             class="absolute top-1 right-2 z-[9999]"
@@ -685,8 +692,8 @@
                 type="button"
                 class="w-8 h-8 rounded bg-gray-600/70 text-white text-lg leading-none hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer"
                 aria-label="Clear canvas"
-                title="Clear canvas"
-                @click="Alpine.store('dialog', { open: true, type: 'confirm', title: 'Are you sure you want to clear the canvas?', onConfirm: () => clearCanvas(), onCancel: () => {} })"
+                title="Clear canvas (ctrl + 9)"
+                @click="promptClearCanvas()"
               >
                 🧹
               </button>

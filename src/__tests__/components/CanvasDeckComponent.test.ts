@@ -130,6 +130,7 @@ type DeckCtx = {
   switchToDeck: (deckId: string) => Promise<void>;
   cycleDeck: (direction: 1 | -1) => Promise<void>;
   onCycleDeckEvent: (event: Event) => void;
+  onOpenDeckModalEvent: () => void;
   createLocalDeckAction: () => Promise<void>;
   downloadCatalogDeckAction: (deckId: string) => Promise<void>;
   onDeckDownloadComplete: (deckId: string) => Promise<void>;
@@ -482,6 +483,13 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     } as unknown as KeyboardEvent);
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(ctx.switchDeckByName).toBeNull();
+  });
+
+  it('onOpenDeckModalEvent opens deck modal', async () => {
+    const ctx = mountDeck();
+    const openSpy = vi.spyOn(ctx, 'openDeckModal').mockResolvedValue(undefined);
+    ctx.onOpenDeckModalEvent.call(ctx);
+    expect(openSpy).toHaveBeenCalledTimes(1);
   });
 
   it('cycleDeck shows failure when listOnDeviceDeckEntries fails', async () => {

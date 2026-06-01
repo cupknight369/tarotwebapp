@@ -3,6 +3,7 @@ import type { MergedThis, TarotCard } from '../types/canvas.js';
 import type { ReadingGroupSection, SavedReadingState } from '../types/readingState.js';
 import type { LocalReadingGroupRow } from '../types/localDb.js';
 import { DEFAULT_READING_GROUP_ID } from '../types/localDb.js';
+import type { SettingsStoreState } from '../types/settings.js';
 import type { DialogStoreState } from '../types/dialog.js';
 import * as localReadingsLib from '../lib/localReadings.js';
 import { getCardsByIds } from '../lib/decks.js';
@@ -24,6 +25,11 @@ function openSaveFailureDialog(message: string): void {
     onConfirm: () => {},
     onCancel: () => {},
   });
+}
+
+/** Clears the canvas via the live canvas component registered at init. */
+function clearCanvasViaDraggableZone(): void {
+  window.draggableZoneComponent?.clearCanvas();
 }
 
 /**
@@ -350,7 +356,7 @@ Alpine.data('stateComponent', () => ({
     }
 
     this.shuffleDeck();
-    this.clearCanvas();
+    clearCanvasViaDraggableZone();
     this.loadedReadingId = null;
     this.dirty = false;
   },
@@ -643,6 +649,94 @@ Alpine.data('stateComponent', () => ({
     }
     event.preventDefault();
     window.dispatchEvent(new CustomEvent('switch-deck-by-name'));
+  },
+
+  handleOpenDeckModalShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    window.dispatchEvent(new CustomEvent('open-deck-modal'));
+  },
+
+  handleOpenReadingsModalShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    void this.openLoadModal();
+  },
+
+  handleOpenSettingsModalShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    (Alpine.store('settings') as SettingsStoreState).open = true;
+  },
+
+  handleOpenAccountModalShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    window.dispatchEvent(new CustomEvent('open-account-modal'));
+  },
+
+  handleClearCanvasShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    this.promptClearCanvas();
+  },
+
+  handleNewReadingShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    void this.createNewReading();
+  },
+
+  promptClearCanvas(this: MergedThis): void {
+    Alpine.store('dialog', {
+      open: true,
+      type: 'confirm',
+      title: 'Are you sure you want to clear the canvas?',
+      onConfirm: () => clearCanvasViaDraggableZone(),
+      onCancel: () => {},
+    });
   },
 
   handleDrawCardShortcut(this: MergedThis, event: KeyboardEvent): void {
