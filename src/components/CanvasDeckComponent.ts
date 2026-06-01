@@ -5,6 +5,7 @@ import type {
   MergedThis,
   OnDeviceDeckEntry,
 } from '../types/canvas.js';
+import type { DialogStoreState } from '../types/dialog.js';
 import {
   DEFAULT_DECK_ID,
   getCardsByDeckId,
@@ -110,10 +111,14 @@ Alpine.data('deckComponent', () => ({
   },
 
   closeDeckModal(this: MergedThis) {
+    const dialog = Alpine.store('dialog') as DialogStoreState | undefined;
+    if (dialog?.open) {
+      return;
+    }
     this.deckModalOpen = false;
   },
 
-  async switchToDeck(this: MergedThis, deckId: string) {
+  async switchToDeck(this: MergedThis, deckId: string, keepDeckModalOpen = false) {
     const cardsRes = await getCardsByDeckId(deckId);
     if (!cardsRes.ok) {
       logError('deckComponent.switchToDeck', cardsRes.error);
@@ -130,7 +135,9 @@ Alpine.data('deckComponent', () => ({
     Alpine.store('activeDeckTitle', title);
     localStorage.setItem(LAST_DECK_STORAGE_KEY, deckId);
     this.shuffleDeck();
-    this.deckModalOpen = false;
+    if (!keepDeckModalOpen) {
+      this.deckModalOpen = false;
+    }
   },
 
   async createLocalDeckAction(this: MergedThis) {
@@ -236,7 +243,8 @@ Alpine.data('deckComponent', () => ({
     if (wasActive) {
       const sorted = [...this.catalogOffers].sort((a, b) => a.title.localeCompare(b.title));
       const nextId = this.onDeviceDecks[0]?.id ?? sorted[0]?.id ?? DEFAULT_DECK_ID;
-      await this.switchToDeck(nextId);
+      await this.switchToDeck(nextId, true);
     }
+    this.deckModalOpen = true;
   },
 }));

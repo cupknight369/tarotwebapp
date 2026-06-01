@@ -167,7 +167,7 @@ export type MergedThis = {
   refreshDeckLists(): Promise<void>;
   openDeckModal(): Promise<void>;
   closeDeckModal(): void;
-  switchToDeck(deckId: string): Promise<void>;
+  switchToDeck(deckId: string, keepDeckModalOpen?: boolean): Promise<void>;
   createLocalDeckAction(): Promise<void>;
   downloadCatalogDeckAction(deckId: string): Promise<void>;
   onDeckDownloadComplete(deckId: string): Promise<void>;

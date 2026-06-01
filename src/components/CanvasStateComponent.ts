@@ -735,6 +735,7 @@ Alpine.data('stateComponent', () => ({
     const dialogStore = Alpine.store('dialog') as DialogStoreState | undefined;
     if (dialogStore?.open) {
       event.preventDefault();
+      event.stopImmediatePropagation();
       dialogStore.onCancel?.();
       dialogStore.open = false;
       return;

@@ -223,6 +223,14 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     expect(ctx.deckModalOpen).toBe(false);
   });
 
+  it('closeDeckModal is a no-op while global dialog is open', () => {
+    const ctx = mountDeck();
+    ctx.deckModalOpen = true;
+    alpineStub.rawStores.dialog = { open: true, type: 'confirm', title: 'Delete?', cancelLabelVisible: true };
+    ctx.closeDeckModal.call(ctx);
+    expect(ctx.deckModalOpen).toBe(true);
+  });
+
   it('filteredOnDeviceDecks returns all decks when search is blank', () => {
     const ctx = mountDeck();
     const decks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta')];
@@ -334,6 +342,13 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     await ctx.switchToDeck.call(ctx, 'd1');
     expect(uiMocks.logError).toHaveBeenCalled();
     expect(uiMocks.showQueryFailureDialog).toHaveBeenCalledWith(qf);
+  });
+
+  it('switchToDeck with keepDeckModalOpen leaves deck modal open', async () => {
+    const ctx = mountDeck();
+    ctx.deckModalOpen = true;
+    await ctx.switchToDeck.call(ctx, 'deck-1', true);
+    expect(ctx.deckModalOpen).toBe(true);
   });
 
   it('switchToDeck sets stores, title from on-device, localStorage, shuffle, closes modal', async () => {
@@ -513,26 +528,30 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     expect(localMocks.deleteLocalDeck).not.toHaveBeenCalled();
   });
 
-  it('deleteLocalDeckAction deletes inactive deck without switching', async () => {
+  it('deleteLocalDeckAction deletes inactive deck without switching and keeps deck modal open', async () => {
     alpineStub.rawStores.activeDeckId = 'active';
     const ctx = mountDeck();
+    ctx.deckModalOpen = true;
     const p = ctx.deleteLocalDeckAction.call(ctx, 'other');
     await Promise.resolve();
     (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
     await p;
     expect(localMocks.deleteLocalDeck).toHaveBeenCalledWith('other');
     expect(deckMocks.getCardsByDeckId).not.toHaveBeenCalled();
+    expect(ctx.deckModalOpen).toBe(true);
   });
 
-  it('deleteLocalDeckAction switches when deleted deck was active', async () => {
+  it('deleteLocalDeckAction switches when deleted deck was active but keeps deck modal open', async () => {
     alpineStub.rawStores.activeDeckId = 'gone';
     deckMocks.listOnDeviceDeckEntries.mockResolvedValue(ok([onDevice('keep', 'Keep')]));
     const ctx = mountDeck();
+    ctx.deckModalOpen = true;
     const p = ctx.deleteLocalDeckAction.call(ctx, 'gone');
     await Promise.resolve();
     (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
     await p;
     expect(deckMocks.getCardsByDeckId).toHaveBeenCalledWith('keep');
+    expect(ctx.deckModalOpen).toBe(true);
   });
 
   it('deleteLocalDeckAction falls back to default id when no next deck in lists', async () => {
