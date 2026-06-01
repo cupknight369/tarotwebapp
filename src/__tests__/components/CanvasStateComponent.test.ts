@@ -196,6 +196,7 @@ type StateCtx = {
   handleShuffleShortcut: (event: KeyboardEvent) => void;
   handleNextDeckShortcut: (event: KeyboardEvent) => void;
   handlePreviousDeckShortcut: (event: KeyboardEvent) => void;
+  handleSwitchDeckByNameShortcut: (event: KeyboardEvent) => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
@@ -1451,6 +1452,36 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     window.addEventListener('cycle-deck', listener);
     ctx.handlePreviousDeckShortcut.call(ctx, event);
     window.removeEventListener('cycle-deck', listener);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('handleSwitchDeckByNameShortcut dispatches switch-deck-by-name and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('switch-deck-by-name', listener);
+    ctx.handleSwitchDeckByNameShortcut.call(ctx, event);
+    window.removeEventListener('switch-deck-by-name', listener);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleSwitchDeckByNameShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('textarea'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('switch-deck-by-name', listener);
+    ctx.handleSwitchDeckByNameShortcut.call(ctx, event);
+    window.removeEventListener('switch-deck-by-name', listener);
     expect(preventDefault).not.toHaveBeenCalled();
     expect(listener).not.toHaveBeenCalled();
   });

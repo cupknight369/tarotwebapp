@@ -135,6 +135,18 @@ type DeckCtx = {
   onDeckDownloadComplete: (deckId: string) => Promise<void>;
   removeCatalogInstallAction: (deckId: string) => Promise<void>;
   deleteLocalDeckAction: (deckId: string) => Promise<void>;
+  switchDeckByName: null | { query: string; highlightIndex: number };
+  switchDeckByNameMatches: () => OnDeviceDeckEntry[];
+  onSwitchDeckByNameEvent: () => void;
+  openSwitchDeckByName: () => Promise<void>;
+  onSwitchDeckByNameQueryInput: (value: string) => void;
+  moveSwitchDeckByNameHighlight: (delta: 1 | -1) => void;
+  onSwitchDeckByNameKeydown: (event: KeyboardEvent) => void;
+  confirmSwitchDeckByNameSelection: (deck?: OnDeviceDeckEntry) => Promise<void>;
+  cancelSwitchDeckByName: () => void;
+  handleDeckEscape: () => void;
+  $nextTick: (cb?: () => void) => void;
+  $refs: Record<string, HTMLElement>;
 };
 
 function mountDeck(): DeckCtx {
@@ -143,7 +155,14 @@ function mountDeck(): DeckCtx {
     throw new Error('deckComponent factory not registered');
   }
   const base = factory() as DeckCtx;
-  return { ...base, shuffleDeck: vi.fn() };
+  return {
+    ...base,
+    shuffleDeck: vi.fn(),
+    $nextTick: (cb?: () => void) => {
+      cb?.();
+    },
+    $refs: {},
+  };
 }
 
 async function flushAsyncWork(rounds = 8): Promise<void> {
@@ -406,6 +425,63 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
     await ctx.cycleDeck.call(ctx, 1);
     expect(switchSpy).not.toHaveBeenCalled();
+  });
+
+  it('openSwitchDeckByName refreshes decks and opens picker', async () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha')];
+    const refreshSpy = vi.spyOn(ctx, 'refreshDeckLists').mockResolvedValue(undefined);
+    await ctx.openSwitchDeckByName.call(ctx);
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(ctx.switchDeckByName).toEqual({ query: '', highlightIndex: 0 });
+  });
+
+  it('switchDeckByNameMatches returns sorted on-device decks filtered by query', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('b', 'Beta'), onDevice('a', 'Alpha'), onDevice('c', 'Alpine')];
+    ctx.switchDeckByName = { query: 'al', highlightIndex: 0 };
+    expect(ctx.switchDeckByNameMatches.call(ctx)).toEqual([
+      onDevice('a', 'Alpha'),
+      onDevice('c', 'Alpine'),
+    ]);
+  });
+
+  it('confirmSwitchDeckByNameSelection switches to highlighted deck and closes picker', async () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta')];
+    ctx.switchDeckByName = { query: '', highlightIndex: 1 };
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.confirmSwitchDeckByNameSelection.call(ctx);
+    expect(switchSpy).toHaveBeenCalledWith('b');
+    expect(ctx.switchDeckByName).toBeNull();
+  });
+
+  it('handleDeckEscape cancels switch deck by name before closing modal', () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = { query: 'x', highlightIndex: 0 };
+    ctx.deckModalOpen = true;
+    ctx.handleDeckEscape.call(ctx);
+    expect(ctx.switchDeckByName).toBeNull();
+    expect(ctx.deckModalOpen).toBe(true);
+  });
+
+  it('handleDeckEscape closes deck modal when picker is closed', () => {
+    const ctx = mountDeck();
+    ctx.deckModalOpen = true;
+    ctx.handleDeckEscape.call(ctx);
+    expect(ctx.deckModalOpen).toBe(false);
+  });
+
+  it('onSwitchDeckByNameKeydown escape cancels picker', () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = { query: 'a', highlightIndex: 0 };
+    const preventDefault = vi.fn();
+    ctx.onSwitchDeckByNameKeydown.call(ctx, {
+      key: 'Escape',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(ctx.switchDeckByName).toBeNull();
   });
 
   it('cycleDeck shows failure when listOnDeviceDeckEntries fails', async () => {

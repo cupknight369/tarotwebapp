@@ -171,6 +171,19 @@ export type MergedThis = {
   switchToDeck(deckId: string, keepDeckModalOpen?: boolean): Promise<void>;
   cycleDeck(direction: 1 | -1): Promise<void>;
   onCycleDeckEvent(event: Event): void;
+  switchDeckByName: null | {
+    query: string;
+    highlightIndex: number;
+  };
+  switchDeckByNameMatches(): OnDeviceDeckEntry[];
+  onSwitchDeckByNameEvent(): void;
+  openSwitchDeckByName(): Promise<void>;
+  onSwitchDeckByNameQueryInput(value: string): void;
+  moveSwitchDeckByNameHighlight(delta: 1 | -1): void;
+  onSwitchDeckByNameKeydown(event: KeyboardEvent): void;
+  confirmSwitchDeckByNameSelection(deck?: OnDeviceDeckEntry): Promise<void>;
+  cancelSwitchDeckByName(): void;
+  handleDeckEscape(): void;
   createLocalDeckAction(): Promise<void>;
   downloadCatalogDeckAction(deckId: string): Promise<void>;
   onDeckDownloadComplete(deckId: string): Promise<void>;
@@ -204,6 +217,7 @@ export type MergedThis = {
   handleShuffleShortcut(event: KeyboardEvent): void;
   handleNextDeckShortcut(event: KeyboardEvent): void;
   handlePreviousDeckShortcut(event: KeyboardEvent): void;
+  handleSwitchDeckByNameShortcut(event: KeyboardEvent): void;
   handleEscapeShortcut(event: KeyboardEvent): void;
   showReadingSaveFlash(): void;
   triggerTitleDialog(): void;

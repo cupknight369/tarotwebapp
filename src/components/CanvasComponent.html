@@ -9,6 +9,7 @@
         @keydown.window.ctrl.i="handleDrawByIndexShortcut($event)"
         @keydown.window.ctrl.t="handleAddTextShortcut($event)"
         @keydown.window.ctrl.8="handleShuffleShortcut($event)"
+        @keydown.window.ctrl.slash="handleSwitchDeckByNameShortcut($event)"
         @keydown.window.ctrl.period="handleNextDeckShortcut($event)"
         @keydown.window.ctrl.comma="handlePreviousDeckShortcut($event)"
         @keydown.window.escape="handleEscapeShortcut($event)"
@@ -624,7 +625,8 @@
             @decks-changed.window="onDecksChanged()"
             @deck-download-complete.window="onDeckDownloadComplete($event.detail.deckId)"
             @cycle-deck.window="onCycleDeckEvent($event)"
-            @keydown.window.escape="deckModalOpen && closeDeckModal()"
+            @switch-deck-by-name.window="onSwitchDeckByNameEvent()"
+            @keydown.window.escape="handleDeckEscape()"
             class="absolute top-1 right-2 z-[9999]"
           >
             <div class="flex items-center gap-1">
@@ -883,6 +885,45 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div
+              x-show="switchDeckByName"
+              x-cloak
+              class="fixed inset-0 z-[10001] flex items-start justify-center bg-gray-900/50 px-4 pt-[18vh]"
+              @click.self="cancelSwitchDeckByName()"
+            >
+              <div
+                class="flex w-full max-w-md flex-col gap-1 rounded-lg border border-gray-600 bg-gray-800 p-3 shadow-xl"
+                @click.stop
+              >
+                <label for="switch-deck-by-name-input" class="sr-only">Switch deck by name</label>
+                <input
+                  id="switch-deck-by-name-input"
+                  type="text"
+                  x-ref="switchDeckByNameInput"
+                  class="w-full rounded border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-purple-500 focus:outline-none"
+                  placeholder="Search decks by title…"
+                  :value="switchDeckByName ? switchDeckByName.query : ''"
+                  @input="onSwitchDeckByNameQueryInput($event.target.value)"
+                  @keydown="onSwitchDeckByNameKeydown($event)"
+                />
+                <ul class="max-h-60 overflow-y-auto rounded border border-gray-700">
+                  <template x-for="(deck, index) in switchDeckByNameMatches()" :key="deck.id">
+                    <li>
+                      <button
+                        type="button"
+                        class="w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 focus:outline-none"
+                        :class="switchDeckByName && index === switchDeckByName.highlightIndex ? 'bg-gray-600' : ''"
+                        @click="confirmSwitchDeckByNameSelection(deck)"
+                      >
+                        <span x-text="deck.title"></span>
+                        <span class="text-xs text-sky-400 ml-1" x-show="deck.fromCatalog">Cloud</span>
+                      </button>
+                    </li>
+                  </template>
+                </ul>
               </div>
             </div>
           </div>

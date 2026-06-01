@@ -52,6 +52,8 @@ function deckTitleMatchesSearch(query: string, title: string): boolean {
   return title.toLowerCase().includes(q);
 }
 
+const SWITCH_DECK_BY_NAME_MATCH_LIMIT = 8;
+
 Alpine.data('deckComponent', () => ({
   deckModalOpen: false,
   deckModalTab: 'onDevice' as DeckModalTab,
@@ -60,6 +62,10 @@ Alpine.data('deckComponent', () => ({
   deckSearchQuery: '',
   newLocalDeckTitle: '',
   newLocalDeckTitleError: '',
+  switchDeckByName: null as null | {
+    query: string;
+    highlightIndex: number;
+  },
 
   setDeckModalTab(this: MergedThis, tab: DeckModalTab) {
     this.deckModalTab = tab;
@@ -72,6 +78,16 @@ Alpine.data('deckComponent', () => ({
 
   filteredCatalogOffers(this: MergedThis): CatalogDeckOffer[] {
     return this.catalogOffers.filter((c) => deckTitleMatchesSearch(this.deckSearchQuery, c.title));
+  },
+
+  switchDeckByNameMatches(this: MergedThis): OnDeviceDeckEntry[] {
+    if (!this.switchDeckByName) {
+      return [];
+    }
+    const query = this.switchDeckByName.query;
+    const filtered = this.onDeviceDecks.filter((d) => deckTitleMatchesSearch(query, d.title));
+    filtered.sort((a, b) => a.title.localeCompare(b.title));
+    return filtered.slice(0, SWITCH_DECK_BY_NAME_MATCH_LIMIT);
   },
 
   onDecksChanged(this: MergedThis) {
@@ -147,6 +163,115 @@ Alpine.data('deckComponent', () => ({
       return;
     }
     void this.cycleDeck(detail.direction);
+  },
+
+  onSwitchDeckByNameEvent(this: MergedThis): void {
+    void this.openSwitchDeckByName();
+  },
+
+  async openSwitchDeckByName(this: MergedThis): Promise<void> {
+    await this.refreshDeckLists();
+    this.switchDeckByName = {
+      query: '',
+      highlightIndex: 0,
+    };
+    this.$nextTick(() => {
+      const el = this.$refs.switchDeckByNameInput as HTMLInputElement | undefined;
+      el?.focus();
+    });
+  },
+
+  onSwitchDeckByNameQueryInput(this: MergedThis, value: string): void {
+    if (!this.switchDeckByName) {
+      return;
+    }
+    const filtered = this.onDeviceDecks.filter((d) => deckTitleMatchesSearch(value, d.title));
+    filtered.sort((a, b) => a.title.localeCompare(b.title));
+    const matchCount = Math.min(filtered.length, SWITCH_DECK_BY_NAME_MATCH_LIMIT);
+    let highlightIndex = this.switchDeckByName.highlightIndex;
+    if (matchCount === 0) {
+      highlightIndex = 0;
+    } else {
+      highlightIndex = Math.min(highlightIndex, matchCount - 1);
+    }
+    this.switchDeckByName = {
+      ...this.switchDeckByName,
+      query: value,
+      highlightIndex,
+    };
+  },
+
+  moveSwitchDeckByNameHighlight(this: MergedThis, delta: 1 | -1): void {
+    if (!this.switchDeckByName) {
+      return;
+    }
+    const matches = this.switchDeckByNameMatches();
+    const n = matches.length;
+    if (n === 0) {
+      return;
+    }
+    const idx = (this.switchDeckByName.highlightIndex + delta + n) % n;
+    this.switchDeckByName = { ...this.switchDeckByName, highlightIndex: idx };
+  },
+
+  onSwitchDeckByNameKeydown(this: MergedThis, event: KeyboardEvent): void {
+    if (!this.switchDeckByName) {
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.moveSwitchDeckByNameHighlight(1);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.moveSwitchDeckByNameHighlight(-1);
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void this.confirmSwitchDeckByNameSelection();
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelSwitchDeckByName();
+    }
+  },
+
+  async confirmSwitchDeckByNameSelection(
+    this: MergedThis,
+    deck?: OnDeviceDeckEntry,
+  ): Promise<void> {
+    const picker = this.switchDeckByName;
+    if (!picker) {
+      return;
+    }
+    const matches = this.switchDeckByNameMatches();
+    let chosen: OnDeviceDeckEntry | undefined = deck;
+    if (!chosen) {
+      if (matches.length === 0) {
+        return;
+      }
+      const idx = Math.min(Math.max(0, picker.highlightIndex), matches.length - 1);
+      chosen = matches[idx];
+    }
+    this.switchDeckByName = null;
+    await this.switchToDeck(chosen.id);
+  },
+
+  cancelSwitchDeckByName(this: MergedThis): void {
+    this.switchDeckByName = null;
+  },
+
+  handleDeckEscape(this: MergedThis): void {
+    if (this.switchDeckByName) {
+      this.cancelSwitchDeckByName();
+      return;
+    }
+    if (this.deckModalOpen) {
+      this.closeDeckModal();
+    }
   },
 
   async switchToDeck(this: MergedThis, deckId: string, keepDeckModalOpen = false) {

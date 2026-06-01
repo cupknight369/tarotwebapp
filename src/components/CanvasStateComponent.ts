@@ -632,6 +632,19 @@ Alpine.data('stateComponent', () => ({
     window.dispatchEvent(new CustomEvent('cycle-deck', { detail: { direction: -1 } }));
   },
 
+  handleSwitchDeckByNameShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    window.dispatchEvent(new CustomEvent('switch-deck-by-name'));
+  },
+
   handleDrawCardShortcut(this: MergedThis, event: KeyboardEvent): void {
     const target = event.target;
     if (
