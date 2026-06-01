@@ -124,6 +124,10 @@ Alpine.data('deckComponent', () => ({
     this.newLocalDeckTitleError = '';
     this.deckModalTab = readDeckModalTab();
     await this.refreshDeckLists();
+    this.$nextTick(() => {
+      const el = this.$refs.deckModalSearchInput as HTMLInputElement | undefined;
+      el?.focus();
+    });
   },
 
   closeDeckModal(this: MergedThis) {

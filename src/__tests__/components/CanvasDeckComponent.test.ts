@@ -238,6 +238,14 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     expect(ctx.deckModalTab).toBe('onDevice');
   });
 
+  it('openDeckModal focuses the search input after deck lists load', async () => {
+    const focus = vi.fn();
+    const ctx = mountDeck();
+    ctx.$refs.deckModalSearchInput = { focus } as unknown as HTMLElement;
+    await ctx.openDeckModal.call(ctx);
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
   it('closeDeckModal sets deckModalOpen false', () => {
     const ctx = mountDeck();
     ctx.deckModalOpen = true;
