@@ -398,6 +398,10 @@ Alpine.data('stateComponent', () => ({
     this.loadModalConfirmingForId = null;
     this.loadModalGroupError = null;
     await this.refreshLoadModalReadings();
+    this.$nextTick(() => {
+      const el = this.$refs.loadModalSearchInput as HTMLInputElement | undefined;
+      el?.focus();
+    });
   },
 
   async refreshLoadModalReadings(this: MergedThis): Promise<void> {

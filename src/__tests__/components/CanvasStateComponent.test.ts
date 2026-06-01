@@ -1242,6 +1242,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     expect(ctx.loadModalConfirmingForId).toBeNull();
   });
 
+  it('openLoadModal focuses the search input after readings load', async () => {
+    readingsMocks.listReadingsGrouped.mockResolvedValue([]);
+    const focus = vi.fn();
+    const ctx = createCtx();
+    ctx.$refs.loadModalSearchInput = { focus } as unknown as HTMLElement;
+    await ctx.openLoadModal.call(ctx);
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
   describe('filteredLoadModalReadings', () => {
     it('returns all readings when search is blank or whitespace', () => {
       const list = [
