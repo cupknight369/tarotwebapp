@@ -50,14 +50,20 @@ Alpine.data('authComponent', () => ({
   },
 
   toggleAccountMenu() {
+    const opening = !this.isAccountMenuOpen;
     this.isAccountMenuOpen = !this.isAccountMenuOpen;
     if (!this.isAccountMenuOpen) {
       this.resetLoginUi();
+      return;
+    }
+    if (opening) {
+      this.focusAccountMenu();
     }
   },
 
   openAccountMenu() {
     this.isAccountMenuOpen = true;
+    this.focusAccountMenu();
   },
 
   closeAccountMenu() {
@@ -71,6 +77,31 @@ Alpine.data('authComponent', () => ({
 
   init() {
     window.authComponent = this;
+  },
+
+  focusAccountMenu(this: {
+    auth: { loading: boolean; user: { email?: string } | null };
+    magicLinkSent: boolean;
+    isPassResetOpen: boolean;
+    $refs: Record<string, HTMLElement>;
+    $nextTick: (cb?: () => void) => void;
+  }) {
+    this.$nextTick(() => {
+      if (this.auth.loading) {
+        return;
+      }
+      if (!this.auth.user) {
+        if (!this.magicLinkSent) {
+          (this.$refs.accountLoginEmail as HTMLInputElement | undefined)?.focus();
+        }
+        return;
+      }
+      if (this.isPassResetOpen) {
+        (this.$refs.accountNewPassword as HTMLInputElement | undefined)?.focus();
+        return;
+      }
+      (this.$refs.accountLogoutButton as HTMLButtonElement | undefined)?.focus();
+    });
   },
 
   togglePassResetForm() {

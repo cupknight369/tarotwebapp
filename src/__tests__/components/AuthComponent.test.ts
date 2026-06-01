@@ -48,6 +48,7 @@ type AuthComponentInstance = {
   openAccountMenu: () => void;
   closeAccountMenu: () => void;
   init: () => void;
+  focusAccountMenu: () => void;
   togglePassResetForm: () => void;
   resetPassword: () => Promise<void>;
   setLoginMode: (mode: 'password' | 'magiclink') => void;
@@ -80,13 +81,22 @@ function createAuthStore(): AuthStore & {
   };
 }
 
-function mountComponent(auth: AuthStore): AuthComponentInstance {
+function mountComponent(auth: AuthStore): AuthComponentInstance & {
+  $refs: Record<string, HTMLElement>;
+  $nextTick: (cb?: () => void) => void;
+} {
   alpineStub.rawStores.auth = auth;
   const factory = alpineStub.getFactory();
   if (!factory) {
     throw new Error('authComponent factory was not registered');
   }
-  return factory() as AuthComponentInstance;
+  return {
+    ...(factory() as AuthComponentInstance),
+    $refs: {},
+    $nextTick: (cb?: () => void) => {
+      cb?.();
+    },
+  };
 }
 
 describe('authComponent (AuthComponent.ts)', () => {
@@ -164,6 +174,45 @@ describe('authComponent (AuthComponent.ts)', () => {
     const c = mountComponent(auth);
     c.init();
     expect(window.authComponent).toBe(c);
+  });
+
+  it('focusAccountMenu focuses email when signed out', () => {
+    const auth = createAuthStore();
+    const focus = vi.fn();
+    const c = mountComponent(auth);
+    c.$refs.accountLoginEmail = { focus } as unknown as HTMLElement;
+    c.focusAccountMenu.call(c);
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('focusAccountMenu focuses logout when signed in', () => {
+    const auth = createAuthStore();
+    auth.user = { email: 'user@example.com' };
+    const focus = vi.fn();
+    const c = mountComponent(auth);
+    c.$refs.accountLogoutButton = { focus } as unknown as HTMLElement;
+    c.focusAccountMenu.call(c);
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('focusAccountMenu focuses new password when pass reset is open', () => {
+    const auth = createAuthStore();
+    auth.user = { email: 'user@example.com' };
+    const focus = vi.fn();
+    const c = mountComponent(auth);
+    c.isPassResetOpen = true;
+    c.$refs.accountNewPassword = { focus } as unknown as HTMLElement;
+    c.focusAccountMenu.call(c);
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('openAccountMenu focuses the sign-in email field', () => {
+    const auth = createAuthStore();
+    const focus = vi.fn();
+    const c = mountComponent(auth);
+    c.$refs.accountLoginEmail = { focus } as unknown as HTMLElement;
+    c.openAccountMenu();
+    expect(focus).toHaveBeenCalledTimes(1);
   });
 
   it('togglePassResetForm toggles and clears validationError', () => {
