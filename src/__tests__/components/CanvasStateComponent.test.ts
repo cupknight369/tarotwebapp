@@ -194,6 +194,8 @@ type StateCtx = {
   handleDrawByIndexShortcut: (event: KeyboardEvent) => void;
   handleAddTextShortcut: (event: KeyboardEvent) => void;
   handleShuffleShortcut: (event: KeyboardEvent) => void;
+  handleNextDeckShortcut: (event: KeyboardEvent) => void;
+  handlePreviousDeckShortcut: (event: KeyboardEvent) => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
   cancelLoadConfirm: () => void;
@@ -1420,6 +1422,37 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     ctx.handleShuffleShortcut.call(ctx, event);
     expect(preventDefault).not.toHaveBeenCalled();
     expect(ctx.shuffleDeck).not.toHaveBeenCalled();
+  });
+
+  it('handleNextDeckShortcut dispatches cycle-deck forward and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('cycle-deck', listener);
+    ctx.handleNextDeckShortcut.call(ctx, event);
+    window.removeEventListener('cycle-deck', listener);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect((listener.mock.calls[0][0] as CustomEvent).detail).toEqual({ direction: 1 });
+  });
+
+  it('handlePreviousDeckShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('input'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('cycle-deck', listener);
+    ctx.handlePreviousDeckShortcut.call(ctx, event);
+    window.removeEventListener('cycle-deck', listener);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it('handleDrawCardShortcut uses context menu coordinates when open', () => {

@@ -128,6 +128,8 @@ type DeckCtx = {
   closeDeckModal: () => void;
   refreshDeckLists: () => Promise<void>;
   switchToDeck: (deckId: string) => Promise<void>;
+  cycleDeck: (direction: 1 | -1) => Promise<void>;
+  onCycleDeckEvent: (event: Event) => void;
   createLocalDeckAction: () => Promise<void>;
   downloadCatalogDeckAction: (deckId: string) => Promise<void>;
   onDeckDownloadComplete: (deckId: string) => Promise<void>;
@@ -375,6 +377,50 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     const ctx = mountDeck();
     await ctx.switchToDeck.call(ctx, 'missing');
     expect(alpineStub.rawStores.activeDeckTitle).toBe('');
+  });
+
+  it('cycleDeck switches to the next on-device deck in title order', async () => {
+    const decks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta'), onDevice('c', 'Gamma')];
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValue(ok(decks));
+    alpineStub.rawStores.activeDeckId = 'b';
+    const ctx = mountDeck();
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.cycleDeck.call(ctx, 1);
+    expect(switchSpy).toHaveBeenCalledWith('c');
+  });
+
+  it('cycleDeck wraps backward to the last deck', async () => {
+    const decks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta')];
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValue(ok(decks));
+    alpineStub.rawStores.activeDeckId = 'a';
+    const ctx = mountDeck();
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.cycleDeck.call(ctx, -1);
+    expect(switchSpy).toHaveBeenCalledWith('b');
+  });
+
+  it('cycleDeck is a no-op with zero or one on-device deck', async () => {
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValue(ok([onDevice('solo', 'Solo')]));
+    alpineStub.rawStores.activeDeckId = 'solo';
+    const ctx = mountDeck();
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.cycleDeck.call(ctx, 1);
+    expect(switchSpy).not.toHaveBeenCalled();
+  });
+
+  it('cycleDeck shows failure when listOnDeviceDeckEntries fails', async () => {
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValueOnce(err(qf));
+    const ctx = mountDeck();
+    await ctx.cycleDeck.call(ctx, 1);
+    expect(uiMocks.logError).toHaveBeenCalled();
+    expect(uiMocks.showQueryFailureDialog).toHaveBeenCalledWith(qf);
+  });
+
+  it('onCycleDeckEvent delegates to cycleDeck', async () => {
+    const ctx = mountDeck();
+    const cycleSpy = vi.spyOn(ctx, 'cycleDeck').mockResolvedValue(undefined);
+    ctx.onCycleDeckEvent.call(ctx, new CustomEvent('cycle-deck', { detail: { direction: -1 } }));
+    expect(cycleSpy).toHaveBeenCalledWith(-1);
   });
 
   it('createLocalDeckAction sets zod error for invalid title', async () => {

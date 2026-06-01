@@ -9,6 +9,8 @@
         @keydown.window.ctrl.i="handleDrawByIndexShortcut($event)"
         @keydown.window.ctrl.t="handleAddTextShortcut($event)"
         @keydown.window.ctrl.8="handleShuffleShortcut($event)"
+        @keydown.window.ctrl.period="handleNextDeckShortcut($event)"
+        @keydown.window.ctrl.comma="handlePreviousDeckShortcut($event)"
         @keydown.window.escape="handleEscapeShortcut($event)"
         @readings-changed.window="loadModalOpen && refreshLoadModalReadings()"
         class="relative"
@@ -621,6 +623,7 @@
             x-data="deckComponent"
             @decks-changed.window="onDecksChanged()"
             @deck-download-complete.window="onDeckDownloadComplete($event.detail.deckId)"
+            @cycle-deck.window="onCycleDeckEvent($event)"
             @keydown.window.escape="deckModalOpen && closeDeckModal()"
             class="absolute top-1 right-2 z-[9999]"
           >

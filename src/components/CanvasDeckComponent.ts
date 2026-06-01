@@ -118,6 +118,37 @@ Alpine.data('deckComponent', () => ({
     this.deckModalOpen = false;
   },
 
+  async cycleDeck(this: MergedThis, direction: 1 | -1): Promise<void> {
+    const onDeviceRes = await listOnDeviceDeckEntries();
+    if (!onDeviceRes.ok) {
+      logError('deckComponent.cycleDeck', onDeviceRes.error);
+      showQueryFailureDialog(onDeviceRes.error);
+      return;
+    }
+    const decks = onDeviceRes.value;
+    if (decks.length <= 1) {
+      return;
+    }
+    this.onDeviceDecks = decks;
+    const activeId = Alpine.store('activeDeckId') as string;
+    const currentIndex = decks.findIndex((d) => d.id === activeId);
+    const startIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextIndex = (startIndex + direction + decks.length) % decks.length;
+    const nextDeck = decks[nextIndex];
+    if (nextDeck.id === activeId) {
+      return;
+    }
+    await this.switchToDeck(nextDeck.id);
+  },
+
+  onCycleDeckEvent(this: MergedThis, event: Event): void {
+    const detail = (event as CustomEvent<{ direction: 1 | -1 }>).detail;
+    if (detail?.direction !== 1 && detail?.direction !== -1) {
+      return;
+    }
+    void this.cycleDeck(detail.direction);
+  },
+
   async switchToDeck(this: MergedThis, deckId: string, keepDeckModalOpen = false) {
     const cardsRes = await getCardsByDeckId(deckId);
     if (!cardsRes.ok) {

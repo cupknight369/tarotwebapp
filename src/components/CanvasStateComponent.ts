@@ -606,6 +606,32 @@ Alpine.data('stateComponent', () => ({
     this.shuffleDeck();
   },
 
+  handleNextDeckShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    window.dispatchEvent(new CustomEvent('cycle-deck', { detail: { direction: 1 } }));
+  },
+
+  handlePreviousDeckShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    window.dispatchEvent(new CustomEvent('cycle-deck', { detail: { direction: -1 } }));
+  },
+
   handleDrawCardShortcut(this: MergedThis, event: KeyboardEvent): void {
     const target = event.target;
     if (

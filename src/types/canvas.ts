@@ -169,6 +169,8 @@ export type MergedThis = {
   openDeckModal(): Promise<void>;
   closeDeckModal(): void;
   switchToDeck(deckId: string, keepDeckModalOpen?: boolean): Promise<void>;
+  cycleDeck(direction: 1 | -1): Promise<void>;
+  onCycleDeckEvent(event: Event): void;
   createLocalDeckAction(): Promise<void>;
   downloadCatalogDeckAction(deckId: string): Promise<void>;
   onDeckDownloadComplete(deckId: string): Promise<void>;
@@ -200,6 +202,8 @@ export type MergedThis = {
   handleDrawByIndexShortcut(event: KeyboardEvent): void;
   handleAddTextShortcut(event: KeyboardEvent): void;
   handleShuffleShortcut(event: KeyboardEvent): void;
+  handleNextDeckShortcut(event: KeyboardEvent): void;
+  handlePreviousDeckShortcut(event: KeyboardEvent): void;
   handleEscapeShortcut(event: KeyboardEvent): void;
   showReadingSaveFlash(): void;
   triggerTitleDialog(): void;
