@@ -299,11 +299,13 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     });
     window.draggableZoneComponent = undefined;
     window.authComponent = undefined;
+    window.correspondenceManagerComponent = undefined;
   });
 
   afterEach(() => {
     window.draggableZoneComponent = undefined;
     window.authComponent = undefined;
+    window.correspondenceManagerComponent = undefined;
     vi.unstubAllGlobals();
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -1820,6 +1822,22 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     ctx.handleEscapeShortcut.call(ctx, event);
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(closeAccountMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleEscapeShortcut closes correspondences manager before settings', () => {
+    alpineStub.rawStores.settings = { open: true };
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const handleManagerEscape = vi.fn(() => true);
+    window.correspondenceManagerComponent = { handleManagerEscape };
+    ctx.handleEscapeShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(handleManagerEscape).toHaveBeenCalledTimes(1);
+    expect((alpineStub.rawStores.settings as { open: boolean }).open).toBe(true);
   });
 
   it('handleEscapeShortcut commits active text edit', () => {

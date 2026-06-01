@@ -876,6 +876,11 @@ Alpine.data('stateComponent', () => ({
     }
 
     const settingsStore = Alpine.store('settings') as { open?: boolean } | undefined;
+    if (window.correspondenceManagerComponent?.handleManagerEscape()) {
+      event.preventDefault();
+      return;
+    }
+
     if (settingsStore?.open) {
       event.preventDefault();
       settingsStore.open = false;

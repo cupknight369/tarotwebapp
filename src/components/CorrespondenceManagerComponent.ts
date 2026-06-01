@@ -90,6 +90,26 @@ Alpine.data('correspondenceManagerComponent', () => ({
     window.dispatchEvent(new CustomEvent('correspondences-changed'));
   },
 
+  handleManagerEscape(): boolean {
+    if (!this.open) {
+      return false;
+    }
+    if (this.editingCorrespondenceId) {
+      this.cancelForm();
+      return true;
+    }
+    if (this.renamingGroupId) {
+      this.cancelRenameGroup();
+      return true;
+    }
+    this.closeManager();
+    return true;
+  },
+
+  init() {
+    window.correspondenceManagerComponent = this;
+  },
+
   startCreateCorrespondence() {
     this.editingCorrespondenceId = 'new';
     this.formTitle = '';

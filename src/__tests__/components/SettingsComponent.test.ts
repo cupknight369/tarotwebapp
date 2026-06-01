@@ -128,6 +128,7 @@ type SettingsCtx = {
   correspondenceGroupsLoadError: string | null;
   correspondenceGroupsPending: boolean;
   isSettingsBusy: () => boolean;
+  closeSettings: () => void;
   loadCorrespondenceGroupsForExport: () => Promise<void>;
   isCorrespondenceGroupSelected: (id: string) => boolean;
   toggleCorrespondenceGroup: (id: string) => void;
@@ -358,6 +359,21 @@ describe('settingsComponent (SettingsComponent.ts)', () => {
     ctx.readingTransferBusy = false;
     ctx.deckTransferBusy = true;
     expect(ctx.isSettingsBusy.call(ctx)).toBe(true);
+  });
+
+  it('closeSettings closes the settings store when not busy', () => {
+    rawStores.settings = settingsState({ open: true });
+    const ctx = mount();
+    ctx.closeSettings.call(ctx);
+    expect((rawStores.settings as SettingsStoreState).open).toBe(false);
+  });
+
+  it('closeSettings is a no-op while settings transfer is busy', () => {
+    rawStores.settings = settingsState({ open: true });
+    const ctx = mount();
+    ctx.backupBusy = true;
+    ctx.closeSettings.call(ctx);
+    expect((rawStores.settings as SettingsStoreState).open).toBe(true);
   });
 
   it('toggleCorrespondenceGroup and canExportCorrespondences gate export', () => {

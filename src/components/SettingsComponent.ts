@@ -74,6 +74,13 @@ Alpine.data('settingsComponent', () => ({
     );
   },
 
+  closeSettings() {
+    if (this.isSettingsBusy()) {
+      return;
+    }
+    settingsStore().open = false;
+  },
+
   formatStorageLine(): string {
     if (this.storageEstimatePending) return 'Getting storage estimate…';
     if (this.storageEstimateError) return this.storageEstimateError;
