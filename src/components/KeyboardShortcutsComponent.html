@@ -1,0 +1,71 @@
+<div
+  x-cloak
+  x-data="keyboardShortcutsComponent"
+  @open-keyboard-shortcuts.window="onOpen()"
+  @keydown.window.escape="open && close()"
+  x-show="open"
+  x-transition
+  class="fixed inset-0 z-[10004] flex items-center justify-center bg-gray-900/80 p-4"
+  @click.self="close()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="keyboard-shortcuts-title"
+>
+  <div
+    class="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-gray-700 bg-gray-800 shadow-xl"
+  >
+    <button
+      type="button"
+      class="cursor-pointer absolute top-2 right-2 z-10 rounded p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+      aria-label="Close"
+      @click="close()"
+    >
+      <span class="text-xl leading-none">×</span>
+    </button>
+
+    <div class="border-b border-gray-700 px-6 pb-4 pt-6 pr-12">
+      <h2 id="keyboard-shortcuts-title" class="text-2xl font-bold text-gray-100">
+        Keyboard Shortcuts
+      </h2>
+      <label class="mt-4 block text-sm text-gray-300" for="keyboard-shortcuts-filter">
+        Filter shortcuts
+      </label>
+      <input
+        id="keyboard-shortcuts-filter"
+        x-ref="filterInput"
+        type="search"
+        x-model="filterQuery"
+        placeholder="Type to filter by key or action…"
+        class="mt-1 w-full rounded border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="overflow-y-auto px-6 py-4">
+      <table class="w-full text-sm text-gray-200">
+        <thead>
+          <tr class="border-b border-gray-700 text-left text-gray-400">
+            <th scope="col" class="pb-2 pr-4 font-semibold">Shortcut</th>
+            <th scope="col" class="pb-2 font-semibold">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="entry in filteredShortcuts()" :key="entry.keys">
+            <tr class="border-b border-gray-700/60">
+              <td class="py-2 pr-4 align-top whitespace-nowrap">
+                <kbd
+                  class="rounded border border-gray-600 bg-gray-900 px-2 py-0.5 font-mono text-xs text-purple-200"
+                  x-text="entry.keys"
+                ></kbd>
+              </td>
+              <td class="py-2 align-top text-gray-300" x-text="entry.description"></td>
+            </tr>
+          </template>
+          <tr x-show="filteredShortcuts().length === 0">
+            <td colspan="2" class="py-4 text-center text-gray-500">No shortcuts match your filter.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -5,6 +5,7 @@ interface HelpComponentState {
   onOpen: () => void;
   close: () => void;
   openWelcomeInfo: () => void;
+  openKeyboardShortcuts: () => void;
 }
 
 Alpine.data(
@@ -24,6 +25,11 @@ Alpine.data(
       openWelcomeInfo() {
         this.close();
         window.dispatchEvent(new CustomEvent('open-welcome'));
+      },
+
+      openKeyboardShortcuts() {
+        this.close();
+        window.dispatchEvent(new CustomEvent('open-keyboard-shortcuts'));
       },
     }) as HelpComponentState,
 );

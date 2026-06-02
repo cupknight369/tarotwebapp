@@ -141,11 +141,15 @@
         <ul class="mt-1 list-disc space-y-1 pl-5 text-gray-300">
           <li><strong>Purpose:</strong> Speed up common actions.</li>
           <li>
-            <strong>How to use:</strong> Use `Ctrl+S` save, `Ctrl+D` draw card, `Ctrl+N` draw by
-            name, `Ctrl+I` draw by index, `Ctrl+T` add text, `Ctrl+Shift+3` generate random number,
-            `Ctrl+8` shuffle deck, `Ctrl+/` switch deck by name, `Ctrl+,` previous deck, `Ctrl+.`
-            next deck, `Ctrl+9` clear canvas, `Ctrl+0` new reading, `Alt+1` deck modal, `Alt+2`
-            readings modal, `Alt+3` settings, `Alt+4` account, and `Esc` close open modals/dialogs.
+            <strong>How to use:</strong>
+            <button
+              type="button"
+              class="cursor-pointer text-purple-300 underline hover:text-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+              @click="openKeyboardShortcuts()"
+            >
+              Open keyboard shortcuts
+            </button>
+            (or press `Alt+K`) for a searchable list of all shortcuts.
           </li>
         </ul>
       </section>

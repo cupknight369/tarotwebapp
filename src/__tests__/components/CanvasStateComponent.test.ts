@@ -214,6 +214,7 @@ type StateCtx = {
   handleOpenReadingsModalShortcut: (event: KeyboardEvent) => void;
   handleOpenSettingsModalShortcut: (event: KeyboardEvent) => void;
   handleOpenAccountModalShortcut: (event: KeyboardEvent) => void;
+  handleOpenKeyboardShortcutsShortcut: (event: KeyboardEvent) => void;
   handleClearCanvasShortcut: (event: KeyboardEvent) => void;
   handleNewReadingShortcut: (event: KeyboardEvent) => void;
   promptClearCanvas: () => void;
@@ -1573,6 +1574,37 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     window.removeEventListener('open-account-modal', listener);
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleOpenKeyboardShortcutsShortcut dispatches open-keyboard-shortcuts and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('open-keyboard-shortcuts', listener);
+    ctx.handleOpenKeyboardShortcutsShortcut.call(ctx, event);
+    window.removeEventListener('open-keyboard-shortcuts', listener);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleOpenKeyboardShortcutsShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const input = document.createElement('input');
+    const event = {
+      target: input,
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('open-keyboard-shortcuts', listener);
+    ctx.handleOpenKeyboardShortcutsShortcut.call(ctx, event);
+    window.removeEventListener('open-keyboard-shortcuts', listener);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it('handleClearCanvasShortcut opens confirm dialog and prevents default', () => {

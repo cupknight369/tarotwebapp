@@ -25,6 +25,7 @@ import './components/CanvasDeckComponent';
 import './components/DialogComponent';
 import './components/SettingsComponent';
 import './components/HelpComponent';
+import './components/KeyboardShortcutsComponent';
 import './components/WelcomeComponent';
 import './components/AuthComponent';
 import './components/DeckEditComponent';

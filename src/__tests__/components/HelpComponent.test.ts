@@ -24,6 +24,7 @@ type HelpCtx = {
   onOpen: () => void;
   close: () => void;
   openWelcomeInfo: () => void;
+  openKeyboardShortcuts: () => void;
 };
 
 function mount(): HelpCtx {
@@ -70,6 +71,17 @@ describe('helpComponent (HelpComponent.ts)', () => {
     expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'open-welcome' }));
   });
 
+  it('openKeyboardShortcuts closes help and dispatches open-keyboard-shortcuts', () => {
+    const ctx = mount() as HelpCtx & { openKeyboardShortcuts: () => void };
+    ctx.open = true;
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    ctx.openKeyboardShortcuts.call(ctx);
+    expect(ctx.open).toBe(false);
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'open-keyboard-shortcuts' }),
+    );
+  });
+
   it('help modal markup includes core section headings', async () => {
     const html = await readFile('src/components/HelpComponent.html', 'utf-8');
     expect(html).toContain('Questions or Bug Reports?');
@@ -80,6 +92,8 @@ describe('helpComponent (HelpComponent.ts)', () => {
     expect(html).toContain('Save, Load, and New Reading');
     expect(html).toContain('Settings and Backup');
     expect(html).toContain('Keyboard Shortcuts');
+    expect(html).toContain('openKeyboardShortcuts()');
+    expect(html).toContain('Alt+K');
   });
 
   it('toolbar markup includes Help button dispatching open-help', async () => {
