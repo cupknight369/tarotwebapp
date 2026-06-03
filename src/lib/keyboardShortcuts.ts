@@ -22,6 +22,7 @@ export const KEYBOARD_SHORTCUTS: readonly KeyboardShortcutEntry[] = [
   { keys: 'Alt+2', description: 'Open readings modal' },
   { keys: 'Alt+3', description: 'Open settings' },
   { keys: 'Alt+4', description: 'Open account menu' },
+  { keys: 'Alt+C', description: 'Open correspondences manager' },
   { keys: 'Alt+K', description: 'Open keyboard shortcuts reference' },
   { keys: 'Esc', description: 'Close open modals and dialogs' },
 ] as const;

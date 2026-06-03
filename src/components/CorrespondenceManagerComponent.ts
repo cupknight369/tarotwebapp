@@ -140,6 +140,22 @@ Alpine.data('correspondenceManagerComponent', () => ({
     this.open = true;
     this.selectedCorrespondenceIds = [];
     await this.refresh();
+    this.focusLibrarySearchInput();
+  },
+
+  focusLibrarySearchInput(this: {
+    tab: 'library' | 'groups';
+    $nextTick: (cb?: () => void) => void;
+  }) {
+    if (this.tab !== 'library') {
+      return;
+    }
+    this.$nextTick(() => {
+      const el = document.getElementById('corr-manager-search');
+      if (el instanceof HTMLInputElement) {
+        el.focus();
+      }
+    });
   },
 
   closeManager() {

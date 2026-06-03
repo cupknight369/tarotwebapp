@@ -78,6 +78,8 @@ type CorrespondenceManagerInstance = {
   error: string | null;
   closeManager: () => void;
   openManager: () => Promise<void>;
+  focusLibrarySearchInput: () => void;
+  tab: 'library' | 'groups';
   cancelForm: () => void;
   cancelRenameGroup: () => void;
   handleManagerEscape: () => boolean;
@@ -114,12 +116,19 @@ type CorrespondenceManagerInstance = {
   saveRenameGroup: () => Promise<void>;
 };
 
-function mount(): CorrespondenceManagerInstance {
+function mount(): CorrespondenceManagerInstance & {
+  $nextTick: (cb?: () => void) => void;
+} {
   const factory = alpineStub.getFactory();
   if (!factory) {
     throw new Error('correspondenceManagerComponent factory was not registered');
   }
-  return factory() as CorrespondenceManagerInstance;
+  return {
+    ...(factory() as CorrespondenceManagerInstance),
+    $nextTick: (cb?: () => void) => {
+      cb?.();
+    },
+  };
 }
 
 describe('correspondenceManagerComponent (CorrespondenceManagerComponent.ts)', () => {
@@ -181,6 +190,38 @@ describe('correspondenceManagerComponent (CorrespondenceManagerComponent.ts)', (
     await ctx.openManager.call(ctx);
     expect(ctx.selectedCorrespondenceIds).toEqual([]);
     expect(ctx.open).toBe(true);
+  });
+
+  it('openManager focuses library search after refresh', async () => {
+    const ctx = mount();
+    const focusSpy = vi.spyOn(ctx, 'focusLibrarySearchInput');
+    ctx.refresh = vi.fn().mockResolvedValue(undefined);
+    await ctx.openManager.call(ctx);
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('focusLibrarySearchInput focuses corr-manager-search on the next tick', () => {
+    const input = document.createElement('input');
+    input.id = 'corr-manager-search';
+    const focus = vi.spyOn(input, 'focus');
+    document.body.appendChild(input);
+    const ctx = mount();
+    ctx.tab = 'library';
+    ctx.focusLibrarySearchInput.call(ctx);
+    expect(focus).toHaveBeenCalledTimes(1);
+    input.remove();
+  });
+
+  it('focusLibrarySearchInput does nothing on the groups tab', () => {
+    const input = document.createElement('input');
+    input.id = 'corr-manager-search';
+    const focus = vi.spyOn(input, 'focus');
+    document.body.appendChild(input);
+    const ctx = mount();
+    ctx.tab = 'groups';
+    ctx.focusLibrarySearchInput.call(ctx);
+    expect(focus).not.toHaveBeenCalled();
+    input.remove();
   });
 
   it('filteredLibrarySections filters by librarySearchQuery', () => {

@@ -6,8 +6,9 @@ import {
 } from '../../lib/keyboardShortcuts.js';
 
 describe('keyboardShortcuts', () => {
-  it('lists all application shortcuts including Alt+K', () => {
-    expect(KEYBOARD_SHORTCUTS.length).toBeGreaterThanOrEqual(18);
+  it('lists all application shortcuts including Alt+C and Alt+K', () => {
+    expect(KEYBOARD_SHORTCUTS.length).toBeGreaterThanOrEqual(19);
+    expect(KEYBOARD_SHORTCUTS.some((entry) => entry.keys === 'Alt+C')).toBe(true);
     expect(KEYBOARD_SHORTCUTS.some((entry) => entry.keys === 'Alt+K')).toBe(true);
     expect(KEYBOARD_SHORTCUTS.some((entry) => entry.keys === 'Ctrl+S')).toBe(true);
   });

@@ -857,6 +857,19 @@ Alpine.data('stateComponent', () => ({
     window.dispatchEvent(new CustomEvent('open-account-modal'));
   },
 
+  handleOpenCorrespondenceManagerShortcut(this: MergedThis, event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    window.dispatchEvent(new CustomEvent('open-correspondence-manager'));
+  },
+
   handleOpenKeyboardShortcutsShortcut(this: MergedThis, event: KeyboardEvent): void {
     const target = event.target;
     if (

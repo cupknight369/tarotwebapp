@@ -250,6 +250,7 @@ export type MergedThis = {
   handleOpenReadingsModalShortcut(event: KeyboardEvent): void;
   handleOpenSettingsModalShortcut(event: KeyboardEvent): void;
   handleOpenAccountModalShortcut(event: KeyboardEvent): void;
+  handleOpenCorrespondenceManagerShortcut(event: KeyboardEvent): void;
   handleOpenKeyboardShortcutsShortcut(event: KeyboardEvent): void;
   handleClearCanvasShortcut(event: KeyboardEvent): void;
   handleNewReadingShortcut(event: KeyboardEvent): void;

@@ -215,6 +215,7 @@ type StateCtx = {
   handleOpenReadingsModalShortcut: (event: KeyboardEvent) => void;
   handleOpenSettingsModalShortcut: (event: KeyboardEvent) => void;
   handleOpenAccountModalShortcut: (event: KeyboardEvent) => void;
+  handleOpenCorrespondenceManagerShortcut: (event: KeyboardEvent) => void;
   handleOpenKeyboardShortcutsShortcut: (event: KeyboardEvent) => void;
   handleClearCanvasShortcut: (event: KeyboardEvent) => void;
   handleNewReadingShortcut: (event: KeyboardEvent) => void;
@@ -1584,6 +1585,37 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     window.removeEventListener('open-account-modal', listener);
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleOpenCorrespondenceManagerShortcut dispatches open-correspondence-manager and prevents default', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('open-correspondence-manager', listener);
+    ctx.handleOpenCorrespondenceManagerShortcut.call(ctx, event);
+    window.removeEventListener('open-correspondence-manager', listener);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleOpenCorrespondenceManagerShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const input = document.createElement('input');
+    const event = {
+      target: input,
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    const listener = vi.fn();
+    window.addEventListener('open-correspondence-manager', listener);
+    ctx.handleOpenCorrespondenceManagerShortcut.call(ctx, event);
+    window.removeEventListener('open-correspondence-manager', listener);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it('handleOpenKeyboardShortcutsShortcut dispatches open-keyboard-shortcuts and prevents default', () => {
