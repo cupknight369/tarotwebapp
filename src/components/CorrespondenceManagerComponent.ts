@@ -4,9 +4,13 @@ import {
   createCorrespondenceGroup,
   deleteCorrespondence,
   deleteCorrespondenceGroup,
+  getCachedCorrespondenceThumbUrl,
+  getCorrespondenceImageRow,
+  isCorrespondenceThumbUrlManagedByCache,
   listCorrespondenceGroups,
   listCorrespondencesGrouped,
   putCorrespondenceGroup,
+  setCachedCorrespondenceThumbUrl,
   upsertCorrespondence,
   type CorrespondenceGroupSection,
 } from '../lib/localCorrespondences.js';
@@ -45,6 +49,9 @@ Alpine.data('correspondenceManagerComponent', () => ({
   formDescription: '',
   formGroupId: DEFAULT_CORRESPONDENCE_GROUP_ID,
   clearThumbnail: false,
+  editingThumbnailBlobId: null as string | null,
+  pendingUploadPreviewUrl: null as string | null,
+  loadedExistingPreviewUrl: null as string | null,
   renamingGroupId: null as string | null,
   renameGroupTitle: '',
   selectedCorrespondenceIds: [] as string[],
@@ -160,11 +167,73 @@ Alpine.data('correspondenceManagerComponent', () => ({
 
   closeManager() {
     this.open = false;
+    this.clearThumbnailPreviewState();
     this.editingCorrespondenceId = null;
     this.renamingGroupId = null;
     this.librarySearchQuery = '';
     this.selectedCorrespondenceIds = [];
     window.dispatchEvent(new CustomEvent('correspondences-changed'));
+  },
+
+  revokePendingUploadPreview(): void {
+    if (this.pendingUploadPreviewUrl) {
+      URL.revokeObjectURL(this.pendingUploadPreviewUrl);
+      this.pendingUploadPreviewUrl = null;
+    }
+  },
+
+  clearThumbnailPreviewState(): void {
+    this.revokePendingUploadPreview();
+    if (
+      this.loadedExistingPreviewUrl &&
+      !isCorrespondenceThumbUrlManagedByCache(this.loadedExistingPreviewUrl)
+    ) {
+      URL.revokeObjectURL(this.loadedExistingPreviewUrl);
+    }
+    this.loadedExistingPreviewUrl = null;
+    this.editingThumbnailBlobId = null;
+  },
+
+  thumbnailPreviewUrl(): string | null {
+    if (this.clearThumbnail) return null;
+    if (this.pendingUploadPreviewUrl) return this.pendingUploadPreviewUrl;
+    return this.loadedExistingPreviewUrl;
+  },
+
+  async loadExistingThumbnailPreview(blobId: string | null): Promise<void> {
+    if (
+      this.loadedExistingPreviewUrl &&
+      !isCorrespondenceThumbUrlManagedByCache(this.loadedExistingPreviewUrl)
+    ) {
+      URL.revokeObjectURL(this.loadedExistingPreviewUrl);
+    }
+    this.loadedExistingPreviewUrl = null;
+    this.editingThumbnailBlobId = blobId;
+    if (!blobId) return;
+
+    let url = getCachedCorrespondenceThumbUrl(blobId);
+    if (!url) {
+      const row = await getCorrespondenceImageRow(blobId);
+      if (!row?.blob) return;
+      url = URL.createObjectURL(row.blob);
+      setCachedCorrespondenceThumbUrl(blobId, url);
+    }
+    this.loadedExistingPreviewUrl = url;
+  },
+
+  onThumbnailFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    this.revokePendingUploadPreview();
+    if (file && file.size > 0) {
+      this.pendingUploadPreviewUrl = URL.createObjectURL(file);
+    }
+  },
+
+  onClearThumbnailChange(): void {
+    if (!this.clearThumbnail && this.editingThumbnailBlobId && !this.pendingUploadPreviewUrl) {
+      void this.loadExistingThumbnailPreview(this.editingThumbnailBlobId);
+    }
   },
 
   handleManagerEscape(): boolean {
@@ -188,6 +257,7 @@ Alpine.data('correspondenceManagerComponent', () => ({
   },
 
   startCreateCorrespondence() {
+    this.clearThumbnailPreviewState();
     this.editingCorrespondenceId = 'new';
     this.formTitle = '';
     this.formDescription = '';
@@ -198,6 +268,7 @@ Alpine.data('correspondenceManagerComponent', () => ({
   },
 
   startEditCorrespondence(row: LocalCorrespondenceRow) {
+    this.clearThumbnailPreviewState();
     this.editingCorrespondenceId = row.id;
     this.formTitle = row.title;
     this.formDescription = row.description ?? '';
@@ -205,9 +276,11 @@ Alpine.data('correspondenceManagerComponent', () => ({
     this.clearThumbnail = false;
     const el = document.getElementById('corr-manager-thumb') as HTMLInputElement | null;
     if (el) el.value = '';
+    void this.loadExistingThumbnailPreview(row.thumbnailBlobId);
   },
 
   cancelForm() {
+    this.clearThumbnailPreviewState();
     this.editingCorrespondenceId = null;
     const el = document.getElementById('corr-manager-thumb') as HTMLInputElement | null;
     if (el) el.value = '';

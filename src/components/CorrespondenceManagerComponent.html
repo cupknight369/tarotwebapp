@@ -211,12 +211,21 @@
             type="file"
             accept="image/*"
             class="text-xs text-gray-400"
+            @change="onThumbnailFileSelected($event)"
           />
+          <div x-show="thumbnailPreviewUrl()" class="mt-1">
+            <img
+              :src="thumbnailPreviewUrl()"
+              alt="Thumbnail preview"
+              class="max-h-24 w-auto rounded border border-gray-600 object-contain"
+            />
+          </div>
           <label class="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
               x-model="clearThumbnail"
               class="rounded border-gray-600 bg-gray-700 text-purple-600"
+              @change="onClearThumbnailChange()"
             />
             <span class="text-xs text-gray-400">Remove thumbnail</span>
           </label>

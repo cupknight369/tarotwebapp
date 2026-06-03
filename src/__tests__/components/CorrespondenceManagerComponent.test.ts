@@ -11,6 +11,7 @@ import type { VitestGlobalWithAlpineDataCapture } from '../helpers/alpineDataCap
 const correspondenceMocks = vi.hoisted(() => ({
   listCorrespondencesGrouped: vi.fn(),
   listCorrespondenceGroups: vi.fn(),
+  getCorrespondenceImageRow: vi.fn(),
 }));
 
 const alpineStub = vi.hoisted(() =>
@@ -32,6 +33,7 @@ vi.mock('../../lib/localCorrespondences.js', async (importOriginal) => {
     deleteCorrespondenceGroup: vi.fn(),
     listCorrespondenceGroups: correspondenceMocks.listCorrespondenceGroups,
     listCorrespondencesGrouped: correspondenceMocks.listCorrespondencesGrouped,
+    getCorrespondenceImageRow: correspondenceMocks.getCorrespondenceImageRow,
     putCorrespondenceGroup: vi.fn(),
     upsertCorrespondence: vi.fn(),
   };
@@ -41,7 +43,9 @@ import {
   createCorrespondenceGroup,
   deleteCorrespondence,
   deleteCorrespondenceGroup,
+  getCachedCorrespondenceThumbUrl,
   putCorrespondenceGroup,
+  setCachedCorrespondenceThumbUrl,
   upsertCorrespondence,
 } from '../../lib/localCorrespondences.js';
 import { DEFAULT_CORRESPONDENCE_GROUP_ID } from '../../types/localDb.js';
@@ -114,6 +118,14 @@ type CorrespondenceManagerInstance = {
   addGroup: () => Promise<void>;
   startRenameGroup: (g: { id: string; title: string }) => void;
   saveRenameGroup: () => Promise<void>;
+  thumbnailPreviewUrl: () => string | null;
+  onThumbnailFileSelected: (event: Event) => void;
+  onClearThumbnailChange: () => void;
+  loadExistingThumbnailPreview: (blobId: string | null) => Promise<void>;
+  clearThumbnailPreviewState: () => void;
+  pendingUploadPreviewUrl: string | null;
+  loadedExistingPreviewUrl: string | null;
+  editingThumbnailBlobId: string | null;
 };
 
 function mount(): CorrespondenceManagerInstance & {
@@ -136,6 +148,7 @@ describe('correspondenceManagerComponent (CorrespondenceManagerComponent.ts)', (
     vi.clearAllMocks();
     correspondenceMocks.listCorrespondencesGrouped.mockResolvedValue([]);
     correspondenceMocks.listCorrespondenceGroups.mockResolvedValue([]);
+    correspondenceMocks.getCorrespondenceImageRow.mockResolvedValue(null);
     alpineStub.rawStores.dialog = undefined;
     window.correspondenceManagerComponent = undefined;
   });
@@ -481,16 +494,62 @@ describe('correspondenceManagerComponent (CorrespondenceManagerComponent.ts)', (
     input.remove();
   });
 
-  it('startEditCorrespondence populates form from row', () => {
+  it('startEditCorrespondence populates form from row', async () => {
+    const blob = new Blob(['img'], { type: 'image/png' });
+    correspondenceMocks.getCorrespondenceImageRow.mockResolvedValue({
+      id: 'thumb-1',
+      blob,
+      mimeType: 'image/png',
+      created_at: '2020-01-01T00:00:00.000Z',
+    });
+    const createSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:existing-thumb');
     const ctx = mount();
     ctx.startEditCorrespondence.call(ctx, {
       ...corr('e1', 'Edited', 'g2'),
       description: 'desc',
+      thumbnailBlobId: 'thumb-1',
     });
+    await Promise.resolve();
     expect(ctx.editingCorrespondenceId).toBe('e1');
     expect(ctx.formTitle).toBe('Edited');
     expect(ctx.formDescription).toBe('desc');
     expect(ctx.formGroupId).toBe('g2');
+    expect(ctx.thumbnailPreviewUrl.call(ctx)).toBe('blob:existing-thumb');
+    createSpy.mockRestore();
+  });
+
+  it('onThumbnailFileSelected creates a preview URL for uploaded files', () => {
+    const createSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:upload-preview');
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL');
+    const ctx = mount();
+    const file = new File(['x'], 't.png', { type: 'image/png' });
+    const input = document.createElement('input');
+    input.type = 'file';
+    Object.defineProperty(input, 'files', { value: [file] });
+    ctx.onThumbnailFileSelected.call(ctx, { target: input } as unknown as Event);
+    expect(createSpy).toHaveBeenCalledWith(file);
+    expect(ctx.thumbnailPreviewUrl.call(ctx)).toBe('blob:upload-preview');
+    ctx.clearThumbnailPreviewState.call(ctx);
+    expect(revokeSpy).toHaveBeenCalledWith('blob:upload-preview');
+    createSpy.mockRestore();
+    revokeSpy.mockRestore();
+  });
+
+  it('thumbnailPreviewUrl is null when clearThumbnail is checked', () => {
+    const ctx = mount();
+    ctx.loadedExistingPreviewUrl = 'blob:existing';
+    ctx.clearThumbnail = true;
+    expect(ctx.thumbnailPreviewUrl.call(ctx)).toBeNull();
+  });
+
+  it('onClearThumbnailChange reloads existing thumbnail when unchecked', async () => {
+    setCachedCorrespondenceThumbUrl('thumb-1', 'blob:cached-thumb');
+    const ctx = mount();
+    ctx.editingThumbnailBlobId = 'thumb-1';
+    ctx.clearThumbnail = false;
+    ctx.onClearThumbnailChange.call(ctx);
+    expect(ctx.thumbnailPreviewUrl.call(ctx)).toBe('blob:cached-thumb');
+    expect(getCachedCorrespondenceThumbUrl('thumb-1')).toBe('blob:cached-thumb');
   });
 
   it('saveCorrespondence validates title and returns on failure', async () => {
