@@ -100,6 +100,7 @@ describe('helpComponent (HelpComponent.ts)', () => {
     const html = await readFile('src/components/AuthComponent.html', 'utf-8');
     expect(html).toContain('aria-label="Help"');
     expect(html).toContain('@click="$dispatch(\'open-help\')"');
+    expect(html).toContain('Shortcuts: ALT + k');
   });
 
   it('toolbar markup includes Settings button opening settings store', async () => {
