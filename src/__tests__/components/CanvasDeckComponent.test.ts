@@ -118,10 +118,15 @@ type DeckCtx = {
   catalogOffers: CatalogDeckOffer[];
   onDeviceDecks: OnDeviceDeckEntry[];
   deckSearchQuery: string;
+  selectedDeckIds: string[];
   newLocalDeckTitle: string;
   newLocalDeckTitleError: string;
   shuffleDeck: ReturnType<typeof vi.fn>;
   setDeckModalTab: (tab: 'onDevice' | 'store') => void;
+  isDeckSelected: (deckId: string) => boolean;
+  toggleDeckSelection: (deckId: string) => void;
+  selectAllDecks: () => void;
+  clearDeckSelection: () => void;
   filteredOnDeviceDecks: () => OnDeviceDeckEntry[];
   filteredCatalogOffers: () => CatalogDeckOffer[];
   openDeckModal: () => Promise<void>;
@@ -136,6 +141,7 @@ type DeckCtx = {
   onDeckDownloadComplete: (deckId: string) => Promise<void>;
   removeCatalogInstallAction: (deckId: string) => Promise<void>;
   deleteLocalDeckAction: (deckId: string) => Promise<void>;
+  confirmAndDeleteSelectedDecks: () => Promise<void>;
   switchDeckByName: null | { query: string; highlightIndex: number };
   switchDeckByNameMatches: () => OnDeviceDeckEntry[];
   onSwitchDeckByNameEvent: () => void;
@@ -215,11 +221,13 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     const ctx = mountDeck();
     ctx.newLocalDeckTitleError = 'x';
     ctx.deckSearchQuery = 'prior';
+    ctx.selectedDeckIds = ['d1'];
     await ctx.openDeckModal.call(ctx);
     expect(ctx.deckModalOpen).toBe(true);
     expect(ctx.deckModalTab).toBe('store');
     expect(ctx.newLocalDeckTitleError).toBe('');
     expect(ctx.deckSearchQuery).toBe('');
+    expect(ctx.selectedDeckIds).toEqual([]);
   });
 
   it('openDeckModal defaults tab when localStorage is invalid', async () => {
@@ -725,5 +733,147 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
     await p;
     expect(deckMocks.getCardsByDeckId).toHaveBeenCalledWith('m');
+  });
+
+  it('isDeckSelected and toggleDeckSelection add and remove deck ids', () => {
+    const ctx = mountDeck();
+    expect(ctx.isDeckSelected.call(ctx, 'a')).toBe(false);
+    ctx.toggleDeckSelection.call(ctx, 'a');
+    expect(ctx.isDeckSelected.call(ctx, 'a')).toBe(true);
+    expect(ctx.selectedDeckIds).toEqual(['a']);
+    ctx.toggleDeckSelection.call(ctx, 'a');
+    expect(ctx.isDeckSelected.call(ctx, 'a')).toBe(false);
+    expect(ctx.selectedDeckIds).toEqual([]);
+  });
+
+  it('selectAllDecks selects filtered on-device deck ids only', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta'), onDevice('c', 'Alpine')];
+    ctx.deckSearchQuery = 'al';
+    ctx.selectAllDecks.call(ctx);
+    expect(ctx.selectedDeckIds).toEqual(['a', 'c']);
+  });
+
+  it('clearDeckSelection empties selectedDeckIds', () => {
+    const ctx = mountDeck();
+    ctx.selectedDeckIds = ['a', 'b'];
+    ctx.clearDeckSelection.call(ctx);
+    expect(ctx.selectedDeckIds).toEqual([]);
+  });
+
+  it('confirmAndDeleteSelectedDecks is a no-op when nothing is selected', async () => {
+    const ctx = mountDeck();
+    await ctx.confirmAndDeleteSelectedDecks.call(ctx);
+    expect(alpineStub.rawStores.dialog).toBeUndefined();
+    expect(localMocks.deleteLocalDeck).not.toHaveBeenCalled();
+  });
+
+  it('confirmAndDeleteSelectedDecks returns when user cancels', async () => {
+    const ctx = mountDeck();
+    ctx.selectedDeckIds = ['d1', 'd2'];
+    const p = ctx.confirmAndDeleteSelectedDecks.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onCancel: () => void }).onCancel();
+    await p;
+    expect(localMocks.deleteLocalDeck).not.toHaveBeenCalled();
+    expect(ctx.selectedDeckIds).toEqual(['d1', 'd2']);
+  });
+
+  it('confirmAndDeleteSelectedDecks deletes multiple inactive decks and clears selection', async () => {
+    alpineStub.rawStores.activeDeckId = 'active';
+    const ctx = mountDeck();
+    ctx.deckModalOpen = true;
+    ctx.selectedDeckIds = ['other-1', 'other-2'];
+    const p = ctx.confirmAndDeleteSelectedDecks.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(localMocks.deleteLocalDeck).toHaveBeenCalledWith('other-1');
+    expect(localMocks.deleteLocalDeck).toHaveBeenCalledWith('other-2');
+    expect(deckMocks.getCardsByDeckId).not.toHaveBeenCalled();
+    expect(ctx.selectedDeckIds).toEqual([]);
+    expect(ctx.deckModalOpen).toBe(true);
+  });
+
+  it('confirmAndDeleteSelectedDecks uses singular confirm title for one deck', async () => {
+    const ctx = mountDeck();
+    ctx.selectedDeckIds = ['solo'];
+    const p = ctx.confirmAndDeleteSelectedDecks.call(ctx);
+    await Promise.resolve();
+    const dialog = alpineStub.rawStores.dialog as { title: string; onCancel: () => void };
+    expect(dialog.title).toBe('Delete this deck and all of its cards?');
+    dialog.onCancel();
+    await p;
+  });
+
+  it('confirmAndDeleteSelectedDecks uses plural confirm title for multiple decks', async () => {
+    const ctx = mountDeck();
+    ctx.selectedDeckIds = ['a', 'b'];
+    const p = ctx.confirmAndDeleteSelectedDecks.call(ctx);
+    await Promise.resolve();
+    const dialog = alpineStub.rawStores.dialog as { title: string; onCancel: () => void };
+    expect(dialog.title).toBe('Delete these 2 decks and all of their cards?');
+    dialog.onCancel();
+    await p;
+  });
+
+  it('confirmAndDeleteSelectedDecks switches when active deck is in selection', async () => {
+    alpineStub.rawStores.activeDeckId = 'gone';
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValue(ok([onDevice('keep', 'Keep')]));
+    const ctx = mountDeck();
+    ctx.deckModalOpen = true;
+    ctx.selectedDeckIds = ['gone', 'other'];
+    const p = ctx.confirmAndDeleteSelectedDecks.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(localMocks.deleteLocalDeck).toHaveBeenCalledWith('gone');
+    expect(localMocks.deleteLocalDeck).toHaveBeenCalledWith('other');
+    expect(deckMocks.getCardsByDeckId).toHaveBeenCalledWith('keep');
+    expect(ctx.selectedDeckIds).toEqual([]);
+    expect(ctx.deckModalOpen).toBe(true);
+  });
+
+  it('confirmAndDeleteSelectedDecks falls back to default id when no next deck', async () => {
+    alpineStub.rawStores.activeDeckId = 'gone';
+    const ctx = mountDeck();
+    ctx.selectedDeckIds = ['gone'];
+    ctx.refreshDeckLists = vi.fn(function (this: DeckCtx) {
+      this.onDeviceDecks = [];
+      this.catalogOffers = [];
+      return Promise.resolve();
+    });
+    const p = ctx.confirmAndDeleteSelectedDecks.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(deckMocks.getCardsByDeckId).toHaveBeenCalledWith(testConsts.DEFAULT_DECK_ID);
+  });
+
+  it('confirmAndDeleteSelectedDecks picks catalog sort when on-device empty after refresh', async () => {
+    alpineStub.rawStores.activeDeckId = 'gone';
+    const ctx = mountDeck();
+    ctx.selectedDeckIds = ['gone'];
+    ctx.catalogOffers = [catalogOffer('z', 'Z'), catalogOffer('m', 'M')];
+    ctx.refreshDeckLists = vi.fn(function (this: DeckCtx) {
+      this.onDeviceDecks = [];
+      return Promise.resolve();
+    });
+    const p = ctx.confirmAndDeleteSelectedDecks.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(deckMocks.getCardsByDeckId).toHaveBeenCalledWith('m');
+  });
+
+  it('deleteLocalDeckAction removes deleted id from selectedDeckIds', async () => {
+    alpineStub.rawStores.activeDeckId = 'active';
+    const ctx = mountDeck();
+    ctx.selectedDeckIds = ['other', 'active'];
+    const p = ctx.deleteLocalDeckAction.call(ctx, 'other');
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(ctx.selectedDeckIds).toEqual(['active']);
   });
 });

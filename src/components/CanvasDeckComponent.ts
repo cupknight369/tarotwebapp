@@ -54,12 +54,33 @@ function deckTitleMatchesSearch(query: string, title: string): boolean {
 
 const SWITCH_DECK_BY_NAME_MATCH_LIMIT = 8;
 
+async function deleteDecksAndHandleActiveSwitch(
+  ctx: MergedThis,
+  deckIds: readonly string[],
+): Promise<void> {
+  const deleteSet = new Set(deckIds);
+  const wasActive = deleteSet.has(Alpine.store('activeDeckId') as string);
+  for (const id of deckIds) {
+    await deleteLocalDeck(id);
+  }
+  ctx.selectedDeckIds = ctx.selectedDeckIds.filter((id) => !deleteSet.has(id));
+  await ctx.refreshDeckLists();
+
+  if (wasActive) {
+    const sorted = [...ctx.catalogOffers].sort((a, b) => a.title.localeCompare(b.title));
+    const nextId = ctx.onDeviceDecks[0]?.id ?? sorted[0]?.id ?? DEFAULT_DECK_ID;
+    await ctx.switchToDeck(nextId, true);
+  }
+  ctx.deckModalOpen = true;
+}
+
 Alpine.data('deckComponent', () => ({
   deckModalOpen: false,
   deckModalTab: 'onDevice' as DeckModalTab,
   catalogOffers: [] as CatalogDeckOffer[],
   onDeviceDecks: [] as OnDeviceDeckEntry[],
   deckSearchQuery: '',
+  selectedDeckIds: [] as string[],
   newLocalDeckTitle: '',
   newLocalDeckTitleError: '',
   switchDeckByName: null as null | {
@@ -118,9 +139,30 @@ Alpine.data('deckComponent', () => ({
     })();
   },
 
+  isDeckSelected(this: MergedThis, deckId: string): boolean {
+    return this.selectedDeckIds.includes(deckId);
+  },
+
+  toggleDeckSelection(this: MergedThis, deckId: string): void {
+    if (this.isDeckSelected(deckId)) {
+      this.selectedDeckIds = this.selectedDeckIds.filter((x) => x !== deckId);
+    } else {
+      this.selectedDeckIds = [...this.selectedDeckIds, deckId];
+    }
+  },
+
+  selectAllDecks(this: MergedThis): void {
+    this.selectedDeckIds = this.filteredOnDeviceDecks().map((d) => d.id);
+  },
+
+  clearDeckSelection(this: MergedThis): void {
+    this.selectedDeckIds = [];
+  },
+
   async openDeckModal(this: MergedThis) {
     this.deckModalOpen = true;
     this.deckSearchQuery = '';
+    this.selectedDeckIds = [];
     this.newLocalDeckTitleError = '';
     this.deckModalTab = readDeckModalTab();
     await this.refreshDeckLists();
@@ -400,15 +442,31 @@ Alpine.data('deckComponent', () => ({
     });
     if (!confirmed) return;
 
-    const wasActive = (Alpine.store('activeDeckId') as string) === deckId;
-    await deleteLocalDeck(deckId);
-    await this.refreshDeckLists();
+    await deleteDecksAndHandleActiveSwitch(this, [deckId]);
+  },
 
-    if (wasActive) {
-      const sorted = [...this.catalogOffers].sort((a, b) => a.title.localeCompare(b.title));
-      const nextId = this.onDeviceDecks[0]?.id ?? sorted[0]?.id ?? DEFAULT_DECK_ID;
-      await this.switchToDeck(nextId, true);
-    }
-    this.deckModalOpen = true;
+  async confirmAndDeleteSelectedDecks(this: MergedThis): Promise<void> {
+    if (this.selectedDeckIds.length === 0) return;
+    const n = this.selectedDeckIds.length;
+    const title =
+      n === 1
+        ? 'Delete this deck and all of its cards?'
+        : `Delete these ${n} decks and all of their cards?`;
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'confirm',
+        title,
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+
+    const ids = [...this.selectedDeckIds];
+    await deleteDecksAndHandleActiveSwitch(this, ids);
+    this.selectedDeckIds = [];
   },
 }));
