@@ -47,6 +47,7 @@ Alpine.data('correspondenceManagerComponent', () => ({
   clearThumbnail: false,
   renamingGroupId: null as string | null,
   renameGroupTitle: '',
+  selectedCorrespondenceIds: [] as string[],
 
   filteredLibrarySections(): CorrespondenceGroupSection[] {
     return this.sections
@@ -61,6 +62,64 @@ Alpine.data('correspondenceManagerComponent', () => ({
 
   totalLibraryCorrespondenceCount(): number {
     return this.sections.reduce((n, sec) => n + sec.items.length, 0);
+  },
+
+  filteredLibraryCorrespondenceIds(): string[] {
+    return this.filteredLibrarySections().flatMap((sec) => sec.items.map((item) => item.id));
+  },
+
+  isCorrespondenceSelected(id: string): boolean {
+    return this.selectedCorrespondenceIds.includes(id);
+  },
+
+  toggleCorrespondenceSelection(id: string): void {
+    if (this.isCorrespondenceSelected(id)) {
+      this.selectedCorrespondenceIds = this.selectedCorrespondenceIds.filter((x) => x !== id);
+    } else {
+      this.selectedCorrespondenceIds = [...this.selectedCorrespondenceIds, id];
+    }
+  },
+
+  selectAllCorrespondences(): void {
+    this.selectedCorrespondenceIds = this.filteredLibraryCorrespondenceIds();
+  },
+
+  clearCorrespondenceSelection(): void {
+    this.selectedCorrespondenceIds = [];
+  },
+
+  correspondencesInFilteredLibraryGroup(groupId: string): LocalCorrespondenceRow[] {
+    const section = this.filteredLibrarySections().find((s) => s.group.id === groupId);
+    return section?.items ?? [];
+  },
+
+  isLibraryCorrespondenceGroupSelected(groupId: string): boolean {
+    const items = this.correspondencesInFilteredLibraryGroup(groupId);
+    if (items.length === 0) return false;
+    return items.every((item) => this.selectedCorrespondenceIds.includes(item.id));
+  },
+
+  toggleLibraryCorrespondenceGroupSelection(groupId: string): void {
+    const items = this.correspondencesInFilteredLibraryGroup(groupId);
+    const ids = items.map((item) => item.id);
+    if (ids.length === 0) return;
+    if (this.isLibraryCorrespondenceGroupSelected(groupId)) {
+      const remove = new Set(ids);
+      this.selectedCorrespondenceIds = this.selectedCorrespondenceIds.filter(
+        (id) => !remove.has(id),
+      );
+    } else {
+      const merged = new Set([...this.selectedCorrespondenceIds, ...ids]);
+      this.selectedCorrespondenceIds = [...merged];
+    }
+  },
+
+  correspondenceTitleById(id: string): string | undefined {
+    for (const sec of this.sections) {
+      const row = sec.items.find((item) => item.id === id);
+      if (row) return row.title;
+    }
+    return undefined;
   },
 
   async refresh() {
@@ -79,6 +138,7 @@ Alpine.data('correspondenceManagerComponent', () => ({
 
   async openManager() {
     this.open = true;
+    this.selectedCorrespondenceIds = [];
     await this.refresh();
   },
 
@@ -87,6 +147,7 @@ Alpine.data('correspondenceManagerComponent', () => ({
     this.editingCorrespondenceId = null;
     this.renamingGroupId = null;
     this.librarySearchQuery = '';
+    this.selectedCorrespondenceIds = [];
     window.dispatchEvent(new CustomEvent('correspondences-changed'));
   },
 
@@ -232,10 +293,45 @@ Alpine.data('correspondenceManagerComponent', () => ({
     this.error = null;
     try {
       await deleteCorrespondence(row.id);
+      this.selectedCorrespondenceIds = this.selectedCorrespondenceIds.filter((id) => id !== row.id);
       await this.refresh();
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Delete failed';
       logError('correspondenceManager.confirmDeleteCorrespondence', e);
+    }
+  },
+
+  async confirmAndDeleteSelectedCorrespondences() {
+    if (this.selectedCorrespondenceIds.length === 0) return;
+    const n = this.selectedCorrespondenceIds.length;
+    const title =
+      n === 1
+        ? `Delete correspondence “${this.correspondenceTitleById(this.selectedCorrespondenceIds[0]) ?? 'this entry'}”?`
+        : `Delete ${n} correspondences?`;
+    const ok = await new Promise<boolean>((resolve) => {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'confirm',
+        title,
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        cancelLabelVisible: true,
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!ok) return;
+    this.error = null;
+    const ids = [...this.selectedCorrespondenceIds];
+    try {
+      for (const id of ids) {
+        await deleteCorrespondence(id);
+      }
+      this.selectedCorrespondenceIds = [];
+      await this.refresh();
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'Delete failed';
+      logError('correspondenceManager.confirmAndDeleteSelectedCorrespondences', e);
     }
   },
 

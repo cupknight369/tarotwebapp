@@ -78,17 +78,67 @@
         >
           No correspondences match your search.
         </p>
+        <div
+          x-show="filteredLibrarySections().length > 0"
+          class="mb-3 flex flex-wrap items-center justify-between gap-2"
+        >
+          <span class="text-xs text-gray-400">Entries</span>
+          <span class="text-xs shrink-0">
+            <button
+              type="button"
+              class="cursor-pointer text-purple-400 hover:text-purple-300"
+              @click="selectAllCorrespondences()"
+            >
+              Select all
+            </button>
+            <span class="mx-1 text-gray-600">·</span>
+            <button
+              type="button"
+              class="cursor-pointer text-purple-400 hover:text-purple-300"
+              @click="clearCorrespondenceSelection()"
+            >
+              Clear all
+            </button>
+            <span class="mx-1 text-gray-600">·</span>
+            <button
+              type="button"
+              class="cursor-pointer text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="selectedCorrespondenceIds.length === 0"
+              @click="confirmAndDeleteSelectedCorrespondences()"
+              x-text="selectedCorrespondenceIds.length > 1 ? 'Delete correspondences' : 'Delete correspondence'"
+            ></button>
+          </span>
+        </div>
         <template x-for="sec in filteredLibrarySections()" :key="sec.group.id">
           <div class="mb-5">
-            <p
-              class="mb-2 border-b border-gray-700 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
-              x-text="sec.group.title"
-            ></p>
+            <div class="mb-2 flex items-center gap-2 border-b border-gray-700 pb-1">
+              <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2" @click.stop>
+                <input
+                  type="checkbox"
+                  class="shrink-0 cursor-pointer rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                  :checked="isLibraryCorrespondenceGroupSelected(sec.group.id)"
+                  :disabled="sec.items.length === 0"
+                  @change="toggleLibraryCorrespondenceGroupSelection(sec.group.id)"
+                />
+                <span
+                  class="truncate text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+                  x-text="sec.group.title"
+                ></span>
+              </label>
+            </div>
             <ul class="space-y-2">
               <template x-for="item in sec.items" :key="item.id">
                 <li
                   class="flex flex-wrap items-start justify-between gap-2 rounded border border-gray-600 bg-gray-900/40 p-2"
                 >
+                  <label class="flex min-w-0 shrink-0 cursor-pointer items-start p-1" @click.stop>
+                    <input
+                      type="checkbox"
+                      class="mt-0.5 cursor-pointer rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                      :checked="isCorrespondenceSelected(item.id)"
+                      @change="toggleCorrespondenceSelection(item.id)"
+                    />
+                  </label>
                   <div class="min-w-0 flex-1">
                     <p class="text-sm font-medium text-gray-200" x-text="item.title"></p>
                     <p
