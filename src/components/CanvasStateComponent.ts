@@ -63,6 +63,25 @@ function filterReadingSectionBySearch(
   return { group: section.group, items };
 }
 
+/** Deletes saved readings and updates load-modal / session state. */
+async function deleteLoadModalReadings(ctx: MergedThis, ids: readonly string[]): Promise<void> {
+  const deleteSet = new Set(ids);
+  for (const id of ids) {
+    await localReadingsLib.deleteLocalReading(id);
+  }
+  await ctx.refreshLoadModalReadings();
+  if (ctx.loadModalEditingReadingId !== null && deleteSet.has(ctx.loadModalEditingReadingId)) {
+    ctx.loadModalEditingReadingId = null;
+    ctx.loadModalEditingTitle = '';
+  }
+  if (ctx.loadedReadingId !== null && deleteSet.has(ctx.loadedReadingId)) {
+    ctx.loadedReadingId = null;
+  }
+  ctx.loadModalSelectedReadingIds = ctx.loadModalSelectedReadingIds.filter(
+    (id) => !deleteSet.has(id),
+  );
+}
+
 Alpine.data('stateComponent', () => ({
   dirty: false,
   loadedReadingId: null as string | null,
@@ -80,6 +99,7 @@ Alpine.data('stateComponent', () => ({
   loadModalRenameGroupTitle: '',
   loadModalGroupError: null as string | null,
   loadModalReadingsPending: false,
+  loadModalSelectedReadingIds: [] as string[],
   saveAndLoadTargetId: null as string | null,
   readingSaveFlashVisible: false,
   _readingSaveFlashTimer: null as ReturnType<typeof setTimeout> | null,
@@ -474,6 +494,7 @@ Alpine.data('stateComponent', () => ({
     this.loadModalEditingReadingId = null;
     this.loadModalEditingTitle = '';
     this.loadModalSearchQuery = '';
+    this.loadModalSelectedReadingIds = [];
     this.loadModalOpen = true;
     this.loadModalConfirmingForId = null;
     this.loadModalGroupError = null;
@@ -524,6 +545,55 @@ Alpine.data('stateComponent', () => ({
     return this.localSavedReadings.filter((r) =>
       savedReadingTitleMatchesSearch(this.loadModalSearchQuery, r.name),
     );
+  },
+
+  isLoadModalReadingSelected(this: MergedThis, id: string): boolean {
+    return this.loadModalSelectedReadingIds.includes(id);
+  },
+
+  toggleLoadModalReadingSelection(this: MergedThis, id: string): void {
+    if (this.isLoadModalReadingSelected(id)) {
+      this.loadModalSelectedReadingIds = this.loadModalSelectedReadingIds.filter((x) => x !== id);
+    } else {
+      this.loadModalSelectedReadingIds = [...this.loadModalSelectedReadingIds, id];
+    }
+  },
+
+  selectAllLoadModalReadings(this: MergedThis): void {
+    this.loadModalSelectedReadingIds = this.filteredLoadModalReadings().map((r) => r.id);
+  },
+
+  clearLoadModalReadingSelection(this: MergedThis): void {
+    this.loadModalSelectedReadingIds = [];
+  },
+
+  loadModalReadingsInFilteredGroup(
+    this: MergedThis,
+    groupId: string,
+  ): { id: string; name: string; updated_at: string; group_id: string }[] {
+    const section = this.filteredLoadModalGroupedSections().find((s) => s.group.id === groupId);
+    return section?.items ?? [];
+  },
+
+  isLoadModalReadingGroupSelected(this: MergedThis, groupId: string): boolean {
+    const items = this.loadModalReadingsInFilteredGroup(groupId);
+    if (items.length === 0) return false;
+    return items.every((r) => this.loadModalSelectedReadingIds.includes(r.id));
+  },
+
+  toggleLoadModalReadingGroupSelection(this: MergedThis, groupId: string): void {
+    const items = this.loadModalReadingsInFilteredGroup(groupId);
+    const ids = items.map((r) => r.id);
+    if (ids.length === 0) return;
+    if (this.isLoadModalReadingGroupSelected(groupId)) {
+      const remove = new Set(ids);
+      this.loadModalSelectedReadingIds = this.loadModalSelectedReadingIds.filter(
+        (id) => !remove.has(id),
+      );
+    } else {
+      const merged = new Set([...this.loadModalSelectedReadingIds, ...ids]);
+      this.loadModalSelectedReadingIds = [...merged];
+    }
   },
 
   isLoadModalGroupCollapsed(this: MergedThis, groupId: string): boolean {
@@ -1108,14 +1178,28 @@ Alpine.data('stateComponent', () => ({
       });
     });
     if (!confirmed) return;
-    await localReadingsLib.deleteLocalReading(id);
-    await this.refreshLoadModalReadings();
-    if (this.loadModalEditingReadingId === id) {
-      this.loadModalEditingReadingId = null;
-      this.loadModalEditingTitle = '';
-    }
-    if (this.loadedReadingId === id) {
-      this.loadedReadingId = null;
-    }
+    await deleteLoadModalReadings(this, [id]);
+  },
+
+  async confirmAndDeleteSelectedLoadModalReadings(this: MergedThis): Promise<void> {
+    if (this.loadModalSelectedReadingIds.length === 0) return;
+    const n = this.loadModalSelectedReadingIds.length;
+    const title = n === 1 ? 'Delete this saved reading?' : `Delete these ${n} saved readings?`;
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Alpine.store('dialog', {
+        open: true,
+        type: 'confirm',
+        title,
+        confirmLabel: 'Delete',
+        cancelLabel: 'Cancel',
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+
+    const ids = [...this.loadModalSelectedReadingIds];
+    await deleteLoadModalReadings(this, ids);
+    this.loadModalSelectedReadingIds = [];
   },
 }));

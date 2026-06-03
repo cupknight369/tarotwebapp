@@ -55,6 +55,7 @@ export type MergedThis = {
   loadModalRenameGroupTitle: string;
   loadModalGroupError: string | null;
   loadModalReadingsPending: boolean;
+  loadModalSelectedReadingIds: string[];
   randomNumberModalOpen: boolean;
   randomNumberLowerBound: string;
   randomNumberUpperBound: string;
@@ -217,6 +218,13 @@ export type MergedThis = {
   refreshLoadModalReadings(): Promise<void>;
   filteredLoadModalGroupedSections(): ReadingGroupSection[];
   filteredLoadModalReadings(): { id: string; name: string; updated_at: string; group_id: string }[];
+  isLoadModalReadingSelected(id: string): boolean;
+  toggleLoadModalReadingSelection(id: string): void;
+  isLoadModalReadingGroupSelected(groupId: string): boolean;
+  toggleLoadModalReadingGroupSelection(groupId: string): void;
+  selectAllLoadModalReadings(): void;
+  clearLoadModalReadingSelection(): void;
+  confirmAndDeleteSelectedLoadModalReadings(): Promise<void>;
   isLoadModalGroupCollapsed(groupId: string): boolean;
   toggleLoadModalGroupCollapsed(groupId: string): void;
   addLoadModalGroup(): Promise<void>;

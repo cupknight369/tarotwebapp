@@ -151,7 +151,8 @@ type StateCtx = {
   loadModalEditingTitle: string;
   loadModalSearchQuery: string;
   loadModalReadingsPending: boolean;
-  localSavedReadings: { id: string; name: string; updated_at: string }[];
+  loadModalSelectedReadingIds: string[];
+  localSavedReadings: { id: string; name: string; updated_at: string; group_id: string }[];
   saveAndLoadTargetId: string | null;
   readingSaveFlashVisible: boolean;
   _readingSaveFlashTimer: ReturnType<typeof setTimeout> | null;
@@ -225,6 +226,13 @@ type StateCtx = {
   commitLoadModalTitleEdit: () => Promise<void>;
   cancelLoadModalTitleEdit: () => void;
   deleteReading: (id: string) => Promise<void>;
+  isLoadModalReadingSelected: (id: string) => boolean;
+  toggleLoadModalReadingSelection: (id: string) => void;
+  isLoadModalReadingGroupSelected: (groupId: string) => boolean;
+  toggleLoadModalReadingGroupSelection: (groupId: string) => void;
+  selectAllLoadModalReadings: () => void;
+  clearLoadModalReadingSelection: () => void;
+  confirmAndDeleteSelectedLoadModalReadings: () => Promise<void>;
   $nextTick: (cb?: () => void) => void;
   $refs: Record<string, HTMLElement>;
 };
@@ -1241,6 +1249,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       loadModalEditingReadingId: 'stale',
       loadModalEditingTitle: 'draft',
       loadModalSearchQuery: 'stale filter',
+      loadModalSelectedReadingIds: ['stale-selection'],
     });
     const openPromise = ctx.openLoadModal.call(ctx);
     expect(ctx.loadModalOpen).toBe(true);
@@ -1251,6 +1260,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     expect(ctx.loadModalEditingReadingId).toBeNull();
     expect(ctx.loadModalEditingTitle).toBe('');
     expect(ctx.loadModalSearchQuery).toBe('');
+    expect(ctx.loadModalSelectedReadingIds).toEqual([]);
     ctx.closeLoadModal.call(ctx);
     expect(ctx.loadModalOpen).toBe(false);
     expect(ctx.loadModalConfirmingForId).toBeNull();
@@ -2317,6 +2327,226 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       loadModalEditingTitle: 'edit',
     });
     const p = ctx.deleteReading.call(ctx, 'a');
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(ctx.loadModalEditingReadingId).toBeNull();
+    expect(ctx.loadModalEditingTitle).toBe('');
+  });
+
+  it('deleteReading removes deleted id from loadModalSelectedReadingIds', async () => {
+    const ctx = createCtx({
+      localSavedReadings: [
+        { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+        { id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+      ],
+      loadModalSelectedReadingIds: ['a', 'b'],
+    });
+    const p = ctx.deleteReading.call(ctx, 'a');
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(ctx.loadModalSelectedReadingIds).toEqual(['b']);
+  });
+
+  it('isLoadModalReadingSelected and toggleLoadModalReadingSelection add and remove ids', () => {
+    const ctx = createCtx();
+    expect(ctx.isLoadModalReadingSelected.call(ctx, 'a')).toBe(false);
+    ctx.toggleLoadModalReadingSelection.call(ctx, 'a');
+    expect(ctx.isLoadModalReadingSelected.call(ctx, 'a')).toBe(true);
+    expect(ctx.loadModalSelectedReadingIds).toEqual(['a']);
+    ctx.toggleLoadModalReadingSelection.call(ctx, 'a');
+    expect(ctx.isLoadModalReadingSelected.call(ctx, 'a')).toBe(false);
+    expect(ctx.loadModalSelectedReadingIds).toEqual([]);
+  });
+
+  it('toggleLoadModalReadingGroupSelection selects and deselects readings in filtered group', () => {
+    const sections = [
+      {
+        group: { id: 'g1', title: 'Client' },
+        items: [
+          { id: 'r1', name: 'A', updated_at: 't', group_id: 'g1' },
+          { id: 'r2', name: 'B', updated_at: 't', group_id: 'g1' },
+        ],
+      },
+      {
+        group: { id: 'g2', title: 'Personal' },
+        items: [{ id: 'r3', name: 'Daily', updated_at: 't', group_id: 'g2' }],
+      },
+    ];
+    const ctx = createCtx({ loadModalGroupedSections: sections, loadModalSearchQuery: '' });
+    ctx.toggleLoadModalReadingGroupSelection.call(ctx, 'g1');
+    expect(ctx.loadModalSelectedReadingIds).toEqual(['r1', 'r2']);
+    expect(ctx.isLoadModalReadingGroupSelected.call(ctx, 'g1')).toBe(true);
+    expect(ctx.isLoadModalReadingGroupSelected.call(ctx, 'g2')).toBe(false);
+    ctx.toggleLoadModalReadingGroupSelection.call(ctx, 'g1');
+    expect(ctx.loadModalSelectedReadingIds).toEqual([]);
+  });
+
+  it('toggleLoadModalReadingGroupSelection respects search filter within group', () => {
+    const sections = [
+      {
+        group: { id: 'g1', title: 'Client' },
+        items: [
+          { id: 'r1', name: 'Alpha', updated_at: 't', group_id: 'g1' },
+          { id: 'r2', name: 'Beta', updated_at: 't', group_id: 'g1' },
+        ],
+      },
+    ];
+    const ctx = createCtx({
+      loadModalGroupedSections: sections,
+      localSavedReadings: sections[0].items,
+      loadModalSearchQuery: 'alpha',
+    });
+    ctx.toggleLoadModalReadingGroupSelection.call(ctx, 'g1');
+    expect(ctx.loadModalSelectedReadingIds).toEqual(['r1']);
+    expect(ctx.isLoadModalReadingGroupSelected.call(ctx, 'g1')).toBe(true);
+  });
+
+  it('isLoadModalReadingGroupSelected is false when group has no visible readings', () => {
+    const ctx = createCtx({
+      loadModalGroupedSections: [{ group: { id: 'g1', title: 'Empty' }, items: [] }],
+    });
+    expect(ctx.isLoadModalReadingGroupSelected.call(ctx, 'g1')).toBe(false);
+    ctx.toggleLoadModalReadingGroupSelection.call(ctx, 'g1');
+    expect(ctx.loadModalSelectedReadingIds).toEqual([]);
+  });
+
+  it('selectAllLoadModalReadings selects filtered reading ids only', () => {
+    const ctx = createCtx({
+      localSavedReadings: [
+        { id: 'a', name: 'Alpha', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+        { id: 'b', name: 'Beta', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+        { id: 'c', name: 'Alpine', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+      ],
+      loadModalSearchQuery: 'al',
+    });
+    ctx.selectAllLoadModalReadings.call(ctx);
+    expect(ctx.loadModalSelectedReadingIds).toEqual(['a', 'c']);
+  });
+
+  it('clearLoadModalReadingSelection empties loadModalSelectedReadingIds', () => {
+    const ctx = createCtx({ loadModalSelectedReadingIds: ['a', 'b'] });
+    ctx.clearLoadModalReadingSelection.call(ctx);
+    expect(ctx.loadModalSelectedReadingIds).toEqual([]);
+  });
+
+  it('confirmAndDeleteSelectedLoadModalReadings is a no-op when nothing is selected', async () => {
+    const ctx = createCtx();
+    await ctx.confirmAndDeleteSelectedLoadModalReadings.call(ctx);
+    expect(alpineStub.rawStores.dialog).toBeUndefined();
+    expect(readingsMocks.deleteLocalReading).not.toHaveBeenCalled();
+  });
+
+  it('confirmAndDeleteSelectedLoadModalReadings returns when user cancels', async () => {
+    const ctx = createCtx({ loadModalSelectedReadingIds: ['a', 'b'] });
+    const p = ctx.confirmAndDeleteSelectedLoadModalReadings.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onCancel: () => void }).onCancel();
+    await p;
+    expect(readingsMocks.deleteLocalReading).not.toHaveBeenCalled();
+    expect(ctx.loadModalSelectedReadingIds).toEqual(['a', 'b']);
+  });
+
+  it('confirmAndDeleteSelectedLoadModalReadings deletes multiple readings and clears selection', async () => {
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID }],
+      },
+    ]);
+    const ctx = createCtx({
+      localSavedReadings: [
+        { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+        { id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+      ],
+      loadModalSelectedReadingIds: ['a', 'b'],
+    });
+    const p = ctx.confirmAndDeleteSelectedLoadModalReadings.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(readingsMocks.deleteLocalReading).toHaveBeenCalledWith('a');
+    expect(readingsMocks.deleteLocalReading).toHaveBeenCalledWith('b');
+    expect(ctx.loadModalSelectedReadingIds).toEqual([]);
+    expect(ctx.localSavedReadings).toHaveLength(1);
+  });
+
+  it('confirmAndDeleteSelectedLoadModalReadings uses singular confirm title for one reading', async () => {
+    const ctx = createCtx({ loadModalSelectedReadingIds: ['solo'] });
+    const p = ctx.confirmAndDeleteSelectedLoadModalReadings.call(ctx);
+    await Promise.resolve();
+    const dialog = alpineStub.rawStores.dialog as { title: string; onCancel: () => void };
+    expect(dialog.title).toBe('Delete this saved reading?');
+    dialog.onCancel();
+    await p;
+  });
+
+  it('confirmAndDeleteSelectedLoadModalReadings uses plural confirm title for multiple readings', async () => {
+    const ctx = createCtx({ loadModalSelectedReadingIds: ['a', 'b'] });
+    const p = ctx.confirmAndDeleteSelectedLoadModalReadings.call(ctx);
+    await Promise.resolve();
+    const dialog = alpineStub.rawStores.dialog as { title: string; onCancel: () => void };
+    expect(dialog.title).toBe('Delete these 2 saved readings?');
+    dialog.onCancel();
+    await p;
+  });
+
+  it('confirmAndDeleteSelectedLoadModalReadings clears loadedReadingId when deleted', async () => {
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID }],
+      },
+    ]);
+    const ctx = createCtx({
+      localSavedReadings: [
+        { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+        { id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+      ],
+      loadedReadingId: 'a',
+      loadModalSelectedReadingIds: ['a'],
+    });
+    const p = ctx.confirmAndDeleteSelectedLoadModalReadings.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(ctx.loadedReadingId).toBeNull();
+  });
+
+  it('confirmAndDeleteSelectedLoadModalReadings keeps loadedReadingId when deleting other readings', async () => {
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID }],
+      },
+    ]);
+    const ctx = createCtx({
+      localSavedReadings: [
+        { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+        { id: 'b', name: 'B', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+      ],
+      loadedReadingId: 'a',
+      loadModalSelectedReadingIds: ['b'],
+    });
+    const p = ctx.confirmAndDeleteSelectedLoadModalReadings.call(ctx);
+    await Promise.resolve();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await p;
+    expect(ctx.loadedReadingId).toBe('a');
+  });
+
+  it('confirmAndDeleteSelectedLoadModalReadings clears title edit state when edited reading is deleted', async () => {
+    readingsMocks.listReadingsGrouped.mockResolvedValue([]);
+    const ctx = createCtx({
+      localSavedReadings: [
+        { id: 'a', name: 'A', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+      ],
+      loadModalEditingReadingId: 'a',
+      loadModalEditingTitle: 'edit',
+      loadModalSelectedReadingIds: ['a'],
+    });
+    const p = ctx.confirmAndDeleteSelectedLoadModalReadings.call(ctx);
     await Promise.resolve();
     (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
     await p;
