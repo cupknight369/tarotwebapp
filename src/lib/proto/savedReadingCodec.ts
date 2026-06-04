@@ -98,6 +98,7 @@ export function encodeSavedReadingState(state: SavedReadingState): Uint8Array {
     tl.anchorPosition = encodeAnchorPosition(t.anchorPosition);
     tl.fixedWidth = t.fixedWidth;
     tl.fixedWidthPx = t.fixedWidthPx;
+    if (t.fontProfileId) tl.fontProfileId = t.fontProfileId;
     return tl;
   });
 
@@ -180,6 +181,8 @@ export function decodeSavedReadingState(bytes: Uint8Array): SavedReadingState {
       anchorPosition: decodeAnchorPosition(Number(t.anchorPosition ?? 0)),
       fixedWidth: Boolean(t.fixedWidth),
       fixedWidthPx: t.fixedWidthPx ?? 0,
+      fontProfileId:
+        t.fontProfileId !== undefined && t.fontProfileId !== '' ? t.fontProfileId : null,
     })),
   };
   return out;

@@ -43,6 +43,7 @@ const uiMocks = vi.hoisted(() => ({
   showQueryFailureDialog: vi.fn(),
   initAuthStore: vi.fn(() => Promise.resolve()),
   initSettingsStore: vi.fn(),
+  initFontProfileStore: vi.fn(),
   startCardImagePrefetch: vi.fn(),
   ensureDefaultDeckOnDevice: vi.fn(() => Promise.resolve()),
   isDefaultDeckOnDevice: vi.fn(() => Promise.resolve(false)),
@@ -59,6 +60,8 @@ const alpineHoisted = vi.hoisted(() => {
         }
         return stores[name];
       },
+      data: vi.fn(),
+      effect: vi.fn(),
       start: vi.fn(),
     },
   };
@@ -76,6 +79,10 @@ vi.mock('../stores/authStore.js', () => ({
 
 vi.mock('../stores/settingsStore.js', () => ({
   initSettingsStore: uiMocks.initSettingsStore,
+}));
+
+vi.mock('../stores/fontProfileStore.js', () => ({
+  initFontProfileStore: uiMocks.initFontProfileStore,
 }));
 
 vi.mock('../lib/cardImageUrls.js', () => ({
@@ -152,6 +159,7 @@ describe('main.ts bootstrap', () => {
     uiMocks.initAuthStore.mockReset();
     uiMocks.initAuthStore.mockResolvedValue(undefined);
     uiMocks.initSettingsStore.mockReset();
+    uiMocks.initFontProfileStore.mockReset();
     uiMocks.startCardImagePrefetch.mockReset();
     uiMocks.ensureDefaultDeckOnDevice.mockReset();
     uiMocks.ensureDefaultDeckOnDevice.mockResolvedValue(undefined);
@@ -173,6 +181,7 @@ describe('main.ts bootstrap', () => {
     expect(uiMocks.startCardImagePrefetch).toHaveBeenCalledTimes(1);
     expect(uiMocks.ensureDefaultDeckOnDevice).toHaveBeenCalledTimes(1);
     expect(uiMocks.initSettingsStore).toHaveBeenCalledTimes(1);
+    expect(uiMocks.initFontProfileStore).toHaveBeenCalledTimes(1);
     expect(initPwaClient).toHaveBeenCalledTimes(1);
 
     expect(alpineHoisted.stores.shuffledCards).toEqual([card]);

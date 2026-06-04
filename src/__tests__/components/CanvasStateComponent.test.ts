@@ -138,6 +138,7 @@ function textLabel(overrides: Partial<TextLabel> = {}): TextLabel {
     anchorPosition: null,
     fixedWidth: false,
     fixedWidthPx: 0,
+    fontProfileId: null,
     ...overrides,
   };
 }
@@ -352,13 +353,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       offsetX: 5,
       offsetY: 7,
       draggableCards: [draggable()],
-      textLabels: [textLabel({ anchorCardId: 'x', anchorPosition: 'above' })],
+      textLabels: [
+        textLabel({ anchorCardId: 'x', anchorPosition: 'above', fontProfileId: 'fp-1' }),
+      ],
     });
     const state = await ctx.serializeState.call(ctx);
     expect(state.viewport).toEqual({ scale: 2, offsetX: 5, offsetY: 7 });
     expect(state.cards).toHaveLength(1);
     expect(state.cards[0]?.card_id).toBe('cid-1');
     expect(state.textLabels[0]?.anchorPosition).toBe('above');
+    expect(state.textLabels[0]?.fontProfileId).toBe('fp-1');
   });
 
   it('serializeState embeds main and censored bytes when local card rows exist', async () => {
@@ -1039,6 +1043,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
           anchorPosition: 'right',
           fixedWidth: true,
           fixedWidthPx: 320,
+          fontProfileId: 'fp-saved',
         },
       ],
     });
@@ -1048,6 +1053,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     expect(ctx.textLabels[0]?.cursor).toBe('grab');
     expect(ctx.textLabels[0]?.fixedWidth).toBe(true);
     expect(ctx.textLabels[0]?.fixedWidthPx).toBe(320);
+    expect(ctx.textLabels[0]?.fontProfileId).toBe('fp-saved');
     expect(ctx.maxTextZIndex).toBe(5);
   });
 

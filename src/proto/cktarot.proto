@@ -64,6 +64,7 @@ message TextLabel {
   AnchorPosition anchor_position = 12;
   bool fixed_width = 13;
   double fixed_width_px = 14;
+  optional string font_profile_id = 15;
 }
 
 message SavedReadingState {

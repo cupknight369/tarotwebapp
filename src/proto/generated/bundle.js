@@ -1047,6 +1047,7 @@ export const cktarot = $root.cktarot = (() => {
          * @property {cktarot.AnchorPosition|null} [anchorPosition] TextLabel anchorPosition
          * @property {boolean|null} [fixedWidth] TextLabel fixedWidth
          * @property {number|null} [fixedWidthPx] TextLabel fixedWidthPx
+         * @property {string|null} [fontProfileId] TextLabel fontProfileId
          */
 
         /**
@@ -1176,12 +1177,26 @@ export const cktarot = $root.cktarot = (() => {
          */
         TextLabel.prototype.fixedWidthPx = 0;
 
+        /**
+         * TextLabel fontProfileId.
+         * @member {string|null|undefined} fontProfileId
+         * @memberof cktarot.TextLabel
+         * @instance
+         */
+        TextLabel.prototype.fontProfileId = null;
+
         // OneOf field names bound to virtual getters and setters
         let $oneOfFields;
 
         // Virtual OneOf for proto3 optional field
         Object.defineProperty(TextLabel.prototype, "_anchorCardId", {
             get: $util.oneOfGetter($oneOfFields = ["anchorCardId"]),
+            set: $util.oneOfSetter($oneOfFields)
+        });
+
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(TextLabel.prototype, "_fontProfileId", {
+            get: $util.oneOfGetter($oneOfFields = ["fontProfileId"]),
             set: $util.oneOfSetter($oneOfFields)
         });
 
@@ -1237,6 +1252,8 @@ export const cktarot = $root.cktarot = (() => {
                 writer.uint32(/* id 13, wireType 0 =*/104).bool(message.fixedWidth);
             if (message.fixedWidthPx != null && Object.hasOwnProperty.call(message, "fixedWidthPx"))
                 writer.uint32(/* id 14, wireType 1 =*/113).double(message.fixedWidthPx);
+            if (message.fontProfileId != null && Object.hasOwnProperty.call(message, "fontProfileId"))
+                writer.uint32(/* id 15, wireType 2 =*/122).string(message.fontProfileId);
             return writer;
         };
 
@@ -1327,6 +1344,10 @@ export const cktarot = $root.cktarot = (() => {
                     }
                 case 14: {
                         message.fixedWidthPx = reader.double();
+                        break;
+                    }
+                case 15: {
+                        message.fontProfileId = reader.string();
                         break;
                     }
                 default:
@@ -1429,6 +1450,11 @@ export const cktarot = $root.cktarot = (() => {
             if (message.fixedWidthPx != null && message.hasOwnProperty("fixedWidthPx"))
                 if (typeof message.fixedWidthPx !== "number")
                     return "fixedWidthPx: number expected";
+            if (message.fontProfileId != null && message.hasOwnProperty("fontProfileId")) {
+                properties._fontProfileId = 1;
+                if (!$util.isString(message.fontProfileId))
+                    return "fontProfileId: string expected";
+            }
             return null;
         };
 
@@ -1534,6 +1560,8 @@ export const cktarot = $root.cktarot = (() => {
                 message.fixedWidth = Boolean(object.fixedWidth);
             if (object.fixedWidthPx != null)
                 message.fixedWidthPx = Number(object.fixedWidthPx);
+            if (object.fontProfileId != null)
+                message.fontProfileId = String(object.fontProfileId);
             return message;
         };
 
@@ -1596,6 +1624,11 @@ export const cktarot = $root.cktarot = (() => {
                 object.fixedWidth = message.fixedWidth;
             if (message.fixedWidthPx != null && message.hasOwnProperty("fixedWidthPx"))
                 object.fixedWidthPx = options.json && !isFinite(message.fixedWidthPx) ? String(message.fixedWidthPx) : message.fixedWidthPx;
+            if (message.fontProfileId != null && message.hasOwnProperty("fontProfileId")) {
+                object.fontProfileId = message.fontProfileId;
+                if (options.oneofs)
+                    object._fontProfileId = "fontProfileId";
+            }
             return object;
         };
 

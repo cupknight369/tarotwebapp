@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  KEYBOARD_SHORTCUTS,
-  filterKeyboardShortcuts,
-} from '../../lib/keyboardShortcuts.js';
+import { KEYBOARD_SHORTCUTS, filterKeyboardShortcuts } from '../../lib/keyboardShortcuts.js';
 
 describe('keyboardShortcuts', () => {
   it('lists all application shortcuts including Alt+C and Alt+K', () => {
@@ -14,9 +11,7 @@ describe('keyboardShortcuts', () => {
   });
 
   it('filterKeyboardShortcuts returns all entries for empty query', () => {
-    expect(filterKeyboardShortcuts(KEYBOARD_SHORTCUTS, '')).toHaveLength(
-      KEYBOARD_SHORTCUTS.length,
-    );
+    expect(filterKeyboardShortcuts(KEYBOARD_SHORTCUTS, '')).toHaveLength(KEYBOARD_SHORTCUTS.length);
     expect(filterKeyboardShortcuts(KEYBOARD_SHORTCUTS, '   ')).toHaveLength(
       KEYBOARD_SHORTCUTS.length,
     );

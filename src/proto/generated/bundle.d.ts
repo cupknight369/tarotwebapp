@@ -378,6 +378,9 @@ export namespace cktarot {
 
         /** TextLabel fixedWidthPx */
         fixedWidthPx?: (number|null);
+
+        /** TextLabel fontProfileId */
+        fontProfileId?: (string|null);
     }
 
     /** Represents a TextLabel. */
@@ -430,6 +433,9 @@ export namespace cktarot {
 
         /** TextLabel fixedWidthPx. */
         public fixedWidthPx: number;
+
+        /** TextLabel fontProfileId. */
+        public fontProfileId?: (string|null);
 
         /**
          * Creates a new TextLabel instance using the specified properties.

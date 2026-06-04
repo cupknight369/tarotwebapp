@@ -297,6 +297,10 @@ export type MergedThis = {
   cancelPendingAnchor(): void;
   commitEditTextLabel(): void;
   setTextLabelFixedWidthToggle(id: string, enabled: boolean): void;
+  applyFontProfileToLabel(textId: string, profileId: string): void;
+  syncLabelsToFontProfile(profileId: string): void;
+  clearFontProfileFromLabel(textId: string): void;
+  getFontProfileTitleForLabel(textId: string): string;
   deleteCard(cardId: string): void;
   deleteSelectedCards(): void;
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180'): void;
@@ -397,4 +401,6 @@ export interface TextLabel {
   fixedWidth: boolean;
   /** Persisted even when fixedWidth is false so toggling restores the last width. */
   fixedWidthPx: number;
+  /** App-wide font profile assigned to this label, or null if none. */
+  fontProfileId: string | null;
 }

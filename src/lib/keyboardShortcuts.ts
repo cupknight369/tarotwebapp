@@ -43,7 +43,6 @@ export function filterKeyboardShortcuts(
     return [...shortcuts];
   }
   return shortcuts.filter(
-    (entry) =>
-      entry.keys.toLowerCase().includes(q) || entry.description.toLowerCase().includes(q),
+    (entry) => entry.keys.toLowerCase().includes(q) || entry.description.toLowerCase().includes(q),
   );
 }

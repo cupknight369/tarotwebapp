@@ -422,6 +422,22 @@
                           Fixed width
                         </label>
                       </div>
+                      <div class="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                        <span>
+                          Font profile:
+                          <span
+                            class="text-gray-200"
+                            x-text="getFontProfileTitleForLabel(label.id)"
+                          ></span>
+                        </span>
+                        <button
+                          type="button"
+                          class="text-purple-400 underline hover:text-purple-300"
+                          @click.stop="window.dispatchEvent(new CustomEvent('open-font-profile-modal', { detail: { textId: label.id } }))"
+                        >
+                          font profile
+                        </button>
+                      </div>
                       <input
                         type="text"
                         :value="label.text"

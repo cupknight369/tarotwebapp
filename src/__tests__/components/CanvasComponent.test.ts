@@ -154,6 +154,7 @@ function mkLabel(id: string, anchor: string | null): TextLabel {
     anchorPosition: anchor ? 'above' : null,
     fixedWidth: false,
     fixedWidthPx: 0,
+    fontProfileId: null,
   };
 }
 

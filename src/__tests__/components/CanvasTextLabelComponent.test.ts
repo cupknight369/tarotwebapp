@@ -22,6 +22,28 @@ vi.mock('alpinejs', () => ({
   default: alpineStub.Alpine,
 }));
 
+const mockProfile = {
+  id: 'fp-test',
+  title: 'Test Profile',
+  fontSize: 22,
+  fontWeight: 700 as const,
+  fontStyle: 'italic' as const,
+  textDecoration: 'underline' as const,
+  color: '#ff0000',
+  fixedWidth: true,
+  fixedWidthPx: 150,
+};
+
+const getDefaultFontProfileMock = vi.hoisted(() => vi.fn(() => mockProfile));
+const getFontProfileByIdMock = vi.hoisted(() =>
+  vi.fn((id: string) => (id === mockProfile.id ? mockProfile : undefined)),
+);
+
+vi.mock('../../stores/fontProfileStore.js', () => ({
+  getDefaultFontProfile: getDefaultFontProfileMock,
+  getFontProfileById: getFontProfileByIdMock,
+}));
+
 import '../../components/CanvasTextLabelComponent.js';
 
 const tarot = (id: string): TarotCard => ({
@@ -64,6 +86,7 @@ function label(overrides: Partial<TextLabel> = {}): TextLabel {
     anchorPosition: null,
     fixedWidth: false,
     fixedWidthPx: 0,
+    fontProfileId: null,
     ...overrides,
   };
 }
@@ -94,6 +117,11 @@ type TextLabelCtx = {
   cancelPendingAnchor: () => void;
   commitEditTextLabel: () => void;
   setTextLabelFixedWidthToggle: (id: string, enabled: boolean) => void;
+  applyFontProfileToLabel: (textId: string, profileId: string) => void;
+  syncLabelsToFontProfile: (profileId: string) => void;
+  clearFontProfileFromLabel: (textId: string) => void;
+  getFontProfileTitleForLabel: (textId: string) => string;
+  buildTextLabelBaseFromDefaultProfile: (x: number, y: number, text: string) => TextLabel;
   $nextTick: (cb?: () => void) => void;
   screenToContent: (sx: number, sy: number) => { x: number; y: number };
   draggableCards: DraggableCard[];
@@ -415,5 +443,55 @@ describe('textLabelComponent (CanvasTextLabelComponent.ts)', () => {
     ctx.setTextLabelFixedWidthToggle.call(ctx, 'a', true);
     expect(ctx.textLabels[0]?.fixedWidth).toBe(true);
     expect(ctx.textLabels[0]?.fixedWidthPx).toBe(92);
+  });
+
+  it('addTextAt uses default font profile styles', () => {
+    const ctx = mount({ maxTextZIndex: 1 });
+    ctx.addTextAt.call(ctx, 10, 20);
+    const created = ctx.textLabels[0];
+    expect(created?.fontProfileId).toBe('fp-test');
+    expect(created?.fontSize).toBe(22);
+    expect(created?.fixedWidthPx).toBe(150);
+  });
+
+  it('applyFontProfileToLabel assigns profile and styles', () => {
+    const ctx = mount({ textLabels: [label({ id: 'a' })] });
+    ctx.applyFontProfileToLabel.call(ctx, 'a', 'fp-test');
+    expect(ctx.textLabels[0]?.fontProfileId).toBe('fp-test');
+    expect(ctx.textLabels[0]?.fontWeight).toBe(700);
+    expect(ctx.dirty).toBe(true);
+  });
+
+  it('syncLabelsToFontProfile updates all labels with matching profile id', () => {
+    const ctx = mount({
+      textLabels: [
+        label({ id: 'a', fontProfileId: 'fp-test', fontSize: 10 }),
+        label({ id: 'b', fontProfileId: 'fp-other', fontSize: 10 }),
+        label({ id: 'c', fontProfileId: 'fp-test', fontSize: 10 }),
+      ],
+    });
+    ctx.syncLabelsToFontProfile.call(ctx, 'fp-test');
+    expect(ctx.textLabels[0]?.fontSize).toBe(22);
+    expect(ctx.textLabels[1]?.fontSize).toBe(10);
+    expect(ctx.textLabels[2]?.fontSize).toBe(22);
+  });
+
+  it('getFontProfileTitleForLabel resolves title or fallbacks', () => {
+    const ctx = mount({
+      textLabels: [
+        label({ id: 'a', fontProfileId: 'fp-test' }),
+        label({ id: 'b', fontProfileId: 'missing' }),
+        label({ id: 'c', fontProfileId: null }),
+      ],
+    });
+    expect(ctx.getFontProfileTitleForLabel.call(ctx, 'a')).toBe('Test Profile');
+    expect(ctx.getFontProfileTitleForLabel.call(ctx, 'b')).toBe('Unknown profile');
+    expect(ctx.getFontProfileTitleForLabel.call(ctx, 'c')).toBe('None');
+  });
+
+  it('clearFontProfileFromLabel clears assignment', () => {
+    const ctx = mount({ textLabels: [label({ id: 'a', fontProfileId: 'fp-test' })] });
+    ctx.clearFontProfileFromLabel.call(ctx, 'a');
+    expect(ctx.textLabels[0]?.fontProfileId).toBeNull();
   });
 });

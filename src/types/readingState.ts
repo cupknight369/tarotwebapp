@@ -41,6 +41,7 @@ export interface SavedReadingState {
     anchorPosition: 'above' | 'below' | 'left' | 'right' | null;
     fixedWidth: boolean;
     fixedWidthPx: number;
+    fontProfileId?: string | null;
   }>;
 }
 

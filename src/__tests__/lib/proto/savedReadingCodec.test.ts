@@ -36,6 +36,7 @@ function baseTextLabel(
     anchorPosition: null,
     fixedWidth: false,
     fixedWidthPx: 0,
+    fontProfileId: null,
     ...overrides,
   };
 }
@@ -524,7 +525,16 @@ describe('savedReadingCodec.ts', () => {
       anchorPosition: null,
       fixedWidth: false,
       fixedWidthPx: 0,
+      fontProfileId: null,
     });
+  });
+
+  it('round-trips text label fontProfileId', () => {
+    const state = minimalState({
+      textLabels: [baseTextLabel({ fontProfileId: 'fp-abc' })],
+    });
+    const out = decodeSavedReadingState(encodeSavedReadingState(state));
+    expect(out.textLabels[0]?.fontProfileId).toBe('fp-abc');
   });
 
   it('round-trips card image rotation on placed cards', () => {

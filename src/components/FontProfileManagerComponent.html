@@ -1,0 +1,192 @@
+<div
+  x-data="fontProfileManagerComponent"
+  @open-font-profile-modal.window="openModal($event)"
+  x-cloak
+  x-show="open"
+  x-transition
+  class="fixed inset-0 z-[10003] flex items-center justify-center bg-gray-900/85 p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="font-profile-manager-title"
+  @click.self="closeModal()"
+  @keydown.escape.window="open && closeModal()"
+>
+  <div
+    class="relative flex max-h-[min(92vh,720px)] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-gray-700 bg-gray-800 shadow-xl"
+  >
+    <button
+      type="button"
+      class="absolute right-2 top-2 z-10 rounded p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+      aria-label="Close"
+      @click="closeModal()"
+    >
+      <span class="text-xl leading-none">×</span>
+    </button>
+
+    <div class="border-b border-gray-700 px-4 pb-3 pt-4 pr-12">
+      <h2 id="font-profile-manager-title" class="text-lg font-bold text-gray-100">Font profiles</h2>
+      <p class="mt-1 text-xs text-gray-500">
+        Manage presets for text label styling. Apply a profile to the label that opened this dialog.
+      </p>
+    </div>
+
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+      <fieldset class="mb-4 rounded-lg border border-gray-700 p-3">
+        <legend class="px-1 text-sm font-medium text-gray-300">
+          Default profile for new labels
+        </legend>
+        <div class="mt-2 flex flex-col gap-2">
+          <template x-for="profile in $store.fontProfiles.profiles" :key="'default-' + profile.id">
+            <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+              <input
+                type="radio"
+                name="default-font-profile"
+                class="border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+                :value="profile.id"
+                :checked="$store.fontProfiles.defaultFontProfileId === profile.id"
+                @change="setDefaultProfileId(profile.id)"
+              />
+              <span x-text="profile.title"></span>
+            </label>
+          </template>
+        </div>
+      </fieldset>
+
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <label for="font-profile-search" class="sr-only">Filter font profiles by title</label>
+        <input
+          id="font-profile-search"
+          type="search"
+          x-model="searchQuery"
+          placeholder="Search by title…"
+          autocomplete="off"
+          class="min-w-0 flex-1 rounded border border-gray-600 bg-gray-700 px-2 py-1.5 text-sm text-gray-200 focus:border-transparent focus:ring-2 focus:ring-purple-500"
+        />
+        <button
+          type="button"
+          class="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-500"
+          @click="createProfile()"
+        >
+          New font profile
+        </button>
+      </div>
+
+      <p
+        class="mb-3 text-sm text-gray-400"
+        x-show="$store.fontProfiles.profiles.length > 0 && filteredProfiles().length === 0"
+      >
+        No font profiles match your search.
+      </p>
+
+      <ul class="flex flex-col gap-3">
+        <template x-for="profile in filteredProfiles()" :key="profile.id">
+          <li
+            class="rounded-lg border p-3"
+            :class="assignedProfileIdForTarget() === profile.id ? 'border-purple-500 bg-purple-950/30' : 'border-gray-700 bg-gray-900/40'"
+          >
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                :value="profile.title"
+                @change="commitProfileTitle(profile.id, $event.target.value)"
+                class="min-w-[8rem] flex-1 rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm font-medium text-gray-100 focus:ring-2 focus:ring-purple-500"
+                aria-label="Profile title"
+              />
+              <span
+                x-show="assignedProfileIdForTarget() === profile.id"
+                class="text-xs font-medium text-purple-400"
+              >
+                Assigned
+              </span>
+              <button
+                type="button"
+                class="rounded bg-purple-600 px-2 py-1 text-xs font-medium text-white hover:bg-purple-500"
+                @click="applyToTarget(profile.id)"
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                class="rounded bg-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-600"
+                :disabled="$store.fontProfiles.profiles.length <= 1"
+                @click="deleteProfile(profile.id)"
+              >
+                Delete
+              </button>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                inputmode="numeric"
+                x-model="profileFontSizeInputs[profile.id]"
+                @change="applyProfileFontSizeInput(profile.id)"
+                @keydown="handleProfileFontSizeKeydown(profile.id, $event)"
+                @wheel.stop
+                autocomplete="off"
+                class="w-14 rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-gray-200"
+                aria-label="Font size"
+              />
+              <button
+                type="button"
+                class="cursor-pointer rounded bg-gray-600 px-2 py-1 text-sm text-gray-200 hover:bg-gray-500"
+                :class="profile.fontWeight === 700 ? 'ring-2 ring-purple-500' : ''"
+                @click="toggleProfileBold(profile)"
+                title="Bold"
+              >
+                B
+              </button>
+              <button
+                type="button"
+                class="cursor-pointer rounded bg-gray-600 px-2 py-1 text-sm italic text-gray-200 hover:bg-gray-500"
+                :class="profile.fontStyle === 'italic' ? 'ring-2 ring-purple-500' : ''"
+                @click="toggleProfileItalic(profile)"
+                title="Italic"
+              >
+                I
+              </button>
+              <button
+                type="button"
+                class="cursor-pointer rounded bg-gray-600 px-2 py-1 text-sm text-gray-200 underline hover:bg-gray-500"
+                :class="profile.textDecoration === 'underline' ? 'ring-2 ring-purple-500' : ''"
+                @click="toggleProfileUnderline(profile)"
+                title="Underline"
+              >
+                U
+              </button>
+              <input
+                type="color"
+                :value="profile.color"
+                @input="setProfileColor(profile.id, $event.target.value)"
+                class="h-8 w-8 cursor-pointer rounded border border-gray-600 bg-gray-700"
+                aria-label="Font color"
+              />
+              <label
+                class="flex cursor-pointer select-none items-center gap-1.5 text-xs text-gray-300"
+              >
+                <input
+                  type="checkbox"
+                  class="rounded border-gray-600 bg-gray-700"
+                  :checked="profile.fixedWidth"
+                  @change="setProfileFixedWidth(profile.id, $event.target.checked)"
+                />
+                Fixed width
+              </label>
+              <input
+                type="text"
+                inputmode="numeric"
+                x-model="profileFixedWidthPxInputs[profile.id]"
+                @change="applyProfileFixedWidthPxInput(profile.id)"
+                @keydown="handleProfileFixedWidthPxKeydown(profile.id, $event)"
+                @wheel.stop
+                autocomplete="off"
+                class="w-16 rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-gray-200"
+                aria-label="Fixed width pixels"
+              />
+              <span class="text-xs text-gray-500">px</span>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+  </div>
+</div>

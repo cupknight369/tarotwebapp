@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import './input.css';
 
 import { initAuthStore } from './stores/authStore.js';
+import { initFontProfileStore } from './stores/fontProfileStore.js';
 import { initSettingsStore } from './stores/settingsStore.js';
 import { ensureDefaultDeckOnDevice, isDefaultDeckOnDevice } from './lib/bootstrapDefaultDeck.js';
 import { startCardImagePrefetch } from './lib/cardImageUrls.js';
@@ -30,6 +31,7 @@ import './components/WelcomeComponent';
 import './components/AuthComponent';
 import './components/DeckEditComponent';
 import './components/CorrespondenceManagerComponent';
+import './components/FontProfileManagerComponent';
 
 import { registerSW } from 'virtual:pwa-register';
 
@@ -91,6 +93,7 @@ void (async () => {
     startCardImagePrefetch();
   }
   initSettingsStore();
+  initFontProfileStore();
   initPwaClient(registerSW);
   Alpine.start();
   window.dispatchEvent(new CustomEvent('check-first-time-welcome'));

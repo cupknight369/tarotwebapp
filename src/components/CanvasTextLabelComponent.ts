@@ -8,7 +8,12 @@ import {
   labelColorSchema,
   labelTextSchema,
 } from '../validation/canvasLabel.js';
+import {
+  fontProfileToLabelPartial,
+  LEGACY_DEFAULT_FONT_PROFILE_VALUES,
+} from '../lib/fontProfile.js';
 import { numericInputStepDelta, stepBoundedIntegerString } from '../lib/numericInput.js';
+import { getDefaultFontProfile, getFontProfileById } from '../stores/fontProfileStore.js';
 
 Alpine.data('textLabelComponent', () => ({
   textLabels: [] as TextLabel[],
@@ -38,26 +43,67 @@ Alpine.data('textLabelComponent', () => ({
     return `text-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   },
 
-  addTextAt(this: MergedThis, screenX: number, screenY: number): void {
-    const { x, y } = this.screenToContent(screenX, screenY);
-    const label: TextLabel = {
+  buildTextLabelBaseFromDefaultProfile(
+    this: MergedThis,
+    x: number,
+    y: number,
+    text: string,
+  ): TextLabel {
+    const profile = getDefaultFontProfile();
+    const style = profile
+      ? { ...fontProfileToLabelPartial(profile), fontProfileId: profile.id }
+      : {
+          ...LEGACY_DEFAULT_FONT_PROFILE_VALUES,
+          fontProfileId: null as string | null,
+        };
+    return {
       id: this.generateTextId(),
-      text: 'Edit Text',
+      text,
       x,
       y,
-      fontSize: 16,
-      fontWeight: 400,
-      fontStyle: 'normal',
-      textDecoration: 'none',
-      color: '#e5e7eb',
+      ...style,
       zIndex: this.maxTextZIndex + 1,
       cursor: 'grab',
       display: 'block',
       anchorCardId: null,
       anchorPosition: null,
-      fixedWidth: false,
-      fixedWidthPx: 0,
     };
+  },
+
+  applyFontProfileToLabel(this: MergedThis, textId: string, profileId: string): void {
+    const profile = getFontProfileById(profileId);
+    if (!profile) return;
+    this.updateTextLabel(textId, {
+      fontProfileId: profileId,
+      ...fontProfileToLabelPartial(profile),
+    });
+  },
+
+  syncLabelsToFontProfile(this: MergedThis, profileId: string): void {
+    const profile = getFontProfileById(profileId);
+    if (!profile) return;
+    const partial = fontProfileToLabelPartial(profile);
+    for (const label of this.textLabels) {
+      if (label.fontProfileId === profileId) {
+        this.updateTextLabel(label.id, partial);
+      }
+    }
+  },
+
+  clearFontProfileFromLabel(this: MergedThis, textId: string): void {
+    this.updateTextLabel(textId, { fontProfileId: null });
+  },
+
+  getFontProfileTitleForLabel(this: MergedThis, textId: string): string {
+    const label = this.textLabels.find((l) => l.id === textId);
+    if (!label?.fontProfileId) return 'None';
+    const profile = getFontProfileById(label.fontProfileId);
+    return profile?.title ?? 'Unknown profile';
+  },
+
+  addTextAt(this: MergedThis, screenX: number, screenY: number): void {
+    const { x, y } = this.screenToContent(screenX, screenY);
+    const label = this.buildTextLabelBaseFromDefaultProfile(x, y, 'Edit Text');
     this.textLabels = [...this.textLabels, label];
     this.$nextTick(() => {
       this.startEditingTextLabel(label);
@@ -72,24 +118,7 @@ Alpine.data('textLabelComponent', () => ({
       return;
     }
     const { x, y } = this.screenToContent(screenX, screenY);
-    const label: TextLabel = {
-      id: this.generateTextId(),
-      text: parsed.data,
-      x,
-      y,
-      fontSize: 16,
-      fontWeight: 400,
-      fontStyle: 'normal',
-      textDecoration: 'none',
-      color: '#e5e7eb',
-      zIndex: this.maxTextZIndex + 1,
-      cursor: 'grab',
-      display: 'block',
-      anchorCardId: null,
-      anchorPosition: null,
-      fixedWidth: false,
-      fixedWidthPx: 0,
-    };
+    const label = this.buildTextLabelBaseFromDefaultProfile(x, y, parsed.data);
     this.textLabels = [...this.textLabels, label];
     this.$nextTick(() => {
       this.startEditingTextLabel(label);
