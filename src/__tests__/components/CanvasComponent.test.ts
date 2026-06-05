@@ -80,7 +80,7 @@ vi.mock('../../lib/decks.js', () => ({
   getCardsByIds: getCardsByIdsMock,
 }));
 
-import { ok } from '../../lib/result.js';
+import { err, ok } from '../../lib/result.js';
 import { revokeTarotCardBlobUrls } from '../../lib/cardBlobUrls.js';
 import { STORAGE_WARNING_DISMISSED_SESSION_KEY } from '../../lib/storageWarning.js';
 import '../../components/CanvasComponent.js';
@@ -1802,6 +1802,24 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
       expect(ctx.correspondenceBarEntries).toEqual(resolved);
     });
 
+    it('ignores stale empty-count refresh when a newer refresh runs synchronously', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.correspondenceBarEntries = [{ id: 'old', title: 'Old', count: 99, thumbnailUrl: null }];
+      const newer = [{ id: 'new', title: 'New', count: 1, thumbnailUrl: null }];
+      aggregateCorrespondenceCountsMock
+        .mockImplementationOnce(() => {
+          void c.refreshCorrespondenceCountBar.call(ctx);
+          return new Map();
+        })
+        .mockReturnValueOnce(new Map([['a', 1]]));
+      resolveCorrespondenceCountEntriesMock.mockResolvedValue(newer);
+
+      await c.refreshCorrespondenceCountBar.call(ctx);
+
+      expect(ctx.correspondenceBarEntries).toEqual(newer);
+    });
+
     it('ignores stale async results when a newer refresh runs', async () => {
       const c = mountCanvas();
       const ctx = createMerged();
@@ -1878,5 +1896,541 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
 
       expect(ctx.cardCountBarEntries).toEqual([]);
     });
+  });
+
+  describe('drawByName picker', () => {
+    beforeEach(() => {
+      alpineStub.rawStores.shuffledCards = [
+        { id: 'c1', deckId: 'd', title: 'The Star', num: 1, img: 'a.webp' },
+        { id: 'c2', deckId: 'd', title: 'The Moon', num: 2, img: 'b.webp' },
+      ];
+    });
+
+    it('drawByNameMatches returns empty when picker is closed', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = null;
+      expect(c.drawByNameMatches.call(ctx)).toEqual([]);
+    });
+
+    it('openDrawByNameAt focuses the search input', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      const focus = vi.fn();
+      ctx.$refs.drawByNameInput = { focus } as unknown as HTMLInputElement;
+      c.openDrawByNameAt.call(ctx, 10, 20);
+      expect(ctx.drawByName).toEqual({
+        screenX: 10,
+        screenY: 20,
+        query: '',
+        highlightIndex: 0,
+      });
+      expect(focus).toHaveBeenCalledTimes(1);
+    });
+
+    it('onDrawByNameQueryInput is a no-op when picker is closed', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = null;
+      c.onDrawByNameQueryInput.call(ctx, 'star');
+      expect(ctx.drawByName).toBeNull();
+    });
+
+    it('onDrawByNameQueryInput resets highlight when there are no matches', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = { screenX: 0, screenY: 0, query: '', highlightIndex: 2 };
+      c.onDrawByNameQueryInput.call(ctx, '   ');
+      expect(ctx.drawByName?.highlightIndex).toBe(0);
+      expect(ctx.drawByName?.query).toBe('   ');
+    });
+
+    it('onDrawByNameQueryInput clamps highlight to three matches', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      alpineStub.rawStores.shuffledCards = [
+        { id: 'a', deckId: 'd', title: 'The Ace', num: 0, img: 'a.webp' },
+        { id: 'b', deckId: 'd', title: 'The Two', num: 1, img: 'b.webp' },
+        { id: 'c', deckId: 'd', title: 'The Three', num: 2, img: 'c.webp' },
+        { id: 'd', deckId: 'd', title: 'The Four', num: 3, img: 'd.webp' },
+      ];
+      ctx.drawByName = { screenX: 0, screenY: 0, query: 'the', highlightIndex: 5 };
+      c.onDrawByNameQueryInput.call(ctx, 'the');
+      expect(ctx.drawByName?.highlightIndex).toBe(2);
+    });
+
+    it('moveDrawByNameHighlight wraps through matches', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = { screenX: 0, screenY: 0, query: 'moon', highlightIndex: 0 };
+      c.moveDrawByNameHighlight.call(ctx, -1);
+      expect(ctx.drawByName?.highlightIndex).toBe(0);
+      c.moveDrawByNameHighlight.call(ctx, 1);
+      expect(ctx.drawByName?.highlightIndex).toBe(0);
+    });
+
+    it('moveDrawByNameHighlight is a no-op when picker is closed or there are no matches', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = null;
+      c.moveDrawByNameHighlight.call(ctx, 1);
+      ctx.drawByName = { screenX: 0, screenY: 0, query: 'missing', highlightIndex: 0 };
+      c.moveDrawByNameHighlight.call(ctx, 1);
+      expect(ctx.drawByName?.highlightIndex).toBe(0);
+    });
+
+    it('onDrawByNameKeydown handles arrow, enter, escape, and ignores other keys', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.addCardToCanvas = vi.fn((card: TarotCard) => {
+        ctx.draggableCards = [...ctx.draggableCards, { ...mkCard('placed'), card }];
+      });
+      ctx.drawByName = { screenX: 0, screenY: 0, query: 'star', highlightIndex: 0 };
+      const preventDefault = vi.fn();
+      c.onDrawByNameKeydown.call(ctx, { key: 'ArrowDown', preventDefault } as KeyboardEvent);
+      expect(preventDefault).toHaveBeenCalled();
+      c.onDrawByNameKeydown.call(ctx, { key: 'ArrowUp', preventDefault } as KeyboardEvent);
+      c.onDrawByNameKeydown.call(ctx, { key: 'Enter', preventDefault } as KeyboardEvent);
+      expect(ctx.addCardToCanvas).toHaveBeenCalled();
+      ctx.drawByName = { screenX: 0, screenY: 0, query: 'star', highlightIndex: 0 };
+      c.onDrawByNameKeydown.call(ctx, { key: 'Escape', preventDefault } as KeyboardEvent);
+      expect(ctx.drawByName).toBeNull();
+      ctx.drawByName = { screenX: 0, screenY: 0, query: 'star', highlightIndex: 0 };
+      c.onDrawByNameKeydown.call(ctx, { key: 'a', preventDefault } as KeyboardEvent);
+      expect(ctx.drawByName?.query).toBe('star');
+    });
+
+    it('confirmDrawByNameSelection uses an explicitly passed card', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = { screenX: 50, screenY: 60, query: '', highlightIndex: 0 };
+      ctx.addCardToCanvas = vi.fn((card: TarotCard) => {
+        ctx.draggableCards = [...ctx.draggableCards, { ...mkCard('placed'), card }];
+      });
+      const explicit = { id: 'picked', deckId: 'd', title: 'Picked', num: 0, img: 'x.webp' };
+      c.confirmDrawByNameSelection.call(ctx, explicit);
+      expect(ctx.drawByName).toBeNull();
+      expect(ctx.addCardToCanvas).toHaveBeenCalledWith(explicit);
+    });
+
+    it('confirmDrawByNameSelection returns without drawing when there are no matches', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = { screenX: 0, screenY: 0, query: 'missing', highlightIndex: 0 };
+      ctx.addCardToCanvas = vi.fn();
+      c.confirmDrawByNameSelection.call(ctx);
+      expect(ctx.addCardToCanvas).not.toHaveBeenCalled();
+      expect(ctx.drawByName).toEqual({
+        screenX: 0,
+        screenY: 0,
+        query: 'missing',
+        highlightIndex: 0,
+      });
+    });
+
+    it('confirmDrawByNameSelection is a no-op when picker is closed', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = null;
+      ctx.addCardToCanvas = vi.fn();
+      c.confirmDrawByNameSelection.call(ctx);
+      expect(ctx.addCardToCanvas).not.toHaveBeenCalled();
+    });
+
+    it('onDrawByNameKeydown is a no-op when picker is closed', () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.drawByName = null;
+      c.onDrawByNameKeydown.call(ctx, {
+        key: 'Enter',
+        preventDefault: vi.fn(),
+      } as KeyboardEvent);
+      expect(ctx.drawByName).toBeNull();
+    });
+  });
+
+  it('showCorrespondenceOnCanvas reflects settings', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    alpineStub.rawStores.settings = {
+      showCorrespondenceThumbnailsOnCanvas: true,
+      showCorrespondenceCountBarOnCanvas: false,
+    };
+    expect(c.showCorrespondenceOnCanvas.call(ctx)).toBe(true);
+  });
+
+  it('onCorrespondencesChanged hydrates cards and refreshes the count bar', async () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const hydrateSpy = vi.spyOn(ctx, 'hydrateCanvasCardCorrespondenceDisplays').mockResolvedValue(undefined);
+    const refreshSpy = vi.spyOn(ctx, 'refreshCorrespondenceCountBar').mockResolvedValue(undefined);
+    await c.onCorrespondencesChanged.call(ctx);
+    expect(hydrateSpy).toHaveBeenCalledTimes(1);
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+  });
+
+  describe('hydrateCanvasCardCorrespondenceDisplays edge cases', () => {
+    beforeEach(() => {
+      alpineStub.rawStores.settings = {
+        showCorrespondenceThumbnailsOnCanvas: true,
+        showCorrespondenceCountBarOnCanvas: false,
+      };
+      getCardsByIdsMock.mockReset();
+      resolveCorrespondenceDisplaysMock.mockReset();
+    });
+
+    it('skips lookup when canvas cards have no ids', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      ctx.draggableCards = [{ ...mkCard('1'), card: { ...mkCard('1').card, id: '' } }];
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+      expect(getCardsByIdsMock).not.toHaveBeenCalled();
+    });
+
+    it('ignores failed deck lookups and stale hydration generations', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      const card = mkCard('1');
+      card.card.id = 'deck-1';
+      ctx.draggableCards = [card];
+      getCardsByIdsMock.mockResolvedValue(err({ kind: 'unknown', operation: 't', message: 'fail' }));
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+      expect(ctx.draggableCards[0]?.card.correspondenceDisplays).toBeUndefined();
+
+      let resolveLate: (value: ReturnType<typeof ok<Map<string, TarotCard>>>) => void;
+      const late = new Promise<ReturnType<typeof ok<Map<string, TarotCard>>>>((r) => {
+        resolveLate = r;
+      });
+      getCardsByIdsMock.mockReturnValueOnce(late);
+      void c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+      resolveLate!(
+        ok(
+          new Map([
+            [
+              'deck-1',
+              {
+                id: 'deck-1',
+                deckId: 'd',
+                title: 'Late',
+                num: 1,
+                img: 'i.webp',
+                correspondence_ids: ['late'],
+              },
+            ],
+          ]),
+        ),
+      );
+      await Promise.resolve();
+      expect(ctx.draggableCards[0]?.card.correspondence_ids).toBeUndefined();
+    });
+
+    it('keeps cards unchanged when lookup misses or metadata already matches', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      const unchanged = mkCard('1');
+      unchanged.card.id = 'deck-unchanged';
+      unchanged.card.correspondence_ids = ['same'];
+      unchanged.card.correspondenceDisplays = [{ id: 'same', title: 'Same', thumbnailUrl: null }];
+      const missing = mkCard('2');
+      missing.card.id = 'deck-missing';
+      ctx.draggableCards = [unchanged, missing];
+      getCardsByIdsMock.mockResolvedValue(
+        ok(
+          new Map([
+            [
+              'deck-unchanged',
+              {
+                id: 'deck-unchanged',
+                deckId: 'd',
+                title: 'T',
+                num: 1,
+                img: 'i.webp',
+                correspondence_ids: ['same'],
+                correspondenceDisplays: [{ id: 'same', title: 'Same', thumbnailUrl: null }],
+              },
+            ],
+          ]),
+        ),
+      );
+      const before = ctx.draggableCards;
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+      expect(ctx.draggableCards).toBe(before);
+      expect(missing.card.correspondence_ids).toBeUndefined();
+    });
+
+    it('defaults missing correspondence fields from deck lookup', async () => {
+      const c = mountCanvas();
+      const ctx = createMerged();
+      const card = mkCard('1');
+      card.card.id = 'deck-defaults';
+      card.card.correspondence_ids = ['old'];
+      ctx.draggableCards = [card];
+      getCardsByIdsMock.mockResolvedValue(
+        ok(
+          new Map([
+            [
+              'deck-defaults',
+              {
+                id: 'deck-defaults',
+                deckId: 'd',
+                title: 'T',
+                num: 1,
+                img: 'i.webp',
+              },
+            ],
+          ]),
+        ),
+      );
+      await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
+      expect(ctx.draggableCards[0]?.card.correspondence_ids).toEqual([]);
+      expect(ctx.draggableCards[0]?.card.correspondenceDisplays).toEqual([]);
+    });
+  });
+
+  it('applyGroupDragAt skips unknown group member ids', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.groupDragOffsets = { ghost: { dx: 0, dy: 0 } };
+    c.applyGroupDragAt.call(ctx, 10, 10);
+    expect(ctx.textLabels).toHaveLength(0);
+  });
+
+  it('onMouseDown ignores resize handles without a parent text id', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const handle = document.createElement('div');
+    handle.setAttribute('data-text-resize', '');
+    c.onMouseDown.call(ctx, {
+      clientX: 100,
+      clientY: 200,
+      target: handle,
+      ctrlKey: false,
+    });
+    expect(ctx.resizingTextId).toBeNull();
+  });
+
+  it('onTouchEnd double-tap ignores missing labels', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(10_000);
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-text-id', 'missing');
+    spyElementFromPoint(wrap);
+    const first = touch(30, 40, 40);
+    c.onTouchStart.call(ctx, touchEv([first], [first]));
+    c.onTouchEnd.call(ctx, touchEv([], [first]));
+    vi.setSystemTime(10_200);
+    const second = touch(30, 42, 41);
+    c.onTouchStart.call(ctx, touchEv([second], [second]));
+    c.onTouchEnd.call(ctx, touchEv([], [second]));
+    expect(ctx.startEditingTextLabel).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('buildGroupDragOffsets skips missing labels and anchored labels tied to selected cards', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.draggableCards = [mkCard('anchor', 0, 0)];
+    ctx.textLabels = [
+      { ...mkLabel('floating', null), x: 20, y: 10 },
+      { ...mkLabel('anchored', 'anchor'), x: 5, y: 5 },
+    ];
+    ctx.selectedCardIds = ['anchor'];
+    ctx.selectedTextIds = ['floating', 'anchored', 'ghost'];
+    const offsets = c.buildGroupDragOffsets.call(ctx, 0, 0);
+    expect(offsets.anchor).toEqual({ dx: 0, dy: 0 });
+    expect(offsets.floating).toEqual({ dx: 20, dy: 10 });
+    expect(offsets.anchored).toBeUndefined();
+    expect(offsets.ghost).toBeUndefined();
+  });
+
+  it('applyGroupDragAt clears anchors when dragging anchored labels in a group', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.textLabels = [{ ...mkLabel('tl1', 'c1'), x: 10, y: 10 }];
+    ctx.groupDragOffsets = { tl1: { dx: 0, dy: 0 } };
+    c.applyGroupDragAt.call(ctx, 30, 40);
+    expect(ctx.textLabels[0]?.x).toBe(30);
+    expect(ctx.textLabels[0]?.y).toBe(40);
+    expect(ctx.textLabels[0]?.anchorCardId).toBeNull();
+    expect(ctx.textLabels[0]?.anchorPosition).toBeNull();
+  });
+
+  it('applyGroupDragAt is a no-op without group drag offsets', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.groupDragOffsets = null;
+    ctx.textLabels = [mkLabel('tl1', null)];
+    c.applyGroupDragAt.call(ctx, 10, 10);
+    expect(ctx.textLabels[0]?.x).toBe(100);
+  });
+
+  it('onMouseMove group drag uses text drag start when card drag start is absent', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.textLabels = [{ ...mkLabel('tl1', null), x: 0, y: 0 }];
+    ctx.groupDragOffsets = { tl1: { dx: 0, dy: 0 } };
+    ctx.textDragStart = { startX: 0, startY: 0, startDropX: 0, startDropY: 0 };
+    ctx.dragStart = null;
+    c.onMouseMove.call(ctx, { clientX: 40, clientY: 50, target: null });
+    expect(ctx.textLabels[0]?.x).toBe(40);
+    expect(ctx.textLabels[0]?.y).toBe(50);
+  });
+
+  it('onMouseUp commits a grouped text-label drag and refreshes anchored labels', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.draggableCards = [mkCard('card-1', 0, 0)];
+    ctx.textLabels = [
+      { ...mkLabel('floating', null), x: 10, y: 10 },
+      { ...mkLabel('anchored', 'card-1'), x: 1, y: 2 },
+    ];
+    ctx.draggingTextId = 'floating';
+    ctx.textDragStart = { startX: 10, startY: 10, startDropX: 0, startDropY: 0 };
+    ctx.groupDragOffsets = {
+      'card-1': { dx: 0, dy: 0 },
+      floating: { dx: 10, dy: 10 },
+    };
+    c.onMouseUp.call(ctx, { clientX: 20, clientY: 20, target: null, preventDefault: vi.fn() });
+    expect(ctx.groupDragOffsets).toBeNull();
+    expect(ctx.draggingTextId).toBeNull();
+    expect(ctx.textLabels.find((l) => l.id === 'anchored')?.x).toBe(1);
+  });
+
+  it('onMouseUp group card drag updates mixed text offsets', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const el = document.createElement('div');
+    el.id = 'card-1';
+    ctx.draggableCards = [mkCard('card-1', 0, 0)];
+    ctx.textLabels = [{ ...mkLabel('tl1', null), x: 5, y: 5 }];
+    ctx.selectedCardIds = ['card-1'];
+    ctx.draggingCard = el;
+    ctx.dragStart = { startCardX: 0, startCardY: 0, startDropX: 0, startDropY: 0 };
+    ctx.groupDragOffsets = {
+      'card-1': { dx: 0, dy: 0 },
+      tl1: { dx: 5, dy: 5 },
+    };
+    c.onMouseUp.call(ctx, { clientX: 30, clientY: 0, target: null, preventDefault: vi.fn() });
+    expect(ctx.textLabels[0]?.x).toBe(35);
+    expect(ctx.textLabels[0]?.y).toBe(5);
+  });
+
+  it('onMouseDown resize handle uses default width when fixedWidthPx is zero', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.textLabels = [{ ...mkLabel('tl1', null), fixedWidth: true, fixedWidthPx: 0 }];
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-text-id', 'tl1');
+    const handle = document.createElement('div');
+    handle.setAttribute('data-text-resize', '');
+    wrap.append(handle);
+    c.onMouseDown.call(ctx, {
+      clientX: 100,
+      clientY: 200,
+      target: handle,
+      ctrlKey: false,
+    });
+    expect(ctx.resizingTextId).toBe('tl1');
+    expect(ctx.textResizeStart?.startWidthPx).toBe(240);
+  });
+
+  it('handleContextMenuTouchDismiss returns early when menu is closed', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.contextMenu.open = false;
+    c.handleContextMenuTouchDismiss.call(ctx, { target: document.body } as TouchEvent);
+    expect(ctx.contextMenu.open).toBe(false);
+  });
+
+  it('init storage and context-menu listeners run their handlers', async () => {
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+    const base = mountCanvas();
+    const ctx = createMerged(base);
+    vi.spyOn(ctx.viewport!, 'addEventListener').mockImplementation(() => {});
+    const dc = document.createElement('div');
+    dc.id = 'draggable-container';
+    document.body.append(dc);
+    vi.spyOn(document, 'querySelector').mockReturnValue(dc);
+    const docAddSpy = vi.spyOn(document, 'addEventListener');
+    const storageCheckSpy = vi.spyOn(ctx, 'runStartupStorageWarningCheck').mockResolvedValue(undefined);
+
+    base.init.call(ctx);
+
+    const touchListener = ctx._contextMenuTouchDismissListener;
+    expect(touchListener).toBeTypeOf('function');
+    ctx.contextMenu = { open: true, x: 0, y: 0, cardId: null, textId: null };
+    touchListener!.call(ctx, { target: ctx.viewport } as TouchEvent);
+    expect(ctx.contextMenu.open).toBe(false);
+
+    const storageListener = ctx._storageWarningStartupListener;
+    expect(storageListener).toBeTypeOf('function');
+    storageListener!.call(ctx);
+    expect(storageCheckSpy).toHaveBeenCalledTimes(1);
+    expect(docAddSpy).toHaveBeenCalledWith('touchstart', touchListener, { capture: true });
+
+    vi.unstubAllGlobals();
+    dc.remove();
+  });
+
+  it('onTouchMove returns when the touch began on an interactive target', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const button = document.createElement('button');
+    spyElementFromPoint(button);
+    const t0 = touch(20, 10, 10);
+    c.onTouchStart.call(ctx, touchEv([t0], [t0]));
+    ctx.touchStartPos = { clientX: 10, clientY: 10, target: button };
+    ctx.activeTouchId = 20;
+    const mm = vi.spyOn(ctx, 'onMouseMove');
+    c.onTouchMove.call(ctx, touchEv([touch(20, 12, 12)], [touch(20, 12, 12)]));
+    expect(mm).not.toHaveBeenCalled();
+  });
+
+  it('onTouchEnd clears lastTextLabelTap when text edit mode is active', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-text-id', 'tl1');
+    ctx.textLabels = [mkLabel('tl1', null)];
+    ctx.editingTextId = 'other';
+    ctx.touchStartPos = { clientX: 10, clientY: 10, target: wrap };
+    ctx.activeTouchId = 21;
+    ctx.lastTextLabelTap = { textId: 'tl1', time: Date.now(), x: 1, y: 2 };
+    c.onTouchEnd.call(ctx, touchEv([], [touch(21, 10, 10)]));
+    expect(ctx.lastTextLabelTap).toBeNull();
+  });
+
+  it('onTouchEnd skips quick-tap handling when touchStartPos is missing', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.activeTouchId = 55;
+    ctx.touchStartPos = null;
+    ctx.longPressActivated = false;
+    ctx.touchGestureStarted = false;
+    const md = vi.spyOn(ctx, 'onMouseDown');
+    const mu = vi.spyOn(ctx, 'onMouseUp');
+    c.onTouchEnd.call(ctx, touchEv([], [touch(55, 10, 10)]));
+    expect(md).not.toHaveBeenCalled();
+    expect(mu).not.toHaveBeenCalled();
+    expect(ctx.activeTouchId).toBeNull();
+  });
+
+  it('onTouchEnd skips mouse synthesis for interactive quick-tap targets', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const button = document.createElement('button');
+    ctx.touchStartPos = { clientX: 10, clientY: 10, target: button };
+    ctx.activeTouchId = 40;
+    const md = vi.spyOn(ctx, 'onMouseDown');
+    const mu = vi.spyOn(ctx, 'onMouseUp');
+    c.onTouchEnd.call(ctx, touchEv([], [touch(40, 10, 10)]));
+    expect(md).not.toHaveBeenCalled();
+    expect(mu).not.toHaveBeenCalled();
   });
 });
