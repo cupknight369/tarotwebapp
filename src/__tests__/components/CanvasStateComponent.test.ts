@@ -220,6 +220,7 @@ type StateCtx = {
   handleOpenKeyboardShortcutsShortcut: (event: KeyboardEvent) => void;
   handleClearCanvasShortcut: (event: KeyboardEvent) => void;
   handleNewReadingShortcut: (event: KeyboardEvent) => void;
+  handleEscapeShortcut: (event: KeyboardEvent) => void;
   promptClearCanvas: () => void;
   triggerTitleDialog: () => void;
   discardAndLoad: (id: string) => Promise<void>;
@@ -235,6 +236,26 @@ type StateCtx = {
   selectAllLoadModalReadings: () => void;
   clearLoadModalReadingSelection: () => void;
   confirmAndDeleteSelectedLoadModalReadings: () => Promise<void>;
+  refreshLoadModalReadings: () => Promise<void>;
+  filteredLoadModalGroupedSections: () => import('../../types/readingState.js').ReadingGroupSection[];
+  loadModalReadingsInFilteredGroup: (
+    groupId: string,
+  ) => { id: string; name: string; updated_at: string; group_id: string }[];
+  isLoadModalGroupCollapsed: (groupId: string) => boolean;
+  toggleLoadModalGroupCollapsed: (groupId: string) => void;
+  addLoadModalGroup: () => Promise<void>;
+  startRenameLoadModalGroup: (g: { id: string; title: string }) => void;
+  cancelRenameLoadModalGroup: () => void;
+  saveRenameLoadModalGroup: () => Promise<void>;
+  confirmDeleteLoadModalGroup: (g: { id: string; title: string }) => Promise<void>;
+  assignReadingGroup: (readingId: string, groupId: string) => Promise<void>;
+  loadModalGroupedSections: import('../../types/readingState.js').ReadingGroupSection[];
+  loadModalReadingGroups: { id: string; title: string }[];
+  loadModalCollapsedGroupIds: Record<string, boolean>;
+  loadModalNewGroupTitle: string;
+  loadModalRenamingGroupId: string | null;
+  loadModalRenameGroupTitle: string;
+  loadModalGroupError: string | null;
   $nextTick: (cb?: () => void) => void;
   $refs: Record<string, HTMLElement>;
 };
@@ -2634,6 +2655,942 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     await ctx.assignReadingGroup.call(ctx, 'r1', 'g2');
     expect(readingsMocks.assignReadingToGroup).toHaveBeenCalledWith('r1', 'g2');
     expect(ctx.localSavedReadings[0]?.name).toBe('Moved');
+  });
+
+  it('assignReadingGroup sets loadModalGroupError when assignment fails', async () => {
+    readingsMocks.assignReadingToGroup.mockResolvedValue({ error: 'Group not found' });
+    const ctx = createCtx();
+    await ctx.assignReadingGroup.call(ctx, 'r1', 'bad-group');
+    expect(ctx.loadModalGroupError).toBe('Group not found');
+    expect(readingsMocks.listReadingsGrouped).not.toHaveBeenCalled();
+  });
+
+  it('refreshLoadModalReadings falls back to flat list when grouped load fails', async () => {
+    readingsMocks.listReadingsGrouped.mockRejectedValue(new Error('db fail'));
+    readingsMocks.listLocalReadings.mockResolvedValue([
+      { id: 'r1', name: 'One', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID },
+    ]);
+    const ctx = createCtx();
+    await ctx.refreshLoadModalReadings.call(ctx);
+    expect(uiMocks.logError).toHaveBeenCalledWith(
+      'stateComponent.refreshLoadModalReadings',
+      expect.any(Error),
+    );
+    expect(ctx.loadModalGroupError).toBe('Could not load saved readings.');
+    expect(ctx.loadModalGroupedSections).toEqual([
+      {
+        group: { id: DEFAULT_READING_GROUP_ID, title: 'Default' },
+        items: [{ id: 'r1', name: 'One', updated_at: 't', group_id: DEFAULT_READING_GROUP_ID }],
+      },
+    ]);
+    expect(ctx.loadModalReadingsPending).toBe(false);
+  });
+
+  it('addLoadModalGroup creates group and refreshes list on success', async () => {
+    readingsMocks.createReadingGroup.mockResolvedValue({ id: 'g-new', title: 'Client Work' });
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: 'g-new', title: 'Client Work' },
+        items: [],
+      },
+    ]);
+    const ctx = createCtx({ loadModalNewGroupTitle: '  Client Work  ' });
+    await ctx.addLoadModalGroup.call(ctx);
+    expect(readingsMocks.createReadingGroup).toHaveBeenCalledWith('Client Work');
+    expect(ctx.loadModalNewGroupTitle).toBe('');
+    expect(ctx.loadModalGroupError).toBeNull();
+    expect(ctx.loadModalGroupedSections[0]?.group.title).toBe('Client Work');
+  });
+
+  it('addLoadModalGroup sets validation error for empty title', async () => {
+    const ctx = createCtx({ loadModalNewGroupTitle: '   ' });
+    await ctx.addLoadModalGroup.call(ctx);
+    expect(readingsMocks.createReadingGroup).not.toHaveBeenCalled();
+    expect(ctx.loadModalGroupError).toBeTruthy();
+  });
+
+  it('addLoadModalGroup sets loadModalGroupError when create fails', async () => {
+    readingsMocks.createReadingGroup.mockRejectedValue(new Error('duplicate title'));
+    const ctx = createCtx({ loadModalNewGroupTitle: 'Dup' });
+    await ctx.addLoadModalGroup.call(ctx);
+    expect(ctx.loadModalGroupError).toBe('duplicate title');
+    expect(uiMocks.logError).toHaveBeenCalledWith(
+      'stateComponent.addLoadModalGroup',
+      expect.any(Error),
+    );
+  });
+
+  it('addLoadModalGroup uses generic message for non-Error throws', async () => {
+    readingsMocks.createReadingGroup.mockRejectedValue('nope');
+    const ctx = createCtx({ loadModalNewGroupTitle: 'X' });
+    await ctx.addLoadModalGroup.call(ctx);
+    expect(ctx.loadModalGroupError).toBe('Could not create group');
+  });
+
+  it('startRenameLoadModalGroup and cancelRenameLoadModalGroup manage rename draft', () => {
+    const ctx = createCtx();
+    ctx.startRenameLoadModalGroup.call(ctx, { id: 'g1', title: 'Old Name' });
+    expect(ctx.loadModalRenamingGroupId).toBe('g1');
+    expect(ctx.loadModalRenameGroupTitle).toBe('Old Name');
+    expect(ctx.loadModalGroupError).toBeNull();
+    ctx.cancelRenameLoadModalGroup.call(ctx);
+    expect(ctx.loadModalRenamingGroupId).toBeNull();
+    expect(ctx.loadModalRenameGroupTitle).toBe('');
+  });
+
+  it('saveRenameLoadModalGroup returns early when no group is being renamed', async () => {
+    const ctx = createCtx({ loadModalRenamingGroupId: null });
+    await ctx.saveRenameLoadModalGroup.call(ctx);
+    expect(readingsMocks.putReadingGroup).not.toHaveBeenCalled();
+  });
+
+  it('saveRenameLoadModalGroup validates title and renames on success', async () => {
+    readingsMocks.putReadingGroup.mockResolvedValue(undefined);
+    readingsMocks.listReadingsGrouped.mockResolvedValue([
+      {
+        group: { id: 'g1', title: 'Renamed' },
+        items: [],
+      },
+    ]);
+    const ctx = createCtx({
+      loadModalRenamingGroupId: 'g1',
+      loadModalRenameGroupTitle: '  Renamed  ',
+    });
+    await ctx.saveRenameLoadModalGroup.call(ctx);
+    expect(readingsMocks.putReadingGroup).toHaveBeenCalledWith({ id: 'g1', title: 'Renamed' });
+    expect(ctx.loadModalRenamingGroupId).toBeNull();
+    expect(ctx.loadModalGroupedSections[0]?.group.title).toBe('Renamed');
+  });
+
+  it('saveRenameLoadModalGroup sets validation error for empty title', async () => {
+    const ctx = createCtx({
+      loadModalRenamingGroupId: 'g1',
+      loadModalRenameGroupTitle: '   ',
+    });
+    await ctx.saveRenameLoadModalGroup.call(ctx);
+    expect(readingsMocks.putReadingGroup).not.toHaveBeenCalled();
+    expect(ctx.loadModalGroupError).toBeTruthy();
+  });
+
+  it('saveRenameLoadModalGroup sets loadModalGroupError when rename fails', async () => {
+    readingsMocks.putReadingGroup.mockRejectedValue(new Error('conflict'));
+    const ctx = createCtx({
+      loadModalRenamingGroupId: 'g1',
+      loadModalRenameGroupTitle: 'New',
+    });
+    await ctx.saveRenameLoadModalGroup.call(ctx);
+    expect(ctx.loadModalGroupError).toBe('conflict');
+    expect(uiMocks.logError).toHaveBeenCalledWith(
+      'stateComponent.saveRenameLoadModalGroup',
+      expect.any(Error),
+    );
+  });
+
+  it('saveRenameLoadModalGroup uses generic message for non-Error throws', async () => {
+    readingsMocks.putReadingGroup.mockRejectedValue('fail');
+    const ctx = createCtx({
+      loadModalRenamingGroupId: 'g1',
+      loadModalRenameGroupTitle: 'New',
+    });
+    await ctx.saveRenameLoadModalGroup.call(ctx);
+    expect(ctx.loadModalGroupError).toBe('Rename failed');
+  });
+
+  it('confirmDeleteLoadModalGroup is a no-op for the default group', async () => {
+    const ctx = createCtx();
+    await ctx.confirmDeleteLoadModalGroup.call(ctx, {
+      id: DEFAULT_READING_GROUP_ID,
+      title: 'Default',
+    });
+    expect(readingsMocks.deleteReadingGroup).not.toHaveBeenCalled();
+  });
+
+  it('confirmDeleteLoadModalGroup returns when user cancels', async () => {
+    const ctx = createCtx();
+    const promise = ctx.confirmDeleteLoadModalGroup.call(ctx, { id: 'g1', title: 'Work' });
+    await flushPromises();
+    (alpineStub.rawStores.dialog as { onCancel: () => void }).onCancel();
+    await promise;
+    expect(readingsMocks.deleteReadingGroup).not.toHaveBeenCalled();
+  });
+
+  it('confirmDeleteLoadModalGroup deletes group and refreshes on confirm', async () => {
+    readingsMocks.deleteReadingGroup.mockResolvedValue(undefined);
+    readingsMocks.listReadingsGrouped.mockResolvedValue([]);
+    const ctx = createCtx();
+    const promise = ctx.confirmDeleteLoadModalGroup.call(ctx, { id: 'g1', title: 'Work' });
+    await flushPromises();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await promise;
+    expect(readingsMocks.deleteReadingGroup).toHaveBeenCalledWith('g1');
+    expect(ctx.loadModalGroupError).toBeNull();
+  });
+
+  it('confirmDeleteLoadModalGroup sets loadModalGroupError when delete fails', async () => {
+    readingsMocks.deleteReadingGroup.mockRejectedValue(new Error('locked'));
+    const ctx = createCtx();
+    const promise = ctx.confirmDeleteLoadModalGroup.call(ctx, { id: 'g1', title: 'Work' });
+    await flushPromises();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await promise;
+    expect(ctx.loadModalGroupError).toBe('locked');
+    expect(uiMocks.logError).toHaveBeenCalledWith(
+      'stateComponent.confirmDeleteLoadModalGroup',
+      expect.any(Error),
+    );
+  });
+
+  it('confirmDeleteLoadModalGroup uses generic message for non-Error throws', async () => {
+    readingsMocks.deleteReadingGroup.mockRejectedValue('fail');
+    const ctx = createCtx();
+    const promise = ctx.confirmDeleteLoadModalGroup.call(ctx, { id: 'g1', title: 'Work' });
+    await flushPromises();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await promise;
+    expect(ctx.loadModalGroupError).toBe('Delete failed');
+  });
+
+  it('filteredLoadModalGroupedSections keeps empty groups when search is blank', () => {
+    const ctx = createCtx({
+      loadModalSearchQuery: '',
+      loadModalGroupedSections: [
+        {
+          group: { id: 'g-empty', title: 'Empty Group' },
+          items: [],
+        },
+      ],
+    });
+    const out = ctx.filteredLoadModalGroupedSections.call(ctx);
+    expect(out).toHaveLength(1);
+    expect(out[0].items).toEqual([]);
+  });
+
+  it('loadModalReadingsInFilteredGroup returns empty when group is missing', () => {
+    const ctx = createCtx({
+      loadModalGroupedSections: [
+        {
+          group: { id: 'g1', title: 'One' },
+          items: [{ id: 'r1', name: 'A', updated_at: 't', group_id: 'g1' }],
+        },
+      ],
+    });
+    expect(ctx.loadModalReadingsInFilteredGroup.call(ctx, 'missing')).toEqual([]);
+  });
+
+  it('toggleLoadModalReadingGroupSelection is a no-op when filtered group has no readings', () => {
+    const ctx = createCtx({
+      loadModalGroupedSections: [
+        { group: { id: 'g-empty', title: 'Empty' }, items: [] },
+      ],
+      loadModalSelectedReadingIds: ['r1'],
+    });
+    ctx.toggleLoadModalReadingGroupSelection.call(ctx, 'g-empty');
+    expect(ctx.loadModalSelectedReadingIds).toEqual(['r1']);
+  });
+
+  it('addRandomNumberResultToCanvas no-ops when anchor coordinates are missing', () => {
+    const addTextLabelWithTextAt = vi.fn();
+    window.draggableZoneComponent = {
+      addTextLabelWithTextAt,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx({
+      randomNumberResult: 7,
+      randomNumberScreenX: null,
+      randomNumberScreenY: 200,
+    });
+    ctx.addRandomNumberResultToCanvas.call(ctx);
+    expect(addTextLabelWithTextAt).not.toHaveBeenCalled();
+  });
+
+  it('handleRandomNumberShortcut opens modal at viewport center when no pointer is stored', () => {
+    const ctx = createCtx();
+    const viewport = document.createElement('div');
+    vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({
+      left: 10,
+      top: 20,
+      width: 400,
+      height: 300,
+      right: 410,
+      bottom: 320,
+      x: 10,
+      y: 20,
+      toJSON: () => ({}),
+    } as DOMRect);
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport,
+    } as unknown as typeof window.draggableZoneComponent;
+    const event = {
+      code: 'Digit3',
+      ctrlKey: true,
+      shiftKey: true,
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent;
+    ctx.handleRandomNumberShortcut.call(ctx, event);
+    expect(ctx.randomNumberModalOpen).toBe(true);
+    expect(ctx.randomNumberScreenX).toBe(210);
+    expect(ctx.randomNumberScreenY).toBe(170);
+  });
+
+  it('handleRandomNumberShortcut returns early when canvas component is missing', () => {
+    const ctx = createCtx();
+    window.draggableZoneComponent = undefined;
+    const event = {
+      code: 'Digit3',
+      ctrlKey: true,
+      shiftKey: true,
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent;
+    ctx.handleRandomNumberShortcut.call(ctx, event);
+    expect(ctx.randomNumberModalOpen).toBe(false);
+  });
+
+  it('handleRandomNumberShortcut returns early when viewport is missing', () => {
+    const ctx = createCtx();
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    const event = {
+      code: 'Digit3',
+      ctrlKey: true,
+      shiftKey: true,
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent;
+    ctx.handleRandomNumberShortcut.call(ctx, event);
+    expect(ctx.randomNumberModalOpen).toBe(false);
+  });
+
+  it('handleDrawCardShortcut draws at viewport center when no pointer is stored', () => {
+    const drawCardAt = vi.fn();
+    const viewport = document.createElement('div');
+    vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+      right: 200,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      drawCardAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.handleDrawCardShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(drawCardAt).toHaveBeenCalledWith(100, 50);
+  });
+
+  it('handleDrawCardShortcut ignores editable targets and missing canvas', () => {
+    const ctx = createCtx();
+    const input = document.createElement('input');
+    const drawCardAt = vi.fn();
+    window.draggableZoneComponent = { drawCardAt } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawCardShortcut.call(ctx, {
+      target: input,
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(drawCardAt).not.toHaveBeenCalled();
+    window.draggableZoneComponent = undefined;
+    ctx.handleDrawCardShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+  });
+
+  it('handleDrawByNameShortcut opens at viewport center and ignores editable targets', () => {
+    const openDrawByNameAt = vi.fn();
+    const viewport = document.createElement('div');
+    vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 300,
+      height: 200,
+      right: 300,
+      bottom: 200,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      openDrawByNameAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.handleDrawByNameShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(openDrawByNameAt).toHaveBeenCalledWith(150, 100);
+    window.draggableZoneComponent = undefined;
+    ctx.handleDrawByNameShortcut.call(ctx, {
+      target: document.createElement('textarea'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+  });
+
+  it('handleDrawByIndexShortcut opens at viewport center and returns when canvas is missing', () => {
+    const openDrawByIndexDialog = vi.fn();
+    const viewport = document.createElement('div');
+    vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 100,
+      right: 100,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      openDrawByIndexDialog,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.handleDrawByIndexShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(openDrawByIndexDialog).toHaveBeenCalledWith(50, 50);
+    window.draggableZoneComponent = undefined;
+    ctx.handleDrawByIndexShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+  });
+
+  it('handleAddTextShortcut adds text at viewport center and ignores editable targets', () => {
+    const addTextAt = vi.fn();
+    const viewport = document.createElement('div');
+    vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 400,
+      height: 200,
+      right: 400,
+      bottom: 200,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      addTextAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.handleAddTextShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(addTextAt).toHaveBeenCalledWith(200, 100);
+    window.draggableZoneComponent = undefined;
+    ctx.handleAddTextShortcut.call(ctx, {
+      target: document.createElement('input'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+  });
+
+  it('handlePreviousDeckShortcut dispatches cycle-deck backward', () => {
+    const ctx = createCtx();
+    const listener = vi.fn();
+    window.addEventListener('cycle-deck', listener);
+    ctx.handlePreviousDeckShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    window.removeEventListener('cycle-deck', listener);
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: { direction: -1 } }),
+    );
+  });
+
+  it('shortcut handlers ignore contenteditable targets', () => {
+    const ctx = createCtx();
+    const editable = document.createElement('div');
+    editable.contentEditable = 'true';
+    const preventDefault = vi.fn();
+    const event = { target: editable, preventDefault } as unknown as KeyboardEvent;
+    ctx.handleOpenDeckModalShortcut.call(ctx, event);
+    ctx.handleOpenReadingsModalShortcut.call(ctx, event);
+    ctx.handleOpenSettingsModalShortcut.call(ctx, event);
+    ctx.handleOpenAccountModalShortcut.call(ctx, event);
+    ctx.handleClearCanvasShortcut.call(ctx, event);
+    ctx.handleNewReadingShortcut.call(ctx, event);
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('handleEscapeShortcut closes open dialog via onCancel', () => {
+    const onCancel = vi.fn();
+    alpineStub.rawStores.dialog = { open: true, onCancel };
+    const ctx = createCtx();
+    const stopImmediatePropagation = vi.fn();
+    ctx.handleEscapeShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+      stopImmediatePropagation,
+    } as unknown as KeyboardEvent);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect((alpineStub.rawStores.dialog as { open: boolean }).open).toBe(false);
+    expect(stopImmediatePropagation).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleEscapeShortcut closes settings when open and correspondence manager does not handle escape', () => {
+    alpineStub.rawStores.settings = { open: true };
+    window.correspondenceManagerComponent = { handleManagerEscape: vi.fn(() => false) };
+    const ctx = createCtx();
+    ctx.handleEscapeShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect((alpineStub.rawStores.settings as { open: boolean }).open).toBe(false);
+  });
+
+  it('handleEscapeShortcut closes deck modal and storage info panel', () => {
+    const closeDeckModal = vi.fn();
+    const closeStorageAdditionalInfo = vi.fn();
+    window.draggableZoneComponent = {
+      deckModalOpen: true,
+      closeDeckModal,
+      storageAdditionalInfoOpen: false,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.handleEscapeShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(closeDeckModal).toHaveBeenCalledTimes(1);
+
+    window.draggableZoneComponent = {
+      deckModalOpen: false,
+      closeDeckModal,
+      storageAdditionalInfoOpen: true,
+      closeStorageAdditionalInfo,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleEscapeShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(closeStorageAdditionalInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleEscapeShortcut cancels load modal title edit and closes load modal', () => {
+    const ctx = createCtx({
+      loadModalEditingReadingId: 'r1',
+      loadModalEditingTitle: 'Draft',
+    });
+    ctx.handleEscapeShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(ctx.loadModalEditingReadingId).toBeNull();
+    expect(ctx.loadModalEditingTitle).toBe('');
+
+    const openCtx = createCtx({ loadModalOpen: true });
+    openCtx.handleEscapeShortcut.call(openCtx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(openCtx.loadModalOpen).toBe(false);
+  });
+
+  it('createNewReading clears canvas even when draggableZoneComponent is missing', async () => {
+    window.draggableZoneComponent = undefined;
+    const ctx = createCtx({ dirty: false, loadedReadingId: null });
+    const promise = ctx.createNewReading.call(ctx);
+    await flushPromises();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await promise;
+    expect(ctx.loadedReadingId).toBeNull();
+    expect(ctx.dirty).toBe(false);
+    expect(ctx.shuffleDeck).toHaveBeenCalled();
+  });
+
+  it('commitLoadModalTitleEdit returns early when no reading is being edited', async () => {
+    const ctx = createCtx({ loadModalEditingReadingId: null });
+    await ctx.commitLoadModalTitleEdit.call(ctx);
+    expect(readingsMocks.renameLocalReading).not.toHaveBeenCalled();
+  });
+
+  it('handleNextDeckShortcut ignores editable targets', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    const listener = vi.fn();
+    window.addEventListener('cycle-deck', listener);
+    ctx.handleNextDeckShortcut.call(ctx, {
+      target: document.createElement('input'),
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    window.removeEventListener('cycle-deck', listener);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('handleDrawCardShortcut returns early when viewport is missing', () => {
+    const drawCardAt = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      drawCardAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.handleDrawCardShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(drawCardAt).not.toHaveBeenCalled();
+  });
+
+  it('handleDrawByNameShortcut returns early when canvas or viewport is missing', () => {
+    const openDrawByNameAt = vi.fn();
+    const ctx = createCtx();
+    window.draggableZoneComponent = undefined;
+    ctx.handleDrawByNameShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      openDrawByNameAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleDrawByNameShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(openDrawByNameAt).not.toHaveBeenCalled();
+  });
+
+  it('handleDrawByIndexShortcut returns early when viewport is missing', () => {
+    const openDrawByIndexDialog = vi.fn();
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      openDrawByIndexDialog,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.handleDrawByIndexShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(openDrawByIndexDialog).not.toHaveBeenCalled();
+  });
+
+  it('handleAddTextShortcut returns early when canvas or viewport is missing', () => {
+    const addTextAt = vi.fn();
+    const ctx = createCtx();
+    window.draggableZoneComponent = undefined;
+    ctx.handleAddTextShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+
+    window.draggableZoneComponent = {
+      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      addTextAt,
+      lastPointerScreenX: null,
+      lastPointerScreenY: null,
+      viewport: null,
+    } as unknown as typeof window.draggableZoneComponent;
+    ctx.handleAddTextShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent);
+    expect(addTextAt).not.toHaveBeenCalled();
+  });
+
+  it('promptClearCanvas cancel is a no-op', () => {
+    const clearCanvas = vi.fn();
+    window.draggableZoneComponent = {
+      clearCanvas,
+    } as unknown as typeof window.draggableZoneComponent;
+    const ctx = createCtx();
+    ctx.promptClearCanvas.call(ctx);
+    (alpineStub.rawStores.dialog as { onCancel: () => void }).onCancel();
+    expect(clearCanvas).not.toHaveBeenCalled();
+  });
+
+  it('startLoadModalTitleEdit treats missing name as empty string', () => {
+    const ctx = createCtx();
+    ctx.startLoadModalTitleEdit.call(ctx, {
+      id: 'r1',
+      name: undefined as unknown as string,
+      updated_at: 't',
+    });
+    expect(ctx.loadModalEditingTitle).toBe('');
+  });
+
+  it('deserializeState embedded resolved uses resolved censoredImg when snapshot has no censor bytes', async () => {
+    const resolved = tarot({ censoredImg: 'blob:censored' });
+    decksMocks.getCardsByIds.mockResolvedValue(ok(new Map([[resolved.id, resolved]])));
+    const state = minimalState({
+      cards: [
+        {
+          id: 'dc1',
+          deck_id: resolved.deckId,
+          card_id: resolved.id,
+          deck_title: resolved.deckTitle,
+          card_title: resolved.title,
+          image_source: resolved.imageSourceLabel,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          zIndex: 1,
+          opacity: 1,
+          card_number: resolved.num,
+          data: new Uint8Array([1, 2, 3]),
+          mime_type: 'image/png',
+        },
+      ],
+    });
+    const ctx = createCtx();
+    await ctx.deserializeState.call(ctx, state);
+    expect(ctx.draggableCards[0]?.card.censoredImg).toBe('blob:censored');
+  });
+
+  it('deserializeState maps text label defaults when optional fields are absent', async () => {
+    decksMocks.getCardsByIds.mockResolvedValue(ok(new Map()));
+    const state = minimalState({
+      textLabels: [
+        {
+          id: 'tl1',
+          text: 'note',
+          x: 1,
+          y: 2,
+          fontSize: 12,
+          fontWeight: 400,
+          fontStyle: 'normal',
+          textDecoration: 'none',
+          color: '#000',
+          zIndex: 1,
+          anchorCardId: null,
+          anchorPosition: null,
+        },
+      ],
+    });
+    const ctx = createCtx();
+    await ctx.deserializeState.call(ctx, state);
+    expect(ctx.textLabels[0]).toMatchObject({
+      fixedWidth: false,
+      fixedWidthPx: 0,
+      fontProfileId: null,
+    });
+  });
+
+  it('createNewReading inputText onCancel is a no-op', async () => {
+    const ctx = createCtx({ dirty: true, loadedReadingId: null });
+    const promise = ctx.createNewReading.call(ctx);
+    await flushPromises();
+    (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
+    await flushPromises();
+    const inputDlg = alpineStub.rawStores.dialog as { onCancel: () => void };
+    inputDlg.onCancel();
+    await promise;
+    expect(ctx.shuffleDeck).toHaveBeenCalled();
+  });
+
+  it('handleEscapeShortcut does nothing when no overlay is open', () => {
+    const ctx = createCtx();
+    const preventDefault = vi.fn();
+    ctx.handleEscapeShortcut.call(ctx, {
+      target: document.createElement('div'),
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('deserializeState embedded resolved falls back to catalog censor label when snapshot omits it', async () => {
+    const resolved = tarot({ id: 'cid-1', censorImageSourceLabel: 'catalog-censor' });
+    decksMocks.getCardsByIds.mockResolvedValue(ok(new Map([['cid-1', resolved]])));
+    const state = minimalState({
+      cards: [
+        {
+          id: 'dc',
+          deck_id: 'd',
+          card_id: 'cid-1',
+          card_title: 'T',
+          image_source: 'i',
+          card_number: 1,
+          data: new Uint8Array([1]),
+          mime_type: 'image/png',
+          x: 0,
+          y: 0,
+          rotation: 0,
+          zIndex: 1,
+          opacity: 1,
+        },
+      ],
+    });
+    const ctx = createCtx();
+    await ctx.deserializeState.call(ctx, state);
+    expect(ctx.draggableCards[0]?.card.censorImageSourceLabel).toBe('catalog-censor');
+  });
+
+  it('deserializeState non-embedded resolved falls back to catalog censor label when snapshot omits it', async () => {
+    const resolved = tarot({ id: 'cid-1', censorImageSourceLabel: 'catalog-censor' });
+    decksMocks.getCardsByIds.mockResolvedValue(ok(new Map([['cid-1', resolved]])));
+    const state = minimalState({
+      cards: [
+        {
+          id: 'dc',
+          deck_id: 'd',
+          card_id: 'cid-1',
+          card_title: 'T',
+          image_source: 'i',
+          card_number: 1,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          zIndex: 1,
+          opacity: 1,
+        },
+      ],
+    });
+    const ctx = createCtx();
+    await ctx.deserializeState.call(ctx, state);
+    expect(ctx.draggableCards[0]?.card.censorImageSourceLabel).toBe('catalog-censor');
+  });
+
+  it('openSaveFailureDialog onCancel is a no-op', async () => {
+    readingsMocks.saveLocalReading.mockResolvedValue({ error: 'fail' });
+    const ctx = createCtx({ loadedReadingId: 'r1' });
+    ctx.handleSaveClick.call(ctx);
+    await flushPromises();
+    const dlg = alpineStub.rawStores.dialog as { onCancel: () => void };
+    dlg.onCancel();
+  });
+
+  it('serializeState writes null censor_image_source when label is missing', async () => {
+    const ctx = createCtx({
+      draggableCards: [draggable({ card: tarot({ censorImageSourceLabel: null }) })],
+    });
+    const state = await ctx.serializeState.call(ctx);
+    expect(state.cards[0]?.censor_image_source).toBeNull();
+  });
+
+  it('serializeState preserves censor_image_source when label is set', async () => {
+    const ctx = createCtx({
+      draggableCards: [draggable({ card: tarot({ censorImageSourceLabel: 'c-src' }) })],
+    });
+    const state = await ctx.serializeState.call(ctx);
+    expect(state.cards[0]?.censor_image_source).toBe('c-src');
+  });
+
+  it('deserializeState embedded resolved keeps explicit null censor label over catalog', async () => {
+    const resolved = tarot({ id: 'cid-1', censorImageSourceLabel: 'catalog-censor' });
+    decksMocks.getCardsByIds.mockResolvedValue(ok(new Map([['cid-1', resolved]])));
+    const state = minimalState({
+      cards: [
+        {
+          id: 'dc',
+          deck_id: 'd',
+          card_id: 'cid-1',
+          card_title: 'T',
+          image_source: 'i',
+          censor_image_source: null,
+          card_number: 1,
+          data: new Uint8Array([1]),
+          mime_type: 'image/png',
+          x: 0,
+          y: 0,
+          rotation: 0,
+          zIndex: 1,
+          opacity: 1,
+        },
+      ],
+    });
+    const ctx = createCtx();
+    await ctx.deserializeState.call(ctx, state);
+    expect(ctx.draggableCards[0]?.card.censorImageSourceLabel).toBeNull();
+  });
+
+  it('deserializeState embedded resolved without censor bytes keeps catalog censored image', async () => {
+    const resolved = tarot({ id: 'cid-1', censoredImg: 'blob:catalog-censor' });
+    decksMocks.getCardsByIds.mockResolvedValue(ok(new Map([['cid-1', resolved]])));
+    const state = minimalState({
+      cards: [
+        {
+          id: 'dc',
+          deck_id: 'd',
+          card_id: 'cid-1',
+          card_title: 'T',
+          image_source: 'i',
+          card_number: 1,
+          data: new Uint8Array([1]),
+          mime_type: 'image/png',
+          x: 0,
+          y: 0,
+          rotation: 0,
+          zIndex: 1,
+          opacity: 1,
+        },
+      ],
+    });
+    const ctx = createCtx();
+    await ctx.deserializeState.call(ctx, state);
+    expect(ctx.draggableCards[0]?.card.censoredImg).toBe('blob:catalog-censor');
+  });
+
+  it('deserializeState embedded censored bytes use octet-stream when mime type is absent', async () => {
+    const resolved = tarot({ id: 'cid-1' });
+    decksMocks.getCardsByIds.mockResolvedValue(ok(new Map([['cid-1', resolved]])));
+    const state = minimalState({
+      cards: [
+        {
+          id: 'dc',
+          deck_id: 'd',
+          card_id: 'cid-1',
+          card_title: 'T',
+          image_source: 'i',
+          card_number: 1,
+          data: new Uint8Array([1]),
+          mime_type: 'image/png',
+          censored_data: new Uint8Array([2, 3]),
+          x: 0,
+          y: 0,
+          rotation: 0,
+          zIndex: 1,
+          opacity: 1,
+        },
+      ],
+    });
+    const ctx = createCtx();
+    await ctx.deserializeState.call(ctx, state);
+    expect(createObjectURLSpy).toHaveBeenCalledWith(expect.any(Blob));
+    const blobArg = createObjectURLSpy.mock.calls.at(-1)?.[0] as Blob;
+    expect(blobArg.type).toBe('application/octet-stream');
   });
 });
 
