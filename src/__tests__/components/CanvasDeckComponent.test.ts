@@ -136,6 +136,7 @@ type DeckCtx = {
   cycleDeck: (direction: 1 | -1) => Promise<void>;
   onCycleDeckEvent: (event: Event) => void;
   onOpenDeckModalEvent: () => void;
+  onDecksChanged: () => void;
   createLocalDeckAction: () => Promise<void>;
   downloadCatalogDeckAction: (deckId: string) => Promise<void>;
   onDeckDownloadComplete: (deckId: string) => Promise<void>;
@@ -875,5 +876,271 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     (alpineStub.rawStores.dialog as { onConfirm: () => void }).onConfirm();
     await p;
     expect(ctx.selectedDeckIds).toEqual(['active']);
+  });
+
+  it('openDeckModal reads onDevice tab from localStorage', async () => {
+    localStorage.setItem(DECK_MODAL_TAB_KEY, 'onDevice');
+    const ctx = mountDeck();
+    await ctx.openDeckModal.call(ctx);
+    expect(ctx.deckModalTab).toBe('onDevice');
+  });
+
+  it('onDecksChanged refreshes deck lists', () => {
+    const ctx = mountDeck();
+    const refreshSpy = vi.spyOn(ctx, 'refreshDeckLists').mockResolvedValue(undefined);
+    ctx.onDecksChanged.call(ctx);
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('switchDeckByNameMatches returns empty when picker is closed', () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = null;
+    expect(ctx.switchDeckByNameMatches.call(ctx)).toEqual([]);
+  });
+
+  it('switchDeckByNameMatches caps results at eight decks', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = Array.from({ length: 10 }, (_, i) =>
+      onDevice(`d${i}`, `Match ${i.toString().padStart(2, '0')}`),
+    );
+    ctx.switchDeckByName = { query: 'match', highlightIndex: 0 };
+    expect(ctx.switchDeckByNameMatches.call(ctx)).toHaveLength(8);
+  });
+
+  it('onSwitchDeckByNameEvent opens the name picker', async () => {
+    const ctx = mountDeck();
+    const openSpy = vi.spyOn(ctx, 'openSwitchDeckByName').mockResolvedValue(undefined);
+    ctx.onSwitchDeckByNameEvent.call(ctx);
+    expect(openSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('openSwitchDeckByName focuses the name input', async () => {
+    const focus = vi.fn();
+    const ctx = mountDeck();
+    ctx.$refs.switchDeckByNameInput = { focus } as unknown as HTMLElement;
+    await ctx.openSwitchDeckByName.call(ctx);
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('onSwitchDeckByNameQueryInput is a no-op when picker is closed', () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = null;
+    ctx.onSwitchDeckByNameQueryInput.call(ctx, 'alpha');
+    expect(ctx.switchDeckByName).toBeNull();
+  });
+
+  it('onSwitchDeckByNameQueryInput updates query and resets highlight when there are no matches', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha')];
+    ctx.switchDeckByName = { query: '', highlightIndex: 2 };
+    ctx.onSwitchDeckByNameQueryInput.call(ctx, 'zzz');
+    expect(ctx.switchDeckByName).toEqual({ query: 'zzz', highlightIndex: 0 });
+  });
+
+  it('onSwitchDeckByNameQueryInput clamps highlight when matches shrink', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [
+      onDevice('a', 'Alpha'),
+      onDevice('b', 'Alpine'),
+      onDevice('c', 'Alps'),
+    ];
+    ctx.switchDeckByName = { query: 'al', highlightIndex: 5 };
+    ctx.onSwitchDeckByNameQueryInput.call(ctx, 'alpha');
+    expect(ctx.switchDeckByName?.highlightIndex).toBe(0);
+    expect(ctx.switchDeckByName?.query).toBe('alpha');
+  });
+
+  it('moveSwitchDeckByNameHighlight is a no-op when picker is closed', () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = null;
+    ctx.moveSwitchDeckByNameHighlight.call(ctx, 1);
+    expect(ctx.switchDeckByName).toBeNull();
+  });
+
+  it('moveSwitchDeckByNameHighlight is a no-op when there are no matches', () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = { query: 'none', highlightIndex: 0 };
+    ctx.moveSwitchDeckByNameHighlight.call(ctx, 1);
+    expect(ctx.switchDeckByName?.highlightIndex).toBe(0);
+  });
+
+  it('moveSwitchDeckByNameHighlight wraps forward and backward through matches', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta')];
+    ctx.switchDeckByName = { query: '', highlightIndex: 1 };
+    ctx.moveSwitchDeckByNameHighlight.call(ctx, 1);
+    expect(ctx.switchDeckByName?.highlightIndex).toBe(0);
+    ctx.moveSwitchDeckByNameHighlight.call(ctx, -1);
+    expect(ctx.switchDeckByName?.highlightIndex).toBe(1);
+  });
+
+  it('onSwitchDeckByNameKeydown is a no-op when picker is closed', () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = null;
+    const preventDefault = vi.fn();
+    ctx.onSwitchDeckByNameKeydown.call(ctx, {
+      key: 'ArrowDown',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('onSwitchDeckByNameKeydown moves highlight on arrow keys', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta')];
+    ctx.switchDeckByName = { query: '', highlightIndex: 0 };
+    const preventDefault = vi.fn();
+    ctx.onSwitchDeckByNameKeydown.call(ctx, {
+      key: 'ArrowDown',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(ctx.switchDeckByName?.highlightIndex).toBe(1);
+    ctx.onSwitchDeckByNameKeydown.call(ctx, {
+      key: 'ArrowUp',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(ctx.switchDeckByName?.highlightIndex).toBe(0);
+  });
+
+  it('onSwitchDeckByNameKeydown confirms selection on Enter', async () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha')];
+    ctx.switchDeckByName = { query: '', highlightIndex: 0 };
+    const confirmSpy = vi.spyOn(ctx, 'confirmSwitchDeckByNameSelection').mockResolvedValue(undefined);
+    const preventDefault = vi.fn();
+    ctx.onSwitchDeckByNameKeydown.call(ctx, {
+      key: 'Enter',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('confirmSwitchDeckByNameSelection is a no-op when picker is closed', async () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = null;
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.confirmSwitchDeckByNameSelection.call(ctx);
+    expect(switchSpy).not.toHaveBeenCalled();
+  });
+
+  it('confirmSwitchDeckByNameSelection returns without switching when there are no matches', async () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha')];
+    ctx.switchDeckByName = { query: 'missing', highlightIndex: 0 };
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.confirmSwitchDeckByNameSelection.call(ctx);
+    expect(switchSpy).not.toHaveBeenCalled();
+    expect(ctx.switchDeckByName).toEqual({ query: 'missing', highlightIndex: 0 });
+  });
+
+  it('confirmSwitchDeckByNameSelection switches to an explicitly passed deck', async () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = { query: '', highlightIndex: 0 };
+    const explicit = onDevice('picked', 'Picked');
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.confirmSwitchDeckByNameSelection.call(ctx, explicit);
+    expect(switchSpy).toHaveBeenCalledWith('picked');
+    expect(ctx.switchDeckByName).toBeNull();
+  });
+
+  it('cancelSwitchDeckByName closes the picker', () => {
+    const ctx = mountDeck();
+    ctx.switchDeckByName = { query: 'a', highlightIndex: 0 };
+    ctx.cancelSwitchDeckByName.call(ctx);
+    expect(ctx.switchDeckByName).toBeNull();
+  });
+
+  it('handleDeckEscape is a no-op when neither picker nor modal is open', () => {
+    const ctx = mountDeck();
+    ctx.deckModalOpen = false;
+    ctx.switchDeckByName = null;
+    ctx.handleDeckEscape.call(ctx);
+    expect(ctx.deckModalOpen).toBe(false);
+  });
+
+  it('onCycleDeckEvent ignores events with invalid direction', async () => {
+    const ctx = mountDeck();
+    const cycleSpy = vi.spyOn(ctx, 'cycleDeck').mockResolvedValue(undefined);
+    ctx.onCycleDeckEvent.call(ctx, new CustomEvent('cycle-deck', { detail: { direction: 0 } }));
+    ctx.onCycleDeckEvent.call(ctx, new CustomEvent('cycle-deck', { detail: {} }));
+    expect(cycleSpy).not.toHaveBeenCalled();
+  });
+
+  it('cycleDeck starts from the first deck when active id is unknown', async () => {
+    const decks = [onDevice('a', 'Alpha'), onDevice('b', 'Beta')];
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValue(ok(decks));
+    alpineStub.rawStores.activeDeckId = 'missing';
+    const ctx = mountDeck();
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.cycleDeck.call(ctx, 1);
+    expect(switchSpy).toHaveBeenCalledWith('b');
+  });
+
+  it('cycleDeck is a no-op when the next deck id matches the active id', async () => {
+    const decks = [onDevice('dup', 'First'), onDevice('dup', 'Second')];
+    deckMocks.listOnDeviceDeckEntries.mockResolvedValue(ok(decks));
+    alpineStub.rawStores.activeDeckId = 'dup';
+    const ctx = mountDeck();
+    const switchSpy = vi.spyOn(ctx, 'switchToDeck').mockResolvedValue(undefined);
+    await ctx.cycleDeck.call(ctx, 1);
+    expect(switchSpy).not.toHaveBeenCalled();
+  });
+
+  it('onDeckDownloadComplete updates active title from catalog when deck is not on device', async () => {
+    alpineStub.rawStores.activeDeckId = 'cat-1';
+    alpineStub.rawStores.activeDeckTitle = 'Old title';
+    deckMocks.listCatalogDeckOffers.mockResolvedValue(
+      ok([catalogOffer('cat-1', 'Catalog title')]),
+    );
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [];
+    await ctx.onDeckDownloadComplete.call(ctx, 'cat-1');
+    await flushAsyncWork();
+    expect(alpineStub.rawStores.activeDeckTitle).toBe('Catalog title');
+  });
+
+  it('onDeckDownloadComplete skips title update when deck title cannot be resolved', async () => {
+    alpineStub.rawStores.activeDeckId = 'missing';
+    alpineStub.rawStores.activeDeckTitle = 'Keep me';
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [];
+    ctx.catalogOffers = [];
+    await ctx.onDeckDownloadComplete.call(ctx, 'missing');
+    await flushAsyncWork();
+    expect(alpineStub.rawStores.activeDeckTitle).toBe('Keep me');
+    expect(deckMocks.getCardsByDeckId).toHaveBeenCalledWith('missing');
+  });
+
+  it('onSwitchDeckByNameQueryInput keeps highlight in range when multiple decks match', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('b', 'Beta'), onDevice('a', 'Alpha')];
+    ctx.switchDeckByName = { query: '', highlightIndex: 5 };
+    ctx.onSwitchDeckByNameQueryInput.call(ctx, 'a');
+    expect(ctx.switchDeckByName?.query).toBe('a');
+    expect(ctx.switchDeckByName?.highlightIndex).toBe(1);
+  });
+
+  it('onSwitchDeckByNameKeydown ignores unrelated keys', () => {
+    const ctx = mountDeck();
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha')];
+    ctx.switchDeckByName = { query: '', highlightIndex: 0 };
+    const preventDefault = vi.fn();
+    ctx.onSwitchDeckByNameKeydown.call(ctx, {
+      key: 'a',
+      preventDefault,
+    } as unknown as KeyboardEvent);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(ctx.switchDeckByName).toEqual({ query: '', highlightIndex: 0 });
+  });
+
+  it('onDeckDownloadComplete shows failure when reload cards fails', async () => {
+    alpineStub.rawStores.activeDeckId = 'same';
+    deckMocks.getCardsByDeckId.mockResolvedValueOnce(err(qf));
+    const ctx = mountDeck();
+    await ctx.onDeckDownloadComplete.call(ctx, 'same');
+    await flushAsyncWork();
+    expect(uiMocks.showQueryFailureDialog).toHaveBeenCalledWith(qf);
   });
 });
