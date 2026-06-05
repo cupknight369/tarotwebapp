@@ -69,7 +69,23 @@ function wheelEvent(opts: {
 describe('scaleComponent (CanvasScaleComponent.ts)', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    delete alpineStub.rawStores.settings;
   });
+
+  function mockRect(el: HTMLElement, rect: Partial<DOMRect>): void {
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 80,
+      right: 100,
+      bottom: 80,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+      ...rect,
+    } as DOMRect);
+  }
 
   it('clamp constrains to [min, max]', () => {
     const c = mountScale();
@@ -127,20 +143,88 @@ describe('scaleComponent (CanvasScaleComponent.ts)', () => {
     expect(slowFactor).toBeGreaterThan(1);
   });
 
+  it('wheelEventToZoomFactor caps large positive wheel deltas toward zoom out', () => {
+    const ev = new WheelEvent('wheel', { deltaY: 500, deltaMode: WheelEvent.DOM_DELTA_PIXEL });
+    expect(wheelEventToZoomFactor(ev)).toBe(1 - WHEEL_ZOOM_MAX_STEP_RATIO_BASE);
+  });
+
+  it('wheelEventToZoomFactor normalizes DOM_DELTA_LINE mode to pixels', () => {
+    const lineEv = new WheelEvent('wheel', {
+      deltaY: -2,
+      deltaMode: WheelEvent.DOM_DELTA_LINE,
+    });
+    const pixelEv = new WheelEvent('wheel', {
+      deltaY: -32,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+    });
+    expect(wheelEventToZoomFactor(lineEv)).toBe(wheelEventToZoomFactor(pixelEv));
+  });
+
+  it('wheelEventToZoomFactor normalizes DOM_DELTA_PAGE mode using viewport height', () => {
+    const pageEv = new WheelEvent('wheel', {
+      deltaY: -1,
+      deltaMode: WheelEvent.DOM_DELTA_PAGE,
+    });
+    Object.defineProperty(pageEv, 'view', {
+      value: { innerHeight: 600 },
+      configurable: true,
+    });
+    const pixelEv = new WheelEvent('wheel', {
+      deltaY: -600,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+    });
+    expect(wheelEventToZoomFactor(pageEv)).toBe(wheelEventToZoomFactor(pixelEv));
+  });
+
+  it('wheelEventToZoomFactor normalizes DOM_DELTA_PAGE mode with 800px fallback when view is missing', () => {
+    const pageEv = new WheelEvent('wheel', {
+      deltaY: -1,
+      deltaMode: WheelEvent.DOM_DELTA_PAGE,
+    });
+    Object.defineProperty(pageEv, 'view', { value: null, configurable: true });
+    const pixelEv = new WheelEvent('wheel', {
+      deltaY: -800,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+    });
+    expect(wheelEventToZoomFactor(pageEv)).toBe(wheelEventToZoomFactor(pixelEv));
+  });
+
+  it('onWheel uses default zoom sensitivity when settings store is missing', () => {
+    const c = mountScale();
+    const el = document.createElement('div');
+    mockRect(el, { left: 10, top: 20, width: 100, height: 80, right: 110, bottom: 100 });
+    const ev = wheelEvent({ clientX: 50, clientY: 60, deltaY: -100, currentTarget: el });
+    c.onWheel.call(c, ev);
+    expect(c.scale).toBeGreaterThan(1);
+    expect(c.dirty).toBe(true);
+  });
+
+  it('onWheel uses default zoom sensitivity when canvasZoomSensitivity is absent', () => {
+    alpineStub.rawStores.settings = {};
+    const c = mountScale();
+    const el = document.createElement('div');
+    mockRect(el);
+    const ev = wheelEvent({ clientX: 50, clientY: 40, deltaY: -100, currentTarget: el });
+    c.onWheel.call(c, ev);
+    expect(c.scale).toBeGreaterThan(1);
+    expect(c.dirty).toBe(true);
+  });
+
+  it('onWheel applies faster zoom when canvasZoomSensitivity is very fast', () => {
+    alpineStub.rawStores.settings = { canvasZoomSensitivity: 400 };
+    const c = mountScale();
+    const el = document.createElement('div');
+    mockRect(el);
+    const ev = wheelEvent({ clientX: 50, clientY: 40, deltaY: -100, currentTarget: el });
+    c.onWheel.call(c, ev);
+    expect(c.scale).toBeGreaterThan(1.05);
+    expect(c.dirty).toBe(true);
+  });
+
   it('onWheel prevents default and zooms in when deltaY is negative', () => {
     const c = mountScale();
     const el = document.createElement('div');
-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-      left: 10,
-      top: 20,
-      width: 100,
-      height: 80,
-      right: 110,
-      bottom: 100,
-      x: 10,
-      y: 20,
-      toJSON: () => ({}),
-    } as DOMRect);
+    mockRect(el, { left: 10, top: 20, width: 100, height: 80, right: 110, bottom: 100 });
     const ev = wheelEvent({ clientX: 50, clientY: 60, deltaY: -100, currentTarget: el });
     const pd = vi.spyOn(ev, 'preventDefault');
     c.onWheel.call(c, ev);
@@ -153,17 +237,7 @@ describe('scaleComponent (CanvasScaleComponent.ts)', () => {
   it('onWheel ignores zero delta without marking dirty', () => {
     const c = mountScale();
     const el = document.createElement('div');
-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-      left: 0,
-      top: 0,
-      width: 100,
-      height: 80,
-      right: 100,
-      bottom: 80,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    } as DOMRect);
+    mockRect(el);
     const ev = wheelEvent({ clientX: 50, clientY: 60, deltaY: 0, currentTarget: el });
     c.onWheel.call(c, ev);
     expect(c.scale).toBe(1);
@@ -176,17 +250,7 @@ describe('scaleComponent (CanvasScaleComponent.ts)', () => {
     c.offsetX = 0;
     c.offsetY = 0;
     const el = document.createElement('div');
-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-      left: 0,
-      top: 0,
-      width: 200,
-      height: 200,
-      right: 200,
-      bottom: 200,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    } as DOMRect);
+    mockRect(el, { width: 200, height: 200, right: 200, bottom: 200 });
     const ev = wheelEvent({ clientX: 100, clientY: 100, deltaY: 100, currentTarget: el });
     c.onWheel.call(c, ev);
     expect(c.scale).toBeLessThan(2);
