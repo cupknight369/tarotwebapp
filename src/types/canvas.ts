@@ -254,6 +254,7 @@ export type MergedThis = {
   handleOpenSettingsModalShortcut(event: KeyboardEvent): void;
   handleOpenAccountModalShortcut(event: KeyboardEvent): void;
   handleOpenCorrespondenceManagerShortcut(event: KeyboardEvent): void;
+  handleToggleCanvasOverlaysShortcut(event: KeyboardEvent): void;
   handleOpenKeyboardShortcutsShortcut(event: KeyboardEvent): void;
   handleClearCanvasShortcut(event: KeyboardEvent): void;
   handleNewReadingShortcut(event: KeyboardEvent): void;
@@ -315,6 +316,7 @@ export type MergedThis = {
   editTextLabelFromContextMenu(): void;
   drawCardAtContextMenu(): void;
   addTextAtContextMenu(): void;
+  toggleCanvasOverlaysFromContextMenu(): void;
   handleContextMenuTouchDismiss(ev: TouchEvent): void;
   openDrawByNameAt(screenX: number, screenY: number): void;
   openDrawByNameFromContextMenu(): void;

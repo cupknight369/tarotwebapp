@@ -8,6 +8,7 @@ describe('keyboardShortcuts', () => {
     expect(KEYBOARD_SHORTCUTS.some((entry) => entry.keys === 'Alt+C')).toBe(true);
     expect(KEYBOARD_SHORTCUTS.some((entry) => entry.keys === 'Alt+K')).toBe(true);
     expect(KEYBOARD_SHORTCUTS.some((entry) => entry.keys === 'Ctrl+S')).toBe(true);
+    expect(KEYBOARD_SHORTCUTS.some((entry) => entry.keys === 'Ctrl+~')).toBe(true);
   });
 
   it('filterKeyboardShortcuts returns all entries for empty query', () => {

@@ -219,6 +219,7 @@ type StateCtx = {
   handleOpenSettingsModalShortcut: (event: KeyboardEvent) => void;
   handleOpenAccountModalShortcut: (event: KeyboardEvent) => void;
   handleOpenCorrespondenceManagerShortcut: (event: KeyboardEvent) => void;
+  handleToggleCanvasOverlaysShortcut: (event: KeyboardEvent) => void;
   handleOpenKeyboardShortcutsShortcut: (event: KeyboardEvent) => void;
   handleClearCanvasShortcut: (event: KeyboardEvent) => void;
   handleNewReadingShortcut: (event: KeyboardEvent) => void;
@@ -1645,6 +1646,59 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     window.removeEventListener('open-correspondence-manager', listener);
     expect(preventDefault).not.toHaveBeenCalled();
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('handleToggleCanvasOverlaysShortcut toggles canvas overlays and prevents default', () => {
+    const ctx = createCtx();
+    alpineStub.Alpine.store('canvasOverlays', {
+      visible: true,
+      toggle() {
+        this.visible = !this.visible;
+      },
+    });
+    const preventDefault = vi.fn();
+    const event = {
+      target: document.createElement('div'),
+      ctrlKey: true,
+      key: '~',
+      code: 'Backquote',
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleToggleCanvasOverlaysShortcut.call(ctx, event);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect((alpineStub.rawStores.canvasOverlays as { visible: boolean }).visible).toBe(false);
+  });
+
+  it('handleToggleCanvasOverlaysShortcut ignores non-toggle keys and editable targets', () => {
+    const ctx = createCtx();
+    alpineStub.Alpine.store('canvasOverlays', {
+      visible: true,
+      toggle: vi.fn(),
+    });
+    const preventDefault = vi.fn();
+    const wrongKey = {
+      target: document.createElement('div'),
+      ctrlKey: true,
+      key: 'k',
+      code: 'KeyK',
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleToggleCanvasOverlaysShortcut.call(ctx, wrongKey);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(
+      (alpineStub.rawStores.canvasOverlays as { toggle: ReturnType<typeof vi.fn> }).toggle,
+    ).not.toHaveBeenCalled();
+
+    const input = document.createElement('input');
+    const editableEvent = {
+      target: input,
+      ctrlKey: true,
+      key: '`',
+      code: 'Backquote',
+      preventDefault,
+    } as unknown as KeyboardEvent;
+    ctx.handleToggleCanvasOverlaysShortcut.call(ctx, editableEvent);
+    expect(preventDefault).not.toHaveBeenCalled();
   });
 
   it('handleOpenKeyboardShortcutsShortcut dispatches open-keyboard-shortcuts and prevents default', () => {

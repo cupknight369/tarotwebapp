@@ -18,6 +18,7 @@ export const KEYBOARD_SHORTCUTS: readonly KeyboardShortcutEntry[] = [
   { keys: 'Ctrl+.', description: 'Switch to next deck' },
   { keys: 'Ctrl+9', description: 'Clear the canvas' },
   { keys: 'Ctrl+0', description: 'Start a new reading' },
+  { keys: 'Ctrl+~', description: 'Show or hide canvas overlay elements' },
   { keys: 'Alt+1', description: 'Open deck modal' },
   { keys: 'Alt+2', description: 'Open readings modal' },
   { keys: 'Alt+3', description: 'Open settings' },

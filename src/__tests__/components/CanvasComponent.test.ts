@@ -805,6 +805,15 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     );
   });
 
+  it('canvas context menu includes overlay visibility toggle', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toContain('toggleCanvasOverlaysFromContextMenu()');
+    expect(html).toContain(
+      "$store.canvasOverlays.visible ? 'Hide overlay elements' : 'Show overlay elements'",
+    );
+    expect(html).toContain('$store.canvasOverlays.visible');
+  });
+
   it('canvas toolbar uses half-width layout and stacks on narrow screens', async () => {
     const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
     expect(html).toMatch(

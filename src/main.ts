@@ -3,6 +3,7 @@ import './input.css';
 
 import { initAuthStore } from './stores/authStore.js';
 import { initFontProfileStore } from './stores/fontProfileStore.js';
+import { initCanvasOverlaysStore } from './stores/canvasOverlaysStore.js';
 import { initSettingsStore } from './stores/settingsStore.js';
 import { ensureDefaultDeckOnDevice, isDefaultDeckOnDevice } from './lib/bootstrapDefaultDeck.js';
 import { startCardImagePrefetch } from './lib/cardImageUrls.js';
@@ -93,6 +94,7 @@ void (async () => {
     startCardImagePrefetch();
   }
   initSettingsStore();
+  initCanvasOverlaysStore();
   initFontProfileStore();
   initPwaClient(registerSW);
   Alpine.start();

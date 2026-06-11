@@ -6,6 +6,7 @@ import {
   TextLabel,
 } from '../types/canvas.js';
 import Alpine from 'alpinejs';
+import type { CanvasOverlaysStoreState } from '../types/canvasOverlays.js';
 import type { SettingsStoreState } from '../types/settings.js';
 import {
   CANVAS_ZOOM_SENSITIVITY_DEFAULT,
@@ -979,6 +980,11 @@ Alpine.data('canvasComponent', () => ({
   addTextAtContextMenu(this: MergedThis) {
     const { contentX, contentY } = this.contextMenu;
     this.addTextAtContent(contentX, contentY);
+    this.closeContextMenu();
+  },
+
+  toggleCanvasOverlaysFromContextMenu(this: MergedThis) {
+    (Alpine.store('canvasOverlays') as CanvasOverlaysStoreState).toggle();
     this.closeContextMenu();
   },
 

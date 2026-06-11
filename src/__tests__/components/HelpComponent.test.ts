@@ -105,6 +105,7 @@ describe('helpComponent (HelpComponent.ts)', () => {
     expect(html).toContain('flex-wrap');
     expect(html).toContain('max-[36rem]:justify-end');
     expect(html).toMatch(/order-4 max-\[36rem\]:order-1[\s\S]*?Shortcuts: ALT \+ k/);
+    expect(html).toContain('$store.canvasOverlays.visible');
   });
 
   it('toolbar markup includes Settings button opening settings store', async () => {

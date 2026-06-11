@@ -11,6 +11,7 @@ import { logError } from '../lib/logError.js';
 import { showQueryFailureDialog } from '../lib/queryFailureUi.js';
 import { getCardImageRow, getLocalCardsByIds } from '../lib/localDecks.js';
 import { revokeTarotCardBlobUrls } from '../lib/cardBlobUrls.js';
+import { handleCanvasOverlayToggleKeydown } from '../lib/canvasOverlayKeyboard.js';
 import { parseRandomNumberBounds, randomIntInclusive } from '../lib/randomNumber.js';
 import { readingGroupCreateSchema } from '../validation/readings.js';
 import { zodFirstIssue } from '../validation/zodErrors.js';
@@ -871,6 +872,10 @@ Alpine.data('stateComponent', () => ({
     }
     event.preventDefault();
     window.dispatchEvent(new CustomEvent('open-correspondence-manager'));
+  },
+
+  handleToggleCanvasOverlaysShortcut(this: MergedThis, event: KeyboardEvent): void {
+    handleCanvasOverlayToggleKeydown(event);
   },
 
   handleOpenKeyboardShortcutsShortcut(this: MergedThis, event: KeyboardEvent): void {

@@ -1,5 +1,7 @@
 <div x-cloak x-data="authComponent" @open-account-modal.window="openAccountMenu()">
   <div
+    x-show="$store.canvasOverlays.visible"
+    x-cloak
     class="fixed top-2 left-2 z-[9999] flex flex-wrap items-center gap-x-1 gap-y-0.5 max-w-[calc(50%-0.5rem)] max-[36rem]:top-14 max-[36rem]:left-2 max-[36rem]:right-2 max-[36rem]:max-w-none max-[36rem]:justify-end"
   >
     <button
