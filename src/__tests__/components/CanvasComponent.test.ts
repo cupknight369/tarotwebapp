@@ -591,6 +591,14 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(html).not.toContain('@dblclick.stop="startEditingTextLabel(label)"');
   });
 
+  it('card wrapper applies rotation so hit area matches the visible image', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toMatch(
+      /:id="draggableCard\.id"[\s\S]*?transform: rotate\(\$\{draggableCard\.rotation\}deg\)/,
+    );
+    expect(html).not.toContain('transform: rotate(${draggableCard.rotation}deg); max-width: 150px');
+  });
+
   it('editTextLabelFromContextMenu opens edit and closes context menu', () => {
     const c = mountCanvas();
     const ctx = createMerged();

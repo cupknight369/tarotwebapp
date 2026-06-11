@@ -283,7 +283,8 @@
                 <div
                   class="absolute cursor-grab select-none will-change-transform origin-center border-5 border-transparent hover:border-purple-600"
                   :id="draggableCard.id"
-                  :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display};`"
+                  :style="`left: ${draggableCard.x}px; top: ${draggableCard.y}px; z-index: ${draggableCard.zIndex}; opacity: ${draggableCard.opacity}; cursor: ${draggableCard.cursor}; display: ${draggableCard.display}; transform: rotate(${draggableCard.rotation}deg);`"
+                  @dblclick.stop="onContextMenu($event)"
                 >
                   <template
                     x-if="cardShowsPlaceholder(draggableCard.card, $store.settings.censored)"
@@ -315,7 +316,7 @@
                       :alt="draggableCard.card.title"
                       draggable="false"
                       class="w-[150px] h-auto pointer-events-none shadow-lg rounded block"
-                      :style="`transform: rotate(${draggableCard.rotation}deg); max-width: 150px; width: 150px`"
+                      :style="'max-width: 150px; width: 150px'"
                     />
                   </template>
                   <div
