@@ -246,7 +246,7 @@
           <div
             x-show="$store.settings.showDeckTitleOnCanvas && ($store.activeDeckTitle || '').length > 0"
             x-cloak
-            class="pointer-events-none absolute bottom-3 left-3 z-[9998] max-w-[min(85vw,22rem)] rounded-lg border border-gray-700/80 bg-gray-900/90 px-3 py-2 shadow-lg backdrop-blur-sm"
+            class="pointer-events-none absolute bottom-3 left-3 z-[9998] min-w-0 max-w-[calc(50%-0.75rem)] rounded-lg border border-gray-700/80 bg-gray-900/90 px-3 py-2 shadow-lg backdrop-blur-sm"
           >
             <p class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Active deck</p>
             <p
@@ -256,9 +256,9 @@
           </div>
 
           <div
-            class="pointer-events-none absolute bottom-3 right-3 z-[9998] rounded-lg border border-gray-700/80 bg-gray-900/90 px-3 py-2 shadow-lg backdrop-blur-sm"
+            class="pointer-events-none absolute bottom-3 right-3 z-[9998] min-w-0 max-w-[calc(50%-0.75rem)] rounded-lg border border-gray-700/80 bg-gray-900/90 px-3 py-2 shadow-lg backdrop-blur-sm"
           >
-            <p class="text-[15px] text-gray-500 leading-snug">
+            <p class="text-xs sm:text-[15px] text-gray-500 leading-snug break-words">
               © Cup Knight Tarot <span x-text="new Date().getFullYear()"></span>. All rights
               reserved.
             </p>

@@ -800,6 +800,19 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(html).toContain('All rights');
     expect(html).toContain('reserved.');
     expect(html).toContain('absolute bottom-3 right-3');
+    expect(html).toMatch(
+      /absolute bottom-3 right-3[\s\S]*?max-w-\[calc\(50%-0\.75rem\)\][\s\S]*?© Cup Knight Tarot/,
+    );
+  });
+
+  it('active deck and trademark overlays each stay within half the canvas width', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toMatch(
+      /absolute bottom-3 left-3[\s\S]*?max-w-\[calc\(50%-0\.75rem\)\][\s\S]*?Active deck/,
+    );
+    expect(html).toMatch(
+      /absolute bottom-3 right-3[\s\S]*?max-w-\[calc\(50%-0\.75rem\)\][\s\S]*?© Cup Knight Tarot/,
+    );
   });
 
   it('confirmDrawByNameSelection clears picker, adds card, and positions at screenToContent', () => {
