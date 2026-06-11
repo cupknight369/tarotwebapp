@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import {
   CANVAS_DOUBLE_TAP_MAX_DISTANCE_PX,
   CANVAS_DOUBLE_TAP_MS,
+  CANVAS_TOUCH_SLOP_PX,
+  exceedsCanvasTouchSlop,
   getContextMenuTapKey,
   isCanvasDoubleTap,
 } from '../../lib/canvasDoubleTap.js';
@@ -77,5 +79,10 @@ describe('canvasDoubleTap', () => {
     expect(
       isCanvasDoubleTap(last, 'canvas', 10 + CANVAS_DOUBLE_TAP_MAX_DISTANCE_PX + 1, 20, now),
     ).toBe(false);
+  });
+
+  it('exceedsCanvasTouchSlop ignores movement within slop and detects pan-sized movement', () => {
+    expect(exceedsCanvasTouchSlop(0, 0, CANVAS_TOUCH_SLOP_PX, 0)).toBe(false);
+    expect(exceedsCanvasTouchSlop(0, 0, CANVAS_TOUCH_SLOP_PX + 1, 0)).toBe(true);
   });
 });

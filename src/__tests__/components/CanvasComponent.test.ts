@@ -1412,13 +1412,13 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(mockCallCount(mockFromCtx(ctx, 'zoomAt'))).toBe(0);
   });
 
-  it('onTouchMove single touch forwards to mouse handlers', () => {
+  it('onTouchMove single touch forwards to mouse handlers after slop exceeded', () => {
     const c = mountCanvas();
     const ctx = createMerged();
     spyElementFromPoint(ctx.viewport);
     const t0 = touch(7, 50, 60);
     c.onTouchStart.call(ctx, touchEv([t0], [t0]));
-    const move = touchEv([touch(7, 55, 65)], [touch(7, 55, 65)]);
+    const move = touchEv([touch(7, 65, 75)], [touch(7, 65, 75)]);
     c.onTouchMove.call(ctx, move);
     expect(ctx.touchGestureStarted).toBe(true);
   });
@@ -1429,9 +1429,9 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     spyElementFromPoint(ctx.viewport);
     const t0 = touch(8, 1, 1);
     c.onTouchStart.call(ctx, touchEv([t0], [t0]));
-    c.onTouchMove.call(ctx, touchEv([touch(8, 5, 5)], [touch(8, 5, 5)]));
+    c.onTouchMove.call(ctx, touchEv([touch(8, 15, 15)], [touch(8, 15, 15)]));
     const md = vi.spyOn(ctx, 'onMouseDown');
-    c.onTouchMove.call(ctx, touchEv([touch(8, 9, 9)], [touch(8, 9, 9)]));
+    c.onTouchMove.call(ctx, touchEv([touch(8, 20, 20)], [touch(8, 20, 20)]));
     expect(md.mock.calls.length).toBe(0);
   });
 
@@ -1462,9 +1462,9 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     spyElementFromPoint(ctx.viewport);
     const t0 = touch(5, 1, 1);
     ctx.onTouchStart.call(ctx, touchEv([t0], [t0]));
-    ctx.onTouchMove.call(ctx, touchEv([touch(5, 10, 10)], [touch(5, 10, 10)]));
+    ctx.onTouchMove.call(ctx, touchEv([touch(5, 20, 20)], [touch(5, 20, 20)]));
     const mu = vi.spyOn(ctx, 'onMouseUp');
-    ctx.onTouchEnd.call(ctx, touchEv([], [touch(5, 10, 10)]));
+    ctx.onTouchEnd.call(ctx, touchEv([], [touch(5, 20, 20)]));
     expect(mu.mock.calls.length).toBeGreaterThan(0);
   });
 
@@ -1580,15 +1580,50 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     vi.useRealTimers();
   });
 
-  it('onTouchMove clears pending canvas double-tap after movement', () => {
+  it('onTouchMove clears pending canvas double-tap after movement beyond slop', () => {
     const c = mountCanvas();
     const ctx = createMerged();
     ctx.lastCanvasTap = { tapKey: 'text:tl1', time: Date.now(), x: 1, y: 2 };
     spyElementFromPoint(ctx.viewport);
     const t0 = touch(12, 0, 0);
     c.onTouchStart.call(ctx, touchEv([t0], [t0]));
-    c.onTouchMove.call(ctx, touchEv([touch(12, 8, 8)], [touch(12, 8, 8)]));
+    c.onTouchMove.call(ctx, touchEv([touch(12, 15, 15)], [touch(12, 15, 15)]));
     expect(ctx.lastCanvasTap).toBeNull();
+  });
+
+  it('onTouchMove sub-slop jitter preserves pending canvas double-tap', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.lastCanvasTap = { tapKey: 'text:tl1', time: Date.now(), x: 1, y: 2 };
+    spyElementFromPoint(ctx.viewport);
+    const t0 = touch(12, 0, 0);
+    c.onTouchStart.call(ctx, touchEv([t0], [t0]));
+    c.onTouchMove.call(ctx, touchEv([touch(12, 4, 4)], [touch(12, 4, 4)]));
+    expect(ctx.lastCanvasTap).toMatchObject({ tapKey: 'text:tl1' });
+    expect(ctx.touchGestureStarted).toBe(false);
+  });
+
+  it('onTouchEnd double-tap still works after sub-slop touchmove jitter', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(7_000);
+    const c = mountCanvas();
+    const ctx = createMerged();
+    spyElementFromPoint(ctx.viewport);
+
+    const first = touch(13, 50, 50);
+    c.onTouchStart.call(ctx, touchEv([first], [first]));
+    c.onTouchMove.call(ctx, touchEv([touch(13, 52, 51)], [touch(13, 52, 51)]));
+    c.onTouchEnd.call(ctx, touchEv([], [first]));
+    expect(ctx.lastCanvasTap).toMatchObject({ tapKey: 'canvas' });
+
+    vi.setSystemTime(7_200);
+    const second = touch(13, 51, 51);
+    const cm = vi.spyOn(ctx, 'onContextMenu');
+    c.onTouchStart.call(ctx, touchEv([second], [second]));
+    c.onTouchMove.call(ctx, touchEv([touch(13, 53, 52)], [touch(13, 53, 52)]));
+    c.onTouchEnd.call(ctx, touchEv([], [second]));
+    expect(cm.mock.calls.length).toBeGreaterThan(0);
+    vi.useRealTimers();
   });
 
   it('onTouchMove two-finger pinch zooms when pinch distance is set', () => {

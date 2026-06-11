@@ -4,6 +4,9 @@ export const CANVAS_DOUBLE_TAP_MS = 300;
 /** Maximum pointer movement in pixels between taps for a double-tap. */
 export const CANVAS_DOUBLE_TAP_MAX_DISTANCE_PX = 32;
 
+/** Minimum finger movement before a touch is treated as pan instead of tap. */
+export const CANVAS_TOUCH_SLOP_PX = 10;
+
 export interface CanvasTapRecord {
   tapKey: string;
   time: number;
@@ -83,4 +86,21 @@ export function isCanvasDoubleTap(
     return false;
   }
   return Math.hypot(x - last.x, y - last.y) <= CANVAS_DOUBLE_TAP_MAX_DISTANCE_PX;
+}
+
+/**
+ * Returns whether finger movement exceeds the tap slop (pan vs tap discrimination).
+ * @param startX - Touch start client X.
+ * @param startY - Touch start client Y.
+ * @param x - Current touch client X.
+ * @param y - Current touch client Y.
+ * @returns True when movement exceeds {@link CANVAS_TOUCH_SLOP_PX}.
+ */
+export function exceedsCanvasTouchSlop(
+  startX: number,
+  startY: number,
+  x: number,
+  y: number,
+): boolean {
+  return Math.hypot(x - startX, y - startY) > CANVAS_TOUCH_SLOP_PX;
 }

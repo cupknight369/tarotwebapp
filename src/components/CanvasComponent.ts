@@ -38,6 +38,7 @@ import {
   isWithinTextEditPanel,
 } from '../lib/canvasInteractiveTarget.js';
 import {
+  exceedsCanvasTouchSlop,
   getContextMenuTapKey,
   isCanvasDoubleTap,
   type CanvasTapRecord,
@@ -361,10 +362,18 @@ Alpine.data('canvasComponent', () => ({
       const touch = this.activeTouchId !== null ? this.getTouchById(e, this.activeTouchId) : null;
       if (!touch || !this.touchStartPos) return;
       if (isCanvasInteractiveTarget(this.touchStartPos.target)) return;
+
+      const pos = this.touchStartPos;
+      if (
+        !this.touchGestureStarted &&
+        !exceedsCanvasTouchSlop(pos.clientX, pos.clientY, touch.clientX, touch.clientY)
+      ) {
+        return;
+      }
+
       this.lastPointerScreenX = touch.clientX;
       this.lastPointerScreenY = touch.clientY;
 
-      const pos = this.touchStartPos;
       const moveSyn = this.touchToMouseLike(touch);
 
       if (!this.touchGestureStarted) {
@@ -376,11 +385,11 @@ Alpine.data('canvasComponent', () => ({
         this.onMouseDown(downSyn);
         this.onMouseMove(moveSyn);
         this.touchGestureStarted = true;
+        this.lastCanvasTap = null;
       } else {
         this.onMouseMove(moveSyn);
       }
 
-      this.lastCanvasTap = null;
       e.preventDefault();
     }
   },
@@ -489,7 +498,9 @@ Alpine.data('canvasComponent', () => ({
       });
     });
 
-    this.viewport.addEventListener('touchstart', (ev: TouchEvent) => this.onTouchStart(ev));
+    this.viewport.addEventListener('touchstart', (ev: TouchEvent) => this.onTouchStart(ev), {
+      passive: false,
+    });
     this.viewport.addEventListener('touchmove', (ev: TouchEvent) => this.onTouchMove(ev), {
       passive: false,
     });
