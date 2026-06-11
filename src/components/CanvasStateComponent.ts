@@ -170,7 +170,8 @@ Alpine.data('stateComponent', () => ({
       return;
     }
     if (canvas.contextMenu.open) {
-      this.openRandomNumberModal(canvas.contextMenu.x, canvas.contextMenu.y);
+      const { x, y } = canvas.getContextMenuScreenPosition();
+      this.openRandomNumberModal(x, y);
       return;
     }
     if (canvas.lastPointerScreenX !== null && canvas.lastPointerScreenY !== null) {
@@ -943,7 +944,8 @@ Alpine.data('stateComponent', () => ({
       return;
     }
     if (canvas.contextMenu.open) {
-      canvas.drawCardAt(canvas.contextMenu.x, canvas.contextMenu.y);
+      const { x, y } = canvas.getContextMenuScreenPosition();
+      canvas.drawCardAt(x, y);
       this._ctrlDLastDrawAtMs = Date.now();
       return;
     }
@@ -1004,7 +1006,8 @@ Alpine.data('stateComponent', () => ({
       return;
     }
     if (canvas.contextMenu.open) {
-      canvas.openDrawByIndexDialog(canvas.contextMenu.x, canvas.contextMenu.y);
+      const { x, y } = canvas.getContextMenuScreenPosition();
+      canvas.openDrawByIndexDialog(x, y);
       return;
     }
     if (canvas.lastPointerScreenX !== null && canvas.lastPointerScreenY !== null) {
@@ -1033,7 +1036,8 @@ Alpine.data('stateComponent', () => ({
       return;
     }
     if (canvas.contextMenu.open) {
-      canvas.addTextAt(canvas.contextMenu.x, canvas.contextMenu.y);
+      const { x, y } = canvas.getContextMenuScreenPosition();
+      canvas.addTextAt(x, y);
       return;
     }
     if (canvas.lastPointerScreenX !== null && canvas.lastPointerScreenY !== null) {

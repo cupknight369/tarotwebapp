@@ -172,6 +172,8 @@ type StateCtx = {
     open: boolean;
     x: number;
     y: number;
+    contentX: number;
+    contentY: number;
     cardId: string | null;
     textId: string | null;
   };
@@ -1721,7 +1723,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent;
     const drawCardAt = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      contextMenu: {
+        open: true,
+        x: 120,
+        y: 240,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
+      getContextMenuScreenPosition: () => ({ x: 120, y: 240 }),
       drawCardAt,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -1741,7 +1752,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent;
     const drawCardAt = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       drawCardAt,
       lastPointerScreenX: 333,
       lastPointerScreenY: 444,
@@ -1758,7 +1777,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     const ctx = createCtx();
     const drawCardAt = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       drawCardAt,
       lastPointerScreenX: 100,
       lastPointerScreenY: 200,
@@ -1802,7 +1829,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     const openDrawByNameFromContextMenu = vi.fn();
     const openDrawByNameAt = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      contextMenu: {
+        open: true,
+        x: 120,
+        y: 240,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
+      getContextMenuScreenPosition: () => ({ x: 120, y: 240 }),
       openDrawByNameFromContextMenu,
       openDrawByNameAt,
       lastPointerScreenX: null,
@@ -1825,7 +1861,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     const openDrawByNameFromContextMenu = vi.fn();
     const openDrawByNameAt = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 120, y: 240, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 120,
+        y: 240,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       openDrawByNameFromContextMenu,
       openDrawByNameAt,
       lastPointerScreenX: 333,
@@ -1847,7 +1891,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent;
     const openDrawByIndexDialog = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      contextMenu: {
+        open: true,
+        x: 120,
+        y: 240,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
+      getContextMenuScreenPosition: () => ({ x: 120, y: 240 }),
       openDrawByIndexDialog,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -1866,7 +1919,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent;
     const openDrawByIndexDialog = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       openDrawByIndexDialog,
       lastPointerScreenX: 333,
       lastPointerScreenY: 444,
@@ -1901,7 +1962,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent;
     const addTextAt = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      contextMenu: {
+        open: true,
+        x: 120,
+        y: 240,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
+      getContextMenuScreenPosition: () => ({ x: 120, y: 240 }),
       addTextAt,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -1921,7 +1991,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent;
     const addTextAt = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       addTextAt,
       lastPointerScreenX: 333,
       lastPointerScreenY: 444,
@@ -1943,7 +2021,16 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       preventDefault,
     } as unknown as KeyboardEvent;
     window.draggableZoneComponent = {
-      contextMenu: { open: true, x: 120, y: 240, cardId: null, textId: null },
+      contextMenu: {
+        open: true,
+        x: 120,
+        y: 240,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
+      getContextMenuScreenPosition: () => ({ x: 120, y: 240 }),
       lastPointerScreenX: null,
       lastPointerScreenY: null,
     } as unknown as typeof window.draggableZoneComponent;
@@ -1965,7 +2052,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       preventDefault,
     } as unknown as KeyboardEvent;
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       lastPointerScreenX: 333,
       lastPointerScreenY: 444,
       viewport: null,
@@ -2879,9 +2974,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
 
   it('toggleLoadModalReadingGroupSelection is a no-op when filtered group has no readings', () => {
     const ctx = createCtx({
-      loadModalGroupedSections: [
-        { group: { id: 'g-empty', title: 'Empty' }, items: [] },
-      ],
+      loadModalGroupedSections: [{ group: { id: 'g-empty', title: 'Empty' }, items: [] }],
       loadModalSelectedReadingIds: ['r1'],
     });
     ctx.toggleLoadModalReadingGroupSelection.call(ctx, 'g-empty');
@@ -2917,7 +3010,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       toJSON: () => ({}),
     } as DOMRect);
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       lastPointerScreenX: null,
       lastPointerScreenY: null,
       viewport,
@@ -2952,7 +3053,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   it('handleRandomNumberShortcut returns early when viewport is missing', () => {
     const ctx = createCtx();
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       lastPointerScreenX: null,
       lastPointerScreenY: null,
       viewport: null,
@@ -2983,7 +3092,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       toJSON: () => ({}),
     } as DOMRect);
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       drawCardAt,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -3001,7 +3118,9 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     const ctx = createCtx();
     const input = document.createElement('input');
     const drawCardAt = vi.fn();
-    window.draggableZoneComponent = { drawCardAt } as unknown as typeof window.draggableZoneComponent;
+    window.draggableZoneComponent = {
+      drawCardAt,
+    } as unknown as typeof window.draggableZoneComponent;
     ctx.handleDrawCardShortcut.call(ctx, {
       target: input,
       preventDefault: vi.fn(),
@@ -3029,7 +3148,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       toJSON: () => ({}),
     } as DOMRect);
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       openDrawByNameAt,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -3063,7 +3190,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       toJSON: () => ({}),
     } as DOMRect);
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       openDrawByIndexDialog,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -3097,7 +3232,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       toJSON: () => ({}),
     } as DOMRect);
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       addTextAt,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -3125,9 +3268,7 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
       preventDefault: vi.fn(),
     } as unknown as KeyboardEvent);
     window.removeEventListener('cycle-deck', listener);
-    expect(listener).toHaveBeenCalledWith(
-      expect.objectContaining({ detail: { direction: -1 } }),
-    );
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ detail: { direction: -1 } }));
   });
 
   it('shortcut handlers ignore contenteditable targets', () => {
@@ -3254,7 +3395,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   it('handleDrawCardShortcut returns early when viewport is missing', () => {
     const drawCardAt = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       drawCardAt,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -3278,7 +3427,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent);
 
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       openDrawByNameAt,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -3294,7 +3451,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
   it('handleDrawByIndexShortcut returns early when viewport is missing', () => {
     const openDrawByIndexDialog = vi.fn();
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       openDrawByIndexDialog,
       lastPointerScreenX: null,
       lastPointerScreenY: null,
@@ -3318,7 +3483,15 @@ describe('stateComponent (CanvasStateComponent.ts)', () => {
     } as unknown as KeyboardEvent);
 
     window.draggableZoneComponent = {
-      contextMenu: { open: false, x: 0, y: 0, cardId: null, textId: null },
+      contextMenu: {
+        open: false,
+        x: 0,
+        y: 0,
+        contentX: 0,
+        contentY: 0,
+        cardId: null,
+        textId: null,
+      },
       addTextAt,
       lastPointerScreenX: null,
       lastPointerScreenY: null,

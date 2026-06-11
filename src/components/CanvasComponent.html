@@ -357,7 +357,7 @@
                   class="absolute select-none will-change-transform origin-top-left cursor-grab border-5 border-transparent hover:border-purple-600 rounded px-1 min-w-[20px] min-h-[1em] max-w-none overflow-visible"
                   :class="label.fixedWidth ? 'whitespace-normal break-words' : 'w-max whitespace-nowrap'"
                   :style="getTextLabelStyle(label)"
-                  @dblclick.stop="startEditingTextLabel(label)"
+                  @dblclick.stop="onContextMenu($event)"
                 >
                   <template x-if="editingTextId !== label.id">
                     <span x-text="label.text"></span>
@@ -529,8 +529,16 @@
             <div x-show="contextMenu.textId">
               <button
                 type="button"
+                class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
+                @click.stop="editTextLabelFromContextMenu()"
+              >
+                Edit
+              </button>
+              <hr class="my-1 border-gray-600" />
+              <button
+                type="button"
                 class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-                @click="deleteTextLabel(contextMenu.textId); closeContextMenu()"
+                @click.stop="deleteTextLabel(contextMenu.textId); closeContextMenu()"
               >
                 Delete
               </button>
@@ -539,7 +547,7 @@
               <button
                 type="button"
                 class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-                @click="drawCardAt(contextMenu.x, contextMenu.y); closeContextMenu()"
+                @click="drawCardAtContextMenu()"
               >
                 Draw card here
               </button>
@@ -560,7 +568,7 @@
               <button
                 type="button"
                 class="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-600 focus:outline-none focus:bg-gray-600 cursor-pointer"
-                @click="addTextAt(contextMenu.x, contextMenu.y); closeContextMenu()"
+                @click="addTextAtContextMenu()"
               >
                 Add text
               </button>

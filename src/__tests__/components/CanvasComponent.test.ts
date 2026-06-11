@@ -245,19 +245,18 @@ function createMerged(base?: ReturnType<typeof mountCanvas>): MergedThis {
     dragContainer: dragContainerEl,
     pinchStartDistance: 0,
     pinchStartScale: 1,
-    longPressTimerId: null as ReturnType<typeof setTimeout> | null,
     activeTouchId: null as number | null,
     touchStartPos: null as MergedThis['touchStartPos'],
-    longPressActivated: false,
-    touchMovedAfterLongPress: false,
     touchGestureStarted: false,
-    lastTextLabelTap: null as MergedThis['lastTextLabelTap'],
+    lastCanvasTap: null as MergedThis['lastCanvasTap'],
     selectionBox: null as MergedThis['selectionBox'],
     selectionBoxStyle: '',
     contextMenu: {
       open: false,
       x: 0,
       y: 0,
+      contentX: 0,
+      contentY: 0,
       cardId: null as string | null,
       textId: null as string | null,
     },
@@ -413,21 +412,36 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(ctx.offsetY).toBe(250);
   });
 
-  it('closeContextMenu resets menu state', () => {
+  it('closeContextMenu hides menu without clearing target ids during transition', () => {
     const c = mountCanvas();
-    const inst = {
-      contextMenu: { open: true, x: 1, y: 2, cardId: 'c', textId: 't' },
-    } as MergedThis;
+    const inst = createMerged();
+    inst.contextMenu = {
+      open: true,
+      x: 1,
+      y: 2,
+      contentX: 0,
+      contentY: 0,
+      cardId: 'c',
+      textId: 't',
+    };
     c.closeContextMenu.call(inst);
     expect(inst.contextMenu.open).toBe(false);
-    expect(inst.contextMenu.cardId).toBeNull();
-    expect(inst.contextMenu.textId).toBeNull();
+    expect(inst.contextMenu.cardId).toBe('c');
+    expect(inst.contextMenu.textId).toBe('t');
   });
 
   it('handleContextMenuTouchDismiss closes menu on outside touch', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.contextMenu = { open: true, x: 0, y: 0, cardId: null, textId: null };
+    ctx.contextMenu = {
+      open: true,
+      x: 0,
+      y: 0,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: null,
+    };
     const outside = ctx.viewport!;
     c.handleContextMenuTouchDismiss.call(ctx, {
       target: outside,
@@ -438,7 +452,15 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
   it('handleContextMenuTouchDismiss keeps menu open for touches inside menu', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.contextMenu = { open: true, x: 0, y: 0, cardId: 'c1', textId: null };
+    ctx.contextMenu = {
+      open: true,
+      x: 0,
+      y: 0,
+      contentX: 0,
+      contentY: 0,
+      cardId: 'c1',
+      textId: null,
+    };
     const menu = document.createElement('div');
     menu.setAttribute('data-context-menu', '');
     const item = document.createElement('button');
@@ -515,7 +537,15 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
   it('openDrawByIndexFromContextMenu opens dialog at menu coords and closes context menu', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.contextMenu = { open: true, x: 12, y: 34, cardId: null, textId: null };
+    ctx.contextMenu = {
+      open: true,
+      x: 12,
+      y: 34,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: null,
+    };
     ctx.openDrawByIndexDialog = vi.fn();
     c.openDrawByIndexFromContextMenu.call(ctx);
     expect(ctx.openDrawByIndexDialog).toHaveBeenCalledWith(12, 34);
@@ -525,7 +555,15 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
   it('openRandomNumberModalFromContextMenu opens modal at menu coords and closes context menu', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.contextMenu = { open: true, x: 12, y: 34, cardId: null, textId: null };
+    ctx.contextMenu = {
+      open: true,
+      x: 12,
+      y: 34,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: null,
+    };
     ctx.openRandomNumberModal = vi.fn();
     ctx.closeContextMenu = vi.fn();
     c.openRandomNumberModalFromContextMenu.call(ctx);
@@ -541,10 +579,100 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(html).toContain('randomNumberModalOpen');
   });
 
+  it('canvas markup includes edit action in text context menu', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toContain('editTextLabelFromContextMenu()');
+    expect(html).toMatch(/contextMenu\.textId[\s\S]*?Edit[\s\S]*?Delete/);
+  });
+
+  it('text label double-click opens context menu instead of direct edit', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toContain('@dblclick.stop="onContextMenu($event)"');
+    expect(html).not.toContain('@dblclick.stop="startEditingTextLabel(label)"');
+  });
+
+  it('editTextLabelFromContextMenu opens edit and closes context menu', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const label = mkLabel('tl1', null);
+    ctx.textLabels = [label];
+    ctx.contextMenu = {
+      open: true,
+      x: 10,
+      y: 20,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: 'tl1',
+    };
+    const startEdit = vi.spyOn(ctx, 'startEditingTextLabel');
+    c.editTextLabelFromContextMenu.call(ctx);
+    expect(ctx.contextMenu.open).toBe(false);
+    expect(startEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 'tl1' }));
+    expect(ctx.editingTextId).toBe('tl1');
+  });
+
+  it('editTextLabelFromContextMenu closes menu before starting edit', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    const label = mkLabel('tl1', null);
+    ctx.textLabels = [label];
+    ctx.contextMenu = {
+      open: true,
+      x: 10,
+      y: 20,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: 'tl1',
+    };
+    const order: string[] = [];
+    ctx.closeContextMenu = vi.fn(function (this: MergedThis) {
+      order.push('close');
+      c.closeContextMenu.call(this);
+    });
+    ctx.startEditingTextLabel = vi.fn(function (this: MergedThis, l: TextLabel) {
+      order.push('edit');
+      this.editingTextId = l.id;
+    });
+    ctx.$nextTick = ((fn: () => void) => {
+      order.push('tick');
+      fn();
+    }) as MergedThis['$nextTick'];
+    c.editTextLabelFromContextMenu.call(ctx);
+    expect(order).toEqual(['close', 'tick', 'edit']);
+  });
+
+  it('editTextLabelFromContextMenu closes menu when label is missing', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.textLabels = [];
+    ctx.contextMenu = {
+      open: true,
+      x: 10,
+      y: 20,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: 'missing',
+    };
+    c.editTextLabelFromContextMenu.call(ctx);
+    expect(ctx.editingTextId).toBeNull();
+    expect(ctx.contextMenu.open).toBe(false);
+  });
+
   it('openDrawByNameFromContextMenu opens picker at menu coords and closes context menu', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.contextMenu = { open: true, x: 12, y: 34, cardId: null, textId: null };
+    ctx.contextMenu = {
+      open: true,
+      x: 12,
+      y: 34,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: null,
+    };
     ctx.$nextTick = ((fn: () => void) => {
       fn();
     }) as MergedThis['$nextTick'];
@@ -559,11 +687,102 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     });
   });
 
-  it('Draw card here uses context menu anchor coordinates', async () => {
+  it('Draw card here uses context menu screen position helper', async () => {
     const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
     expect(html).toContain('Draw card here');
-    expect(html).toContain('drawCardAt(contextMenu.x, contextMenu.y); closeContextMenu()');
+    expect(html).toContain('drawCardAtContextMenu()');
     expect(html).not.toContain('drawCardAt($event.clientX, $event.clientY)');
+    expect(html).toContain('data-context-menu');
+    expect(html).toMatch(
+      /x-ref="emptyCanvasMessage"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>[\s\S]*?data-context-menu[\s\S]*?fixed z-\[10000\]/,
+    );
+  });
+
+  it('onContextMenu stores screen and content coordinates', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.offsetX = 10;
+    ctx.offsetY = 20;
+    ctx.scale = 2;
+    vi.spyOn(ctx.viewport!, 'getBoundingClientRect').mockReturnValue({
+      ...domRect(1000, 800),
+      left: 40,
+      top: 20,
+      right: 1040,
+      bottom: 820,
+      x: 40,
+      y: 20,
+    } as DOMRect);
+    c.onContextMenu.call(ctx, {
+      clientX: 140,
+      clientY: 120,
+      target: ctx.viewport!,
+      preventDefault: vi.fn(),
+    });
+    expect(ctx.contextMenu).toMatchObject({
+      open: true,
+      x: 140,
+      y: 120,
+      contentX: 45,
+      contentY: 40,
+    });
+  });
+
+  it('getContextMenuScreenPosition returns stored screen coordinates', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.offsetX = 10;
+    ctx.offsetY = 20;
+    ctx.scale = 2;
+    vi.spyOn(ctx.viewport!, 'getBoundingClientRect').mockReturnValue({
+      ...domRect(1000, 800),
+      left: 40,
+      top: 20,
+      right: 1040,
+      bottom: 820,
+      x: 40,
+      y: 20,
+    } as DOMRect);
+    ctx.contextMenu = {
+      open: true,
+      x: 140,
+      y: 120,
+      contentX: 45,
+      contentY: 40,
+      cardId: null,
+      textId: null,
+    };
+    expect(c.getContextMenuScreenPosition.call(ctx)).toEqual({ x: 140, y: 120 });
+  });
+
+  it('drawCardAtContextMenu draws at content position of menu anchor', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.offsetX = 10;
+    ctx.offsetY = 20;
+    ctx.scale = 2;
+    vi.spyOn(ctx.viewport!, 'getBoundingClientRect').mockReturnValue({
+      ...domRect(1000, 800),
+      left: 40,
+      top: 20,
+      right: 1040,
+      bottom: 820,
+      x: 40,
+      y: 20,
+    } as DOMRect);
+    ctx.contextMenu = {
+      open: true,
+      x: 140,
+      y: 120,
+      contentX: 45,
+      contentY: 40,
+      cardId: null,
+      textId: null,
+    };
+    ctx.drawCardAtContent = vi.fn();
+    c.drawCardAtContextMenu.call(ctx);
+    expect(ctx.drawCardAtContent).toHaveBeenCalledWith(45, 40);
+    expect(ctx.contextMenu.open).toBe(false);
   });
 
   it('canvas markup includes bottom-right copyright notice', async () => {
@@ -1093,16 +1312,14 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     c.onTouchMove.call(ctx, touchEv([touch(2, 5, 5)], [touch(2, 5, 5)]));
   });
 
-  it('onTouchStart two-finger pinch clears long-press timer', () => {
-    vi.useFakeTimers();
+  it('onTouchStart two-finger pinch initializes pinch state', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.longPressTimerId = setTimeout(() => {}, 9999);
     const t0 = touch(0, 0, 0);
     const t1 = touch(1, 10, 10);
     c.onTouchStart.call(ctx, touchEv([t0, t1], [t0, t1]));
-    expect(ctx.longPressTimerId).toBeNull();
     expect(ctx.pinchStartDistance).toBeGreaterThan(0);
+    expect(ctx.activeTouchId).toBeNull();
   });
 
   it('onTouchMove pinch skips zoom when actual scale factor is 1', () => {
@@ -1147,20 +1364,6 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(zoomMock.mock.calls[0]).toEqual([100, 0, 1.5]);
   });
 
-  it('onTouchMove two-finger clears an active long-press timer', () => {
-    vi.useFakeTimers();
-    const c = mountCanvas();
-    const ctx = createMerged();
-    ctx.longPressTimerId = setTimeout(() => {}, 9999);
-    ctx.pinchStartDistance = 80;
-    ctx.pinchStartScale = 1;
-    ctx.scale = 1;
-    const t0 = touch(0, 0, 0);
-    const t1 = touch(1, 80, 0);
-    c.onTouchMove.call(ctx, touchEv([t0, t1], [t0, t1]));
-    expect(ctx.longPressTimerId).toBeNull();
-  });
-
   it('onTouchMove pinch returns early when pinchStartDistance is zero', () => {
     const c = mountCanvas();
     const ctx = createMerged();
@@ -1194,37 +1397,26 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(md.mock.calls.length).toBe(0);
   });
 
-  it('onTouchMove long-press path invokes mouse down and move once', () => {
+  it('onTouchEnd double-tap on canvas opens context menu and resets pinch', () => {
     vi.useFakeTimers();
+    vi.setSystemTime(1_000);
     const ctx = createMerged();
     spyElementFromPoint(ctx.viewport);
-    const t0 = touch(3, 10, 10);
-    ctx.onTouchStart.call(ctx, touchEv([t0], [t0]));
-    vi.advanceTimersByTime(500);
-    const md = vi.spyOn(ctx, 'onMouseDown');
-    const mm = vi.spyOn(ctx, 'onMouseMove');
-    const move = touchEv([touch(3, 20, 20)], [touch(3, 20, 20)]);
-    ctx.onTouchMove.call(ctx, move);
-    expect(md.mock.calls.length).toBeGreaterThan(0);
-    expect(mm.mock.calls.length).toBeGreaterThan(0);
-    const move2 = touchEv([touch(3, 30, 30)], [touch(3, 30, 30)]);
-    ctx.onTouchMove.call(ctx, move2);
-    expect(mm.mock.calls.length).toBeGreaterThan(1);
-  });
+    const first = touch(4, 5, 5);
+    ctx.onTouchStart.call(ctx, touchEv([first], [first]));
+    ctx.onTouchEnd.call(ctx, touchEv([], [first]));
+    expect(ctx.lastCanvasTap).toMatchObject({ tapKey: 'canvas' });
 
-  it('onTouchEnd resets pinch and opens context menu after long press', () => {
-    vi.useFakeTimers();
-    const ctx = createMerged();
-    spyElementFromPoint(ctx.viewport);
-    const t0 = touch(4, 5, 5);
-    ctx.onTouchStart.call(ctx, touchEv([t0], [t0]));
-    vi.advanceTimersByTime(500);
+    vi.setSystemTime(1_200);
     ctx.pinchStartDistance = 50;
+    const second = touch(4, 6, 6);
     const cm = vi.spyOn(ctx, 'onContextMenu');
-    const end = touchEv([], [t0]);
-    ctx.onTouchEnd.call(ctx, end);
+    ctx.onTouchStart.call(ctx, touchEv([second], [second]));
+    ctx.onTouchEnd.call(ctx, touchEv([], [second]));
     expect(ctx.pinchStartDistance).toBe(0);
     expect(cm.mock.calls.length).toBeGreaterThan(0);
+    expect(ctx.lastCanvasTap).toBeNull();
+    vi.useRealTimers();
   });
 
   it('onTouchEnd calls onMouseUp when gesture started', () => {
@@ -1246,27 +1438,13 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(end.mock.calls[0]?.[0]).toBe(e);
   });
 
-  it('onTouchStart two-finger ignores absent long-press timer', () => {
+  it('onTouchStart two-finger pinch sets pinch distance', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.longPressTimerId = null;
     const t0 = touch(0, 0, 0);
     const t1 = touch(1, 10, 0);
     c.onTouchStart.call(ctx, touchEv([t0, t1], [t0, t1]));
     expect(ctx.pinchStartDistance).toBe(10);
-  });
-
-  it('onTouchStart single-finger replaces an existing long-press timer', () => {
-    vi.useFakeTimers();
-    const c = mountCanvas();
-    const ctx = createMerged();
-    spyElementFromPoint(ctx.viewport);
-    const first = touch(0, 0, 0);
-    c.onTouchStart.call(ctx, touchEv([first], [first]));
-    const prior = ctx.longPressTimerId;
-    const second = touch(1, 1, 1);
-    c.onTouchStart.call(ctx, touchEv([second], [second]));
-    expect(ctx.longPressTimerId).not.toBe(prior);
   });
 
   it('onTouchStart skips canvas handling for interactive targets', () => {
@@ -1309,7 +1487,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(ctx.editingTextId).toBe('tl1');
   });
 
-  it('onTouchEnd double-tap on text label opens edit mode', () => {
+  it('onTouchEnd double-tap on text label opens context menu', () => {
     vi.useFakeTimers();
     vi.setSystemTime(5_000);
     const c = mountCanvas();
@@ -1325,34 +1503,59 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     const first = touch(11, 40, 40);
     c.onTouchStart.call(ctx, touchEv([first], [first]));
     c.onTouchEnd.call(ctx, touchEv([], [first]));
-    expect(ctx.startEditingTextLabel).not.toHaveBeenCalled();
-    expect(ctx.lastTextLabelTap).toMatchObject({ textId: 'tl1' });
+    expect(ctx.lastCanvasTap).toMatchObject({ tapKey: 'text:tl1' });
 
     vi.setSystemTime(5_200);
     const second = touch(11, 42, 41);
+    const cm = vi.spyOn(ctx, 'onContextMenu');
     c.onTouchStart.call(ctx, touchEv([second], [second]));
     c.onTouchEnd.call(ctx, touchEv([], [second]));
-    expect(ctx.startEditingTextLabel).toHaveBeenCalledTimes(1);
-    expect(ctx.startEditingTextLabel).toHaveBeenCalledWith(expect.objectContaining({ id: 'tl1' }));
-    expect(ctx.editingTextId).toBe('tl1');
-    expect(ctx.lastTextLabelTap).toBeNull();
+    expect(cm.mock.calls.length).toBeGreaterThan(0);
+    expect(ctx.lastCanvasTap).toBeNull();
+    vi.useRealTimers();
   });
 
-  it('onTouchMove clears pending text double-tap after movement', () => {
+  it('onTouchEnd double-tap on card opens card context menu', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(6_000);
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.lastTextLabelTap = { textId: 'tl1', time: Date.now(), x: 1, y: 2 };
+    ctx.draggableCards = [mkCard('cd1', 0, 0)];
+    const card = document.createElement('div');
+    card.id = 'cd1';
+    const img = document.createElement('img');
+    card.append(img);
+    ctx.viewport!.append(card);
+    spyElementFromPoint(img);
+
+    const first = touch(20, 30, 30);
+    c.onTouchStart.call(ctx, touchEv([first], [first]));
+    c.onTouchEnd.call(ctx, touchEv([], [first]));
+    expect(ctx.lastCanvasTap).toMatchObject({ tapKey: 'card:cd1' });
+
+    vi.setSystemTime(6_200);
+    const second = touch(20, 32, 31);
+    const cm = vi.spyOn(ctx, 'onContextMenu');
+    c.onTouchStart.call(ctx, touchEv([second], [second]));
+    c.onTouchEnd.call(ctx, touchEv([], [second]));
+    expect(cm.mock.calls.length).toBeGreaterThan(0);
+    vi.useRealTimers();
+  });
+
+  it('onTouchMove clears pending canvas double-tap after movement', () => {
+    const c = mountCanvas();
+    const ctx = createMerged();
+    ctx.lastCanvasTap = { tapKey: 'text:tl1', time: Date.now(), x: 1, y: 2 };
     spyElementFromPoint(ctx.viewport);
     const t0 = touch(12, 0, 0);
     c.onTouchStart.call(ctx, touchEv([t0], [t0]));
     c.onTouchMove.call(ctx, touchEv([touch(12, 8, 8)], [touch(12, 8, 8)]));
-    expect(ctx.lastTextLabelTap).toBeNull();
+    expect(ctx.lastCanvasTap).toBeNull();
   });
 
-  it('onTouchMove two-finger pinch skips clearing when no long-press timer', () => {
+  it('onTouchMove two-finger pinch zooms when pinch distance is set', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.longPressTimerId = null;
     ctx.pinchStartDistance = 100;
     ctx.pinchStartScale = 1;
     ctx.scale = 1;
@@ -1451,7 +1654,15 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
   it('onContextMenu does nothing when target is outside the canvas', () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    ctx.contextMenu = { open: false, x: 0, y: 0, cardId: null, textId: null };
+    ctx.contextMenu = {
+      open: false,
+      x: 0,
+      y: 0,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: null,
+    };
     const foreign = document.createElement('div');
     document.body.append(foreign);
     c.onContextMenu.call(ctx, {
@@ -2062,7 +2273,9 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
   it('onCorrespondencesChanged hydrates cards and refreshes the count bar', async () => {
     const c = mountCanvas();
     const ctx = createMerged();
-    const hydrateSpy = vi.spyOn(ctx, 'hydrateCanvasCardCorrespondenceDisplays').mockResolvedValue(undefined);
+    const hydrateSpy = vi
+      .spyOn(ctx, 'hydrateCanvasCardCorrespondenceDisplays')
+      .mockResolvedValue(undefined);
     const refreshSpy = vi.spyOn(ctx, 'refreshCorrespondenceCountBar').mockResolvedValue(undefined);
     await c.onCorrespondencesChanged.call(ctx);
     expect(hydrateSpy).toHaveBeenCalledTimes(1);
@@ -2093,7 +2306,9 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
       const card = mkCard('1');
       card.card.id = 'deck-1';
       ctx.draggableCards = [card];
-      getCardsByIdsMock.mockResolvedValue(err({ kind: 'unknown', operation: 't', message: 'fail' }));
+      getCardsByIdsMock.mockResolvedValue(
+        err({ kind: 'unknown', operation: 't', message: 'fail' }),
+      );
       await c.hydrateCanvasCardCorrespondenceDisplays.call(ctx);
       expect(ctx.draggableCards[0]?.card.correspondenceDisplays).toBeUndefined();
 
@@ -2223,9 +2438,10 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     c.onTouchEnd.call(ctx, touchEv([], [first]));
     vi.setSystemTime(10_200);
     const second = touch(30, 42, 41);
+    const cm = vi.spyOn(ctx, 'onContextMenu');
     c.onTouchStart.call(ctx, touchEv([second], [second]));
     c.onTouchEnd.call(ctx, touchEv([], [second]));
-    expect(ctx.startEditingTextLabel).not.toHaveBeenCalled();
+    expect(cm).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
 
@@ -2358,13 +2574,23 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     document.body.append(dc);
     vi.spyOn(document, 'querySelector').mockReturnValue(dc);
     const docAddSpy = vi.spyOn(document, 'addEventListener');
-    const storageCheckSpy = vi.spyOn(ctx, 'runStartupStorageWarningCheck').mockResolvedValue(undefined);
+    const storageCheckSpy = vi
+      .spyOn(ctx, 'runStartupStorageWarningCheck')
+      .mockResolvedValue(undefined);
 
     base.init.call(ctx);
 
     const touchListener = ctx._contextMenuTouchDismissListener;
     expect(touchListener).toBeTypeOf('function');
-    ctx.contextMenu = { open: true, x: 0, y: 0, cardId: null, textId: null };
+    ctx.contextMenu = {
+      open: true,
+      x: 0,
+      y: 0,
+      contentX: 0,
+      contentY: 0,
+      cardId: null,
+      textId: null,
+    };
     touchListener!.call(ctx, { target: ctx.viewport } as TouchEvent);
     expect(ctx.contextMenu.open).toBe(false);
 
@@ -2392,7 +2618,7 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     expect(mm).not.toHaveBeenCalled();
   });
 
-  it('onTouchEnd clears lastTextLabelTap when text edit mode is active', () => {
+  it('onTouchEnd clears lastCanvasTap when text edit mode is active', () => {
     const c = mountCanvas();
     const ctx = createMerged();
     const wrap = document.createElement('div');
@@ -2401,9 +2627,9 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     ctx.editingTextId = 'other';
     ctx.touchStartPos = { clientX: 10, clientY: 10, target: wrap };
     ctx.activeTouchId = 21;
-    ctx.lastTextLabelTap = { textId: 'tl1', time: Date.now(), x: 1, y: 2 };
+    ctx.lastCanvasTap = { tapKey: 'text:tl1', time: Date.now(), x: 1, y: 2 };
     c.onTouchEnd.call(ctx, touchEv([], [touch(21, 10, 10)]));
-    expect(ctx.lastTextLabelTap).toBeNull();
+    expect(ctx.lastCanvasTap).toBeNull();
   });
 
   it('onTouchEnd skips quick-tap handling when touchStartPos is missing', () => {
@@ -2411,7 +2637,6 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     const ctx = createMerged();
     ctx.activeTouchId = 55;
     ctx.touchStartPos = null;
-    ctx.longPressActivated = false;
     ctx.touchGestureStarted = false;
     const md = vi.spyOn(ctx, 'onMouseDown');
     const mu = vi.spyOn(ctx, 'onMouseUp');

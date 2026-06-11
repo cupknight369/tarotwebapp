@@ -56,7 +56,11 @@ describe('readingGroupAssignSchema', () => {
   });
 
   it('rejects non-UUID group ids that are not the default', () => {
-    expect(() => readingGroupAssignSchema.parse({ groupId: 'custom-group' })).toThrow(/Invalid group id/);
-    expect(() => readingGroupAssignSchema.parse({ groupId: 'not-a-uuid' })).toThrow(/Invalid group id/);
+    expect(() => readingGroupAssignSchema.parse({ groupId: 'custom-group' })).toThrow(
+      /Invalid group id/,
+    );
+    expect(() => readingGroupAssignSchema.parse({ groupId: 'not-a-uuid' })).toThrow(
+      /Invalid group id/,
+    );
   });
 });

@@ -37,10 +37,10 @@ import {
   isWithinTextEditPanel,
 } from '../lib/canvasInteractiveTarget.js';
 import {
-  getTextLabelIdFromTarget,
-  isTextDoubleTap,
-  type TextLabelTapRecord,
-} from '../lib/canvasTextDoubleTap.js';
+  getContextMenuTapKey,
+  isCanvasDoubleTap,
+  type CanvasTapRecord,
+} from '../lib/canvasDoubleTap.js';
 import {
   lockPointerInteraction,
   resetPointerInteractionLock,
@@ -72,6 +72,8 @@ Alpine.data('canvasComponent', () => ({
     open: false,
     x: 0,
     y: 0,
+    contentX: 0,
+    contentY: 0,
     cardId: null as string | null,
     textId: null as string | null,
   },
@@ -196,11 +198,8 @@ Alpine.data('canvasComponent', () => ({
 
   activeTouchId: null as number | null,
   touchStartPos: null as { clientX: number; clientY: number; target: EventTarget | null } | null,
-  longPressTimerId: null as ReturnType<typeof setTimeout> | null,
-  longPressActivated: false,
-  touchMovedAfterLongPress: false,
   touchGestureStarted: false,
-  lastTextLabelTap: null as TextLabelTapRecord | null,
+  lastCanvasTap: null as CanvasTapRecord | null,
   pinchStartDistance: 0,
   pinchStartScale: 1,
 
@@ -302,12 +301,6 @@ Alpine.data('canvasComponent', () => ({
     if (!this.viewport) return;
 
     if (e.touches.length === 2) {
-      if (this.longPressTimerId) {
-        clearTimeout(this.longPressTimerId);
-        this.longPressTimerId = null;
-      }
-
-      this.longPressActivated = false;
       this.activeTouchId = null;
       const t1 = e.touches[0];
       const t2 = e.touches[1];
@@ -331,14 +324,6 @@ Alpine.data('canvasComponent', () => ({
       this.activeTouchId = touch.identifier;
       this.touchStartPos = { clientX: touch.clientX, clientY: touch.clientY, target };
       this.touchGestureStarted = false;
-      this.touchMovedAfterLongPress = false;
-      this.longPressActivated = false;
-
-      if (this.longPressTimerId) clearTimeout(this.longPressTimerId);
-      this.longPressTimerId = setTimeout(() => {
-        this.longPressTimerId = null;
-        this.longPressActivated = true;
-      }, 500);
     }
   },
 
@@ -346,11 +331,6 @@ Alpine.data('canvasComponent', () => ({
     if (!this.viewport) return;
 
     if (e.touches.length === 2) {
-      if (this.longPressTimerId) {
-        clearTimeout(this.longPressTimerId);
-        this.longPressTimerId = null;
-      }
-
       if (this.pinchStartDistance <= 0) return;
       const t1 = e.touches[0];
       const t2 = e.touches[1];
@@ -383,31 +363,8 @@ Alpine.data('canvasComponent', () => ({
       this.lastPointerScreenX = touch.clientX;
       this.lastPointerScreenY = touch.clientY;
 
-      if (this.longPressTimerId) {
-        clearTimeout(this.longPressTimerId);
-        this.longPressTimerId = null;
-      }
-
       const pos = this.touchStartPos;
       const moveSyn = this.touchToMouseLike(touch);
-
-      if (this.longPressActivated) {
-        if (!this.touchMovedAfterLongPress) {
-          const downSyn: MouseLikeEvent = {
-            ...this.touchToMouseLike(touch, pos.target, true),
-            clientX: pos.clientX,
-            clientY: pos.clientY,
-          };
-          this.onMouseDown(downSyn);
-          this.onMouseMove(moveSyn);
-          this.touchMovedAfterLongPress = true;
-          this.touchGestureStarted = true;
-        } else {
-          this.onMouseMove(moveSyn);
-        }
-        e.preventDefault();
-        return;
-      }
 
       if (!this.touchGestureStarted) {
         const downSyn: MouseLikeEvent = {
@@ -422,7 +379,7 @@ Alpine.data('canvasComponent', () => ({
         this.onMouseMove(moveSyn);
       }
 
-      this.lastTextLabelTap = null;
+      this.lastCanvasTap = null;
       e.preventDefault();
     }
   },
@@ -435,21 +392,13 @@ Alpine.data('canvasComponent', () => ({
     }
     const ended = Array.from(e.changedTouches).find((t) => t.identifier === this.activeTouchId);
     if (ended !== undefined) {
-      if (this.longPressActivated && !this.touchMovedAfterLongPress) {
-        this.clearDragState();
-        const pos = this.touchStartPos!;
-        const syn: MouseLikeEvent = {
-          clientX: pos.clientX,
-          clientY: pos.clientY,
-          target: pos.target,
-          preventDefault: () => {},
-        };
-        this.onContextMenu(syn);
-      } else if (this.touchGestureStarted) {
+      if (this.touchGestureStarted) {
         this.onMouseUp(this.touchToMouseLike(ended));
       } else if (this.touchStartPos) {
         const pos = this.touchStartPos;
+        const skipQuickTap = isWithinContextMenu(pos.target) || this.contextMenu.open;
         if (
+          !skipQuickTap &&
           this.editingTextId &&
           !isWithinTextEditPanel(pos.target) &&
           !isCanvasInteractiveTarget(pos.target)
@@ -457,49 +406,57 @@ Alpine.data('canvasComponent', () => ({
           this.commitEditTextLabel();
         }
 
-        const textId = getTextLabelIdFromTarget(pos.target);
-        const now = Date.now();
-        const openedTextEdit =
-          textId &&
-          !this.editingTextId &&
-          !isCanvasInteractiveTarget(pos.target) &&
-          isTextDoubleTap(this.lastTextLabelTap, textId, pos.clientX, pos.clientY, now);
+        if (!skipQuickTap) {
+          const tapKey = getContextMenuTapKey(pos.target, {
+            textLabels: this.textLabels,
+            draggableCards: this.draggableCards,
+            viewport: this.viewport,
+            content: this.content,
+            emptyCanvasMessage: this.emptyCanvasMessage,
+          });
+          const now = Date.now();
+          const openedContextMenu =
+            tapKey &&
+            !isCanvasInteractiveTarget(pos.target) &&
+            isCanvasDoubleTap(this.lastCanvasTap, tapKey, pos.clientX, pos.clientY, now);
 
-        if (openedTextEdit) {
-          const label = this.textLabels.find((l) => l.id === textId);
-          if (label) {
-            this.startEditingTextLabel(label);
-          }
-          this.lastTextLabelTap = null;
-        } else {
-          if (textId && !this.editingTextId && !isCanvasInteractiveTarget(pos.target)) {
-            this.lastTextLabelTap = {
-              textId,
-              time: now,
-              x: pos.clientX,
-              y: pos.clientY,
-            };
-          } else {
-            this.lastTextLabelTap = null;
-          }
-
-          if (!isCanvasInteractiveTarget(pos.target)) {
+          if (openedContextMenu) {
             const syn: MouseLikeEvent = {
               clientX: pos.clientX,
               clientY: pos.clientY,
               target: pos.target,
               preventDefault: () => {},
             };
-            this.onMouseDown(syn);
-            this.onMouseUp(syn);
+            this.onContextMenu(syn);
+            this.lastCanvasTap = null;
+          } else {
+            if (tapKey && !this.editingTextId && !isCanvasInteractiveTarget(pos.target)) {
+              this.lastCanvasTap = {
+                tapKey,
+                time: now,
+                x: pos.clientX,
+                y: pos.clientY,
+              };
+            } else {
+              this.lastCanvasTap = null;
+            }
+
+            if (!isCanvasInteractiveTarget(pos.target)) {
+              const syn: MouseLikeEvent = {
+                clientX: pos.clientX,
+                clientY: pos.clientY,
+                target: pos.target,
+                preventDefault: () => {},
+              };
+              this.onMouseDown(syn);
+              this.onMouseUp(syn);
+            }
           }
         }
       }
     }
     this.activeTouchId = null;
     this.touchStartPos = null;
-    this.longPressActivated = false;
-    this.touchMovedAfterLongPress = false;
     this.touchGestureStarted = false;
   },
 
@@ -915,9 +872,16 @@ Alpine.data('canvasComponent', () => ({
     if (this.viewport) this.viewport.style.cursor = 'grab';
   },
 
+  getContextMenuScreenPosition(this: MergedThis): { x: number; y: number } {
+    return { x: this.contextMenu.x, y: this.contextMenu.y };
+  },
+
   onContextMenu(this: MergedThis, event: MouseLikeEvent) {
     this.lastPointerScreenX = event.clientX;
     this.lastPointerScreenY = event.clientY;
+    const screenX = event.clientX;
+    const screenY = event.clientY;
+    const { x: contentX, y: contentY } = this.screenToContent(screenX, screenY);
     const target = event.target as HTMLElement;
     const textEl = target.closest('[data-text-id]');
     const textId = textEl ? textEl.getAttribute('data-text-id') : null;
@@ -925,8 +889,10 @@ Alpine.data('canvasComponent', () => ({
       if (event.preventDefault) event.preventDefault();
       this.contextMenu = {
         open: true,
-        x: event.clientX,
-        y: event.clientY,
+        x: screenX,
+        y: screenY,
+        contentX,
+        contentY,
         cardId: null,
         textId,
       };
@@ -947,8 +913,10 @@ Alpine.data('canvasComponent', () => ({
       if (event.preventDefault) event.preventDefault();
       this.contextMenu = {
         open: true,
-        x: event.clientX,
-        y: event.clientY,
+        x: screenX,
+        y: screenY,
+        contentX,
+        contentY,
         cardId,
         textId: null,
       };
@@ -964,8 +932,10 @@ Alpine.data('canvasComponent', () => ({
       if (event.preventDefault) event.preventDefault();
       this.contextMenu = {
         open: true,
-        x: event.clientX,
-        y: event.clientY,
+        x: screenX,
+        y: screenY,
+        contentX,
+        contentY,
         cardId: null,
         textId: null,
       };
@@ -974,8 +944,21 @@ Alpine.data('canvasComponent', () => ({
 
   closeContextMenu() {
     this.contextMenu.open = false;
-    this.contextMenu.cardId = null;
-    this.contextMenu.textId = null;
+  },
+
+  editTextLabelFromContextMenu(this: MergedThis) {
+    const textId = this.contextMenu.textId;
+    this.closeContextMenu();
+    if (!textId) {
+      return;
+    }
+    const label = this.textLabels.find((l) => l.id === textId);
+    if (!label) {
+      return;
+    }
+    this.$nextTick(() => {
+      this.startEditingTextLabel(label);
+    });
   },
 
   handleContextMenuTouchDismiss(this: MergedThis, ev: TouchEvent) {
@@ -987,14 +970,26 @@ Alpine.data('canvasComponent', () => ({
     }
   },
 
+  drawCardAtContextMenu(this: MergedThis) {
+    const { contentX, contentY } = this.contextMenu;
+    this.drawCardAtContent(contentX, contentY);
+    this.closeContextMenu();
+  },
+
+  addTextAtContextMenu(this: MergedThis) {
+    const { contentX, contentY } = this.contextMenu;
+    this.addTextAtContent(contentX, contentY);
+    this.closeContextMenu();
+  },
+
   openDrawByIndexFromContextMenu(this: MergedThis) {
-    const { x, y } = this.contextMenu;
+    const { x, y } = this.getContextMenuScreenPosition();
     this.openDrawByIndexDialog(x, y);
     this.closeContextMenu();
   },
 
   openRandomNumberModalFromContextMenu(this: MergedThis) {
-    const { x, y } = this.contextMenu;
+    const { x, y } = this.getContextMenuScreenPosition();
     this.openRandomNumberModal(x, y);
     this.closeContextMenu();
   },
@@ -1013,7 +1008,7 @@ Alpine.data('canvasComponent', () => ({
   },
 
   openDrawByNameFromContextMenu(this: MergedThis) {
-    const { x, y } = this.contextMenu;
+    const { x, y } = this.getContextMenuScreenPosition();
     this.openDrawByNameAt(x, y);
     this.closeContextMenu();
   },

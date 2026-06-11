@@ -260,9 +260,9 @@ describe('FontProfileManagerComponent', () => {
     ctx.profileFontSizeInputs = { 'fp-a': '999' };
     ctx.applyProfileFontSizeInput('fp-a');
     expect(ctx.profileFontSizeInputs['fp-a']).toBe('555');
-    expect(
-      (alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.fontSize,
-    ).toBe(555);
+    expect((alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.fontSize).toBe(
+      555,
+    );
   });
 
   it('toggleProfileItalic and underline flip styles', () => {
@@ -287,7 +287,11 @@ describe('FontProfileManagerComponent', () => {
     document.body.appendChild(input);
     const focusSpy = vi.spyOn(input, 'focus');
 
-    const ctx = mount({ searchQuery: 'old', profileFontSizeInputs: {}, profileFixedWidthPxInputs: {} });
+    const ctx = mount({
+      searchQuery: 'old',
+      profileFontSizeInputs: {},
+      profileFixedWidthPxInputs: {},
+    });
     ctx.openModal(new CustomEvent('open-font-profile-modal', { detail: { textId: 'lbl-1' } }));
 
     expect(ctx.searchQuery).toBe('');
@@ -326,9 +330,9 @@ describe('FontProfileManagerComponent', () => {
   it('commitProfileTitle trims and saves non-blank titles', () => {
     const ctx = mount();
     ctx.commitProfileTitle('fp-a', '  Renamed  ');
-    expect(
-      (alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.title,
-    ).toBe('Renamed');
+    expect((alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.title).toBe(
+      'Renamed',
+    );
   });
 
   it('applyProfileFontSizeInput falls back to 16 for invalid input', () => {
@@ -336,9 +340,9 @@ describe('FontProfileManagerComponent', () => {
     ctx.profileFontSizeInputs = { 'fp-a': 'abc' };
     ctx.applyProfileFontSizeInput('fp-a');
     expect(ctx.profileFontSizeInputs['fp-a']).toBe('16');
-    expect(
-      (alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.fontSize,
-    ).toBe(16);
+    expect((alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.fontSize).toBe(
+      16,
+    );
   });
 
   it('handleProfileFontSizeKeydown steps value and applies on arrow keys', () => {
@@ -347,9 +351,9 @@ describe('FontProfileManagerComponent', () => {
     ctx.handleProfileFontSizeKeydown('fp-a', up);
     expect(up.preventDefault).toHaveBeenCalled();
     expect(ctx.profileFontSizeInputs['fp-a']).toBe('21');
-    expect(
-      (alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.fontSize,
-    ).toBe(21);
+    expect((alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.fontSize).toBe(
+      21,
+    );
 
     const down = keyEvent('ArrowDown');
     ctx.handleProfileFontSizeKeydown('fp-a', down);
@@ -462,9 +466,9 @@ describe('FontProfileManagerComponent', () => {
     window.draggableZoneComponent = undefined;
     const ctx = mount();
     ctx.replaceProfile('fp-a', { color: '#abcdef' });
-    expect(
-      (alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.color,
-    ).toBe('#abcdef');
+    expect((alpineStores.get('fontProfiles') as FontProfilesStoreState).profiles[0]?.color).toBe(
+      '#abcdef',
+    );
     expect(syncLabelsToFontProfile).not.toHaveBeenCalled();
   });
 

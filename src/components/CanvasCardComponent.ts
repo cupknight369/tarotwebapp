@@ -133,6 +133,16 @@ Alpine.data('cardComponent', () => ({
     this.addCardAtScreenPosition(shuffledCards[this.cryptoRandomInt(shuffledCards.length)], x, y);
   },
 
+  drawCardAtContent(this: MergedThis, contentX: number, contentY: number) {
+    const shuffledCards = Alpine.store('shuffledCards') as TarotCard[];
+    if (shuffledCards.length === 0) return;
+    this.addCardToCanvas(shuffledCards[this.cryptoRandomInt(shuffledCards.length)]);
+    this.updateItem(this.draggableCards[this.draggableCards.length - 1].id, {
+      x: contentX,
+      y: contentY,
+    });
+  },
+
   updateItem(this: MergedThis, id: string, newProps: Partial<DraggableCard>) {
     const index = this.draggableCards.findIndex((i) => i.id === id);
     if (index === -1) return;

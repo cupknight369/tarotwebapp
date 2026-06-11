@@ -939,11 +939,7 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
 
   it('onSwitchDeckByNameQueryInput clamps highlight when matches shrink', () => {
     const ctx = mountDeck();
-    ctx.onDeviceDecks = [
-      onDevice('a', 'Alpha'),
-      onDevice('b', 'Alpine'),
-      onDevice('c', 'Alps'),
-    ];
+    ctx.onDeviceDecks = [onDevice('a', 'Alpha'), onDevice('b', 'Alpine'), onDevice('c', 'Alps')];
     ctx.switchDeckByName = { query: 'al', highlightIndex: 5 };
     ctx.onSwitchDeckByNameQueryInput.call(ctx, 'alpha');
     expect(ctx.switchDeckByName?.highlightIndex).toBe(0);
@@ -1007,7 +1003,9 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
     const ctx = mountDeck();
     ctx.onDeviceDecks = [onDevice('a', 'Alpha')];
     ctx.switchDeckByName = { query: '', highlightIndex: 0 };
-    const confirmSpy = vi.spyOn(ctx, 'confirmSwitchDeckByNameSelection').mockResolvedValue(undefined);
+    const confirmSpy = vi
+      .spyOn(ctx, 'confirmSwitchDeckByNameSelection')
+      .mockResolvedValue(undefined);
     const preventDefault = vi.fn();
     ctx.onSwitchDeckByNameKeydown.call(ctx, {
       key: 'Enter',
@@ -1091,9 +1089,7 @@ describe('deckComponent (CanvasDeckComponent.ts)', () => {
   it('onDeckDownloadComplete updates active title from catalog when deck is not on device', async () => {
     alpineStub.rawStores.activeDeckId = 'cat-1';
     alpineStub.rawStores.activeDeckTitle = 'Old title';
-    deckMocks.listCatalogDeckOffers.mockResolvedValue(
-      ok([catalogOffer('cat-1', 'Catalog title')]),
-    );
+    deckMocks.listCatalogDeckOffers.mockResolvedValue(ok([catalogOffer('cat-1', 'Catalog title')]));
     const ctx = mountDeck();
     ctx.onDeviceDecks = [];
     await ctx.onDeckDownloadComplete.call(ctx, 'cat-1');

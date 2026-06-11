@@ -103,7 +103,11 @@ Alpine.data('textLabelComponent', () => ({
 
   addTextAt(this: MergedThis, screenX: number, screenY: number): void {
     const { x, y } = this.screenToContent(screenX, screenY);
-    const label = this.buildTextLabelBaseFromDefaultProfile(x, y, 'Edit Text');
+    this.addTextAtContent(x, y);
+  },
+
+  addTextAtContent(this: MergedThis, contentX: number, contentY: number): void {
+    const label = this.buildTextLabelBaseFromDefaultProfile(contentX, contentY, 'Edit Text');
     this.textLabels = [...this.textLabels, label];
     this.$nextTick(() => {
       this.startEditingTextLabel(label);

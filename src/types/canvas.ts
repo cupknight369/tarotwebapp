@@ -94,8 +94,14 @@ export type MergedThis = {
 
   contextMenu: {
     open: boolean;
+    /** Screen X for fixed menu positioning. */
     x: number;
+    /** Screen Y for fixed menu positioning. */
     y: number;
+    /** Content-space X captured when the menu opens. */
+    contentX: number;
+    /** Content-space Y captured when the menu opens. */
+    contentY: number;
     cardId: string | null;
     textId: string | null;
   };
@@ -124,11 +130,8 @@ export type MergedThis = {
 
   activeTouchId: number | null;
   touchStartPos: { clientX: number; clientY: number; target: EventTarget | null } | null;
-  longPressTimerId: ReturnType<typeof setTimeout> | null;
-  longPressActivated: boolean;
-  touchMovedAfterLongPress: boolean;
   touchGestureStarted: boolean;
-  lastTextLabelTap: { textId: string; time: number; x: number; y: number } | null;
+  lastCanvasTap: { tapKey: string; time: number; x: number; y: number } | null;
   pinchStartDistance: number;
   pinchStartScale: number;
 
@@ -268,6 +271,7 @@ export type MergedThis = {
   generateCardId(): string;
   generateTextId(): string;
   addTextAt(screenX: number, screenY: number): void;
+  addTextAtContent(contentX: number, contentY: number): void;
   addTextLabelWithTextAt(screenX: number, screenY: number, text: string): void;
   getTextLabelPosition(label: TextLabel): { x: number; y: number };
   getTextLabelBounds(label: TextLabel): {
@@ -285,6 +289,7 @@ export type MergedThis = {
   cryptoRandomInt(len: number): number;
   onMouseWheelClick(event: MouseLikeEvent): void;
   drawCardAt(x: number, y: number): void;
+  drawCardAtContent(contentX: number, contentY: number): void;
   onMouseDown(event: MouseLikeEvent): void;
   onMouseMove(e: MouseLikeEvent): void;
   onMouseUp(event: MouseLikeEvent): void;
@@ -305,7 +310,11 @@ export type MergedThis = {
   deleteSelectedCards(): void;
   rotateCard(cardId: string, direction: 'clockwise' | 'counter-clockwise' | '180'): void;
   onContextMenu(event: MouseLikeEvent): void;
+  getContextMenuScreenPosition(): { x: number; y: number };
   closeContextMenu(): void;
+  editTextLabelFromContextMenu(): void;
+  drawCardAtContextMenu(): void;
+  addTextAtContextMenu(): void;
   handleContextMenuTouchDismiss(ev: TouchEvent): void;
   openDrawByNameAt(screenX: number, screenY: number): void;
   openDrawByNameFromContextMenu(): void;

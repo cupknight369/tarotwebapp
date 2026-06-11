@@ -82,14 +82,14 @@ async function loadSw(options: LoadSwOptions = {}): Promise<SwListeners> {
   return listeners;
 }
 
-type RouteMatcher = (ctx: {
-  request: { mode: string };
-  url: URL;
-}) => boolean;
+type RouteMatcher = (ctx: { request: { mode: string }; url: URL }) => boolean;
 
 function getFunctionRouteMatcher(cacheName: string): RouteMatcher {
   for (const call of workboxMocks.registerRoute.mock.calls) {
-    const [matcher, strategy] = call as [RouteMatcher | unknown, { options?: { cacheName?: string } }];
+    const [matcher, strategy] = call as [
+      RouteMatcher | unknown,
+      { options?: { cacheName?: string } },
+    ];
     if (typeof matcher === 'function' && strategy?.options?.cacheName === cacheName) {
       return matcher;
     }
@@ -99,7 +99,10 @@ function getFunctionRouteMatcher(cacheName: string): RouteMatcher {
 
 function getSupabaseRouteMatcher(): RouteMatcher {
   for (const call of workboxMocks.registerRoute.mock.calls) {
-    const [matcher, strategy] = call as [RouteMatcher | unknown, { options?: { cacheName?: string } }];
+    const [matcher, strategy] = call as [
+      RouteMatcher | unknown,
+      { options?: { cacheName?: string } },
+    ];
     if (typeof matcher === 'function' && strategy?.options?.cacheName === 'supabase-catalog') {
       return matcher;
     }
@@ -221,12 +224,12 @@ describe('sw.ts', () => {
       );
 
       const matcher = getSupabaseRouteMatcher();
-      expect(matcher({ request: { mode: 'cors' }, url: new URL(`${supabaseUrl}/rest/v1/deck`) })).toBe(
-        true,
-      );
-      expect(matcher({ request: { mode: 'cors' }, url: new URL(`${supabaseUrl}/rest/v1/card`) })).toBe(
-        true,
-      );
+      expect(
+        matcher({ request: { mode: 'cors' }, url: new URL(`${supabaseUrl}/rest/v1/deck`) }),
+      ).toBe(true);
+      expect(
+        matcher({ request: { mode: 'cors' }, url: new URL(`${supabaseUrl}/rest/v1/card`) }),
+      ).toBe(true);
       expect(
         matcher({ request: { mode: 'cors' }, url: new URL(`${supabaseUrl}/rest/v1/profile`) }),
       ).toBe(false);
