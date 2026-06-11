@@ -101,6 +101,10 @@ describe('helpComponent (HelpComponent.ts)', () => {
     expect(html).toContain('aria-label="Help"');
     expect(html).toContain('@click="$dispatch(\'open-help\')"');
     expect(html).toContain('Shortcuts: ALT + k');
+    expect(html).toContain('max-w-[calc(50%-0.5rem)]');
+    expect(html).toContain('flex-wrap');
+    expect(html).toContain('max-[36rem]:justify-end');
+    expect(html).toMatch(/order-4 max-\[36rem\]:order-1[\s\S]*?Shortcuts: ALT \+ k/);
   });
 
   it('toolbar markup includes Settings button opening settings store', async () => {

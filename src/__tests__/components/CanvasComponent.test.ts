@@ -805,6 +805,14 @@ describe('canvasComponent (CanvasComponent.ts)', () => {
     );
   });
 
+  it('canvas toolbar uses half-width layout and stacks on narrow screens', async () => {
+    const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
+    expect(html).toMatch(
+      /fixed top-2 right-2[\s\S]*?max-w-\[calc\(50%-0\.5rem\)\][\s\S]*?flex-wrap items-center justify-end/,
+    );
+    expect(html).toContain('max-[36rem]:top-28');
+  });
+
   it('active deck and trademark overlays each stay within half the canvas width', async () => {
     const html = await readFile('src/components/CanvasComponent.html', 'utf-8');
     expect(html).toMatch(

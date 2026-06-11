@@ -142,7 +142,7 @@
           </div>
 
           <div
-            class="fixed top-12 left-2 z-[9998] pointer-events-auto flex flex-row flex-wrap items-start gap-2 select-none"
+            class="fixed top-12 left-2 z-[9998] pointer-events-auto flex flex-row flex-wrap items-start gap-2 select-none max-[36rem]:top-28"
           >
             <div
               x-cloak
@@ -669,9 +669,9 @@
             @open-deck-modal.window="onOpenDeckModalEvent()"
             @switch-deck-by-name.window="onSwitchDeckByNameEvent()"
             @keydown.window.escape="handleDeckEscape()"
-            class="absolute top-1 right-2 z-[9999]"
+            class="fixed top-2 right-2 z-[9999] max-w-[calc(50%-0.5rem)] max-[36rem]:left-2 max-[36rem]:right-2 max-[36rem]:max-w-none"
           >
-            <div class="flex items-center gap-1">
+            <div class="flex flex-wrap items-center justify-end gap-1">
               <span
                 x-show="showShuffledConfirmation"
                 x-transition
