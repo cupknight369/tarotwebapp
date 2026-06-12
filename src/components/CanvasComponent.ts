@@ -103,12 +103,11 @@ Alpine.data('canvasComponent', () => ({
   _storageWarningStartupListener: null as (() => void) | null,
   _contextMenuTouchDismissListener: null as ((ev: TouchEvent) => void) | null,
 
-  correspondenceCountBarCollapsed: false,
+  canvasCountBarCollapsed: false,
   correspondenceBarEntries: [] as CorrespondenceCanvasCountEntry[],
   _correspondenceBarRefreshGen: 0,
   _correspondenceDisplaysHydrateGen: 0,
 
-  cardCountBarCollapsed: false,
   cardCountBarEntries: [] as CardCanvasCountEntry[],
 
   /**

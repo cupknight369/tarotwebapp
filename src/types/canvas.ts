@@ -332,7 +332,7 @@ export type MergedThis = {
   closeStorageAdditionalInfo(): void;
   exportFromStorageWarning(): void;
 
-  correspondenceCountBarCollapsed: boolean;
+  canvasCountBarCollapsed: boolean;
   correspondenceBarEntries: CorrespondenceCanvasCountEntry[];
   _correspondenceBarRefreshGen: number;
   _correspondenceDisplaysHydrateGen: number;
@@ -342,7 +342,6 @@ export type MergedThis = {
   onCorrespondencesChanged(): Promise<void>;
   refreshCorrespondenceCountBar(): Promise<void>;
 
-  cardCountBarCollapsed: boolean;
   cardCountBarEntries: CardCanvasCountEntry[];
   refreshCardCountBar(): void;
 
