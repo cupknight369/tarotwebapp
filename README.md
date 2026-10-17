@@ -2,6 +2,9 @@
 
 A TypeScript-based tarot card drawing application using Alpine.js, with Express server-side auth and Supabase.
 
+Currently hosted here:
+https://cktarot.cards
+
 ## Setup
 
 1. Install dependencies:
